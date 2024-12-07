@@ -2,6 +2,8 @@ package tools
 
 import (
 	"context"
+
+	"github.com/llmcontext/gomcp/types"
 )
 
 // contextKey is a custom type for context keys to avoid collisions
@@ -14,6 +16,6 @@ func MakeContextWithLogger(ctx context.Context, toolName string) context.Context
 	return context.WithValue(ctx, loggerKey, NewLogger(toolName))
 }
 
-func GetLogger(ctx context.Context) Logger {
-	return ctx.Value(loggerKey).(Logger)
+func GetLogger(ctx context.Context) types.Logger {
+	return ctx.Value(loggerKey).(types.Logger)
 }

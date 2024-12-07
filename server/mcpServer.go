@@ -10,7 +10,7 @@ import (
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/tools"
-	"github.com/llmcontext/gomcp/transport"
+	"github.com/llmcontext/gomcp/types"
 )
 
 type ClientInfo struct {
@@ -19,7 +19,7 @@ type ClientInfo struct {
 }
 
 type MCPServer struct {
-	transport     transport.Transport
+	transport     types.Transport
 	toolsRegistry *tools.ToolsRegistry
 	// server information
 	serverName    string
@@ -30,7 +30,7 @@ type MCPServer struct {
 	clientInfo          *ClientInfo
 }
 
-func NewMCPServer(transport transport.Transport, toolsRegistry *tools.ToolsRegistry, serverName string, serverVersion string) *MCPServer {
+func NewMCPServer(transport types.Transport, toolsRegistry *tools.ToolsRegistry, serverName string, serverVersion string) *MCPServer {
 	return &MCPServer{transport: transport, toolsRegistry: toolsRegistry, serverName: serverName, serverVersion: serverVersion}
 }
 
