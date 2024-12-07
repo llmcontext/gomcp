@@ -7,6 +7,7 @@ import (
 
 	"github.com/invopop/jsonschema"
 	"github.com/llmcontext/gomcp/logger"
+	"github.com/llmcontext/gomcp/types"
 )
 
 type ToolDefinition struct {
@@ -168,10 +169,10 @@ func (tp *ToolProvider) AddTool(toolName string, description string, toolHandler
 		return fmt.Errorf("error generating schema for toolHandler for %s third argument", toolName)
 	}
 
-	// the fourth argument must be a pointer to tools.ToolCallResult
-	toolCallResultType := reflect.TypeOf((*ToolCallResult)(nil))
-	if fnType.In(3) != toolCallResultType {
-		return fmt.Errorf("toolHandler for %s fourth argument must be a *tools.ToolCallResult", toolName)
+	// the fourth argument must be an implementation of types.ToolCallResult
+	toolCallResultType := reflect.TypeOf((*types.ToolCallResult)(nil)).Elem()
+	if !fnType.In(3).Implements(toolCallResultType) {
+		return fmt.Errorf("toolHandler for %s fourth argument must implement types.ToolCallResult but is %s", toolName, fnType.In(3).String())
 	}
 
 	// the function must return an error

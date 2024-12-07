@@ -1,6 +1,10 @@
 package tools
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/llmcontext/gomcp/types"
+)
 
 /*
  response must be:
@@ -59,26 +63,26 @@ export const BlobResourceContentsSchema = ResourceContentsSchema.extend({
 });
 */
 
-type ToolCallResult struct {
+type ToolCallResultImpl struct {
 	Content []interface{} `json:"content"`
 	IsError *bool         `json:"isError,omitempty"`
 }
 
-func NewToolCallResult() *ToolCallResult {
-	return &ToolCallResult{
+func NewToolCallResult() types.ToolCallResult {
+	return &ToolCallResultImpl{
 		Content: []interface{}{},
 		IsError: nil,
 	}
 }
 
-func (r *ToolCallResult) AddTextContent(content string) {
+func (r *ToolCallResultImpl) AddTextContent(content string) {
 	r.Content = append(r.Content, map[string]interface{}{
 		"type": "text",
 		"text": content,
 	})
 }
 
-func (r *ToolCallResult) AddJSONTextContent(content interface{}) {
+func (r *ToolCallResultImpl) AddJSONTextContent(content interface{}) {
 	// let's marshal the content
 	contentBytes, err := json.Marshal(content)
 	if err != nil {
@@ -90,7 +94,7 @@ func (r *ToolCallResult) AddJSONTextContent(content interface{}) {
 	})
 }
 
-func (r *ToolCallResult) AddImageContent(base64Data string, mimeType string) {
+func (r *ToolCallResultImpl) AddImageContent(base64Data string, mimeType string) {
 	r.Content = append(r.Content, map[string]interface{}{
 		"type":     "image",
 		"data":     base64Data,
@@ -98,7 +102,7 @@ func (r *ToolCallResult) AddImageContent(base64Data string, mimeType string) {
 	})
 }
 
-func (r *ToolCallResult) AddEmbeddedResourceTextContent(uri string, mimeType string, text string) {
+func (r *ToolCallResultImpl) AddEmbeddedResourceTextContent(uri string, mimeType string, text string) {
 	r.Content = append(r.Content, map[string]interface{}{
 		"type": "resource",
 		"resource": map[string]interface{}{
@@ -109,7 +113,7 @@ func (r *ToolCallResult) AddEmbeddedResourceTextContent(uri string, mimeType str
 	})
 }
 
-func (r *ToolCallResult) AddEmbeddedResourceBlobContent(uri string, mimeType string, base64Data string) {
+func (r *ToolCallResultImpl) AddEmbeddedResourceBlobContent(uri string, mimeType string, base64Data string) {
 	r.Content = append(r.Content, map[string]interface{}{
 		"type": "resource",
 		"resource": map[string]interface{}{
@@ -120,6 +124,6 @@ func (r *ToolCallResult) AddEmbeddedResourceBlobContent(uri string, mimeType str
 	})
 }
 
-func (r *ToolCallResult) SetError(isError bool) {
+func (r *ToolCallResultImpl) SetError(isError bool) {
 	r.IsError = &isError
 }

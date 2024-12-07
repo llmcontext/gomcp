@@ -71,3 +71,7 @@ func (mcp *ModelContextProtocolImpl) Start(serverName string, serverVersion stri
 	}
 	return nil
 }
+
+func (mcp *ModelContextProtocolImpl) GetToolRegistry() types.ToolRegistry {
+	return mcp
+}
