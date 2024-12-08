@@ -5,17 +5,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/llmcontext/gomcp/logger"
 )
 
 type StdioTransport struct {
+	debug     bool
 	onMessage func(json.RawMessage)
 	onClose   func()
 	onError   func(error)
 	done      chan struct{}
 }
 
+func NewStdioTransportWithDebug() *StdioTransport {
+	return &StdioTransport{
+		debug: true,
+	}
+}
+
 func NewStdioTransport() *StdioTransport {
-	return &StdioTransport{}
+	return &StdioTransport{
+		debug: false,
+	}
 }
 
 func (t *StdioTransport) Start() error {
@@ -28,6 +39,9 @@ func (t *StdioTransport) Start() error {
 
 func (t *StdioTransport) Send(message json.RawMessage) error {
 	// Write message followed by newline to stdout
+	if t.debug {
+		logger.Info(string(message), logger.Arg{"direction": "sending"})
+	}
 	_, err := fmt.Fprintf(os.Stdout, "%s\n", message)
 	return err
 }
@@ -59,7 +73,12 @@ func (t *StdioTransport) readLoop() {
 			return
 		default:
 			if t.onMessage != nil {
-				t.onMessage(json.RawMessage(scanner.Bytes()))
+				line := scanner.Bytes()
+				if t.debug {
+					logger.Info(string(line), logger.Arg{"direction": "receiving"})
+				}
+
+				t.onMessage(json.RawMessage(line))
 			}
 		}
 	}

@@ -28,6 +28,8 @@ func (s *MCPServer) processRequest(request *jsonrpc.JsonRpcRequest) error {
 		return s.handleResourcesList(request)
 	case "prompts/list":
 		return s.handlePromptsList(request)
+	case "prompts/get":
+		return s.handlePromptsGet(request)
 	case "ping":
 		result := json.RawMessage(`{}`)
 		response := &jsonrpc.JsonRpcResponse{

@@ -6,8 +6,8 @@ import (
 	"reflect"
 
 	"github.com/invopop/jsonschema"
-	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/types"
+	"github.com/llmcontext/gomcp/utils"
 )
 
 type ToolDefinition struct {
@@ -30,30 +30,6 @@ type ToolProvider struct {
 	toolDefinitions  []ToolDefinition
 	// the tool context retrieve from the tool init function
 	toolContext interface{}
-}
-
-func getSchemaFromType(t reflect.Type) (*jsonschema.Schema, string, error) {
-	var typeName = t.Elem().Name()
-	if typeName == "" {
-		return nil, "", fmt.Errorf("type name is empty")
-	}
-
-	reflector := jsonschema.Reflector{}
-	schema := reflector.ReflectFromType(t)
-	if schema == nil {
-		return nil, "", fmt.Errorf("error generating schema")
-	}
-
-	schemaType := schema.Definitions[typeName]
-	if schemaType == nil {
-		return nil, "", fmt.Errorf("no schema for definition found")
-	}
-	logger.Info("schema", logger.Arg{
-		"type":   typeName,
-		"schema": schemaType,
-	})
-
-	return schemaType, typeName, nil
 }
 
 func DeclareToolProvider(toolName string, toolInitFunction interface{}) (*ToolProvider, error) {
@@ -95,7 +71,7 @@ func DeclareToolProvider(toolName string, toolInitFunction interface{}) (*ToolPr
 			return nil, fmt.Errorf("toolInitFunctiom argument must be a pointer to a struct")
 		}
 		configType = fnType.In(1)
-		configSchema, configTypeName, err := getSchemaFromType(configType)
+		configSchema, configTypeName, err := utils.GetSchemaFromType(configType)
 		if err != nil {
 			return nil, fmt.Errorf("error generating schema for toolInitFunctiom argument")
 		}
@@ -164,7 +140,7 @@ func (tp *ToolProvider) AddTool(toolName string, description string, toolHandler
 		return fmt.Errorf("toolHandler for %s third argument must be a pointer to a struct", toolName)
 	}
 	// we need to get the schema of the third argument
-	inputSchema, inputTypeName, err := getSchemaFromType(fnType.In(2))
+	inputSchema, inputTypeName, err := utils.GetSchemaFromType(fnType.In(2))
 	if err != nil {
 		return fmt.Errorf("error generating schema for toolHandler for %s third argument", toolName)
 	}

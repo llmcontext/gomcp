@@ -9,6 +9,7 @@ import (
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/logger"
+	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/types"
 )
@@ -19,8 +20,9 @@ type ClientInfo struct {
 }
 
 type MCPServer struct {
-	transport     types.Transport
-	toolsRegistry *tools.ToolsRegistry
+	transport       types.Transport
+	toolsRegistry   *tools.ToolsRegistry
+	promptsRegistry *prompts.PromptsRegistry
 	// server information
 	serverName    string
 	serverVersion string
@@ -30,8 +32,14 @@ type MCPServer struct {
 	clientInfo          *ClientInfo
 }
 
-func NewMCPServer(transport types.Transport, toolsRegistry *tools.ToolsRegistry, serverName string, serverVersion string) *MCPServer {
-	return &MCPServer{transport: transport, toolsRegistry: toolsRegistry, serverName: serverName, serverVersion: serverVersion}
+func NewMCPServer(transport types.Transport, toolsRegistry *tools.ToolsRegistry, promptsRegistry *prompts.PromptsRegistry, serverName string, serverVersion string) *MCPServer {
+	return &MCPServer{
+		transport:       transport,
+		toolsRegistry:   toolsRegistry,
+		promptsRegistry: promptsRegistry,
+		serverName:      serverName,
+		serverVersion:   serverVersion,
+	}
 }
 
 func (s *MCPServer) Start() error {

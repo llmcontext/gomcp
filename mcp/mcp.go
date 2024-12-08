@@ -5,6 +5,7 @@ import (
 
 	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/logger"
+	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/server"
 	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
@@ -12,8 +13,9 @@ import (
 )
 
 type ModelContextProtocolImpl struct {
-	toolsRegistry *tools.ToolsRegistry
-	config        *config.Config
+	config          *config.Config
+	toolsRegistry   *tools.ToolsRegistry
+	promptsRegistry *prompts.PromptsRegistry
 }
 
 func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocolImpl, error) {
@@ -32,14 +34,24 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	// Initialize tools registry
 	toolsRegistry := tools.NewToolsRegistry()
 
+	// Initialize prompts registry
+	promptsRegistry := prompts.NewEmptyPromptsRegistry()
+	if config.Prompts != nil {
+		promptsRegistry, err = prompts.NewPromptsRegistry(config.Prompts.File)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize prompts registry: %v", err)
+		}
+	}
+
 	return &ModelContextProtocolImpl{
-		toolsRegistry: toolsRegistry,
-		config:        config,
+		config:          config,
+		toolsRegistry:   toolsRegistry,
+		promptsRegistry: promptsRegistry,
 	}, nil
 }
 
 func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
-	transport := transport.NewStdioTransport()
+	transport := transport.NewStdioTransportWithDebug()
 	return transport
 }
 
@@ -53,7 +65,7 @@ func (mcp *ModelContextProtocolImpl) DeclareToolProvider(toolName string, toolIn
 	return toolProvider, nil
 }
 
-func (mcp *ModelContextProtocolImpl) Start(serverName string, serverVersion string, transport types.Transport) error {
+func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 	// All the tools are initialized, we can prepare the tools registry
 	// so that it can be used by the server
 	err := mcp.toolsRegistry.Prepare(mcp.config.Tools)
@@ -62,7 +74,9 @@ func (mcp *ModelContextProtocolImpl) Start(serverName string, serverVersion stri
 	}
 
 	// Initialize server
-	server := server.NewMCPServer(transport, mcp.toolsRegistry, serverName, serverVersion)
+	server := server.NewMCPServer(transport, mcp.toolsRegistry, mcp.promptsRegistry,
+		mcp.config.ServerInfo.Name,
+		mcp.config.ServerInfo.Version)
 
 	// Start server
 	err = server.Start()

@@ -10,9 +10,10 @@ import (
 )
 
 type Config struct {
-	Logging    LoggingInfo  `json:"logging,omitempty"`
-	ServerInfo ServerInfo   `json:"serverInfo"`
-	Tools      []ToolConfig `json:"tools"`
+	Logging    LoggingInfo   `json:"logging,omitempty"`
+	ServerInfo ServerInfo    `json:"serverInfo"`
+	Tools      []ToolConfig  `json:"tools"`
+	Prompts    *PromptConfig `json:"prompts,omitempty"`
 }
 
 type ServerInfo struct {
@@ -32,6 +33,10 @@ type LoggingInfo struct {
 	IsFifo     bool   `json:"isFifo,omitempty"`
 	Level      string `json:"level,omitempty"`
 	WithStderr bool   `json:"withStderr,omitempty"`
+}
+
+type PromptConfig struct {
+	File string `json:"file"`
 }
 
 // LoadConfig loads the configuration from a file
