@@ -19,10 +19,15 @@ type serverInfo struct {
 
 // for now, only tools are supported
 type serverCapabilities struct {
-	Tools serverCapabilitiesTools `json:"tools"`
+	Tools   serverCapabilitiesTools   `json:"tools"`
+	Prompts serverCapabilitiesPrompts `json:"prompts"`
 }
 
 type serverCapabilitiesTools struct {
+	ListChanged bool `json:"listChanged"`
+}
+
+type serverCapabilitiesPrompts struct {
 	ListChanged bool `json:"listChanged"`
 }
 
@@ -70,7 +75,10 @@ func (s *MCPServer) handleInitialize(request *jsonrpc.JsonRpcRequest) error {
 		ProtocolVersion: s.protocolVersion,
 		Capabilities: serverCapabilities{
 			Tools: serverCapabilitiesTools{
-				ListChanged: true,
+				ListChanged: false,
+			},
+			Prompts: serverCapabilitiesPrompts{
+				ListChanged: false,
 			},
 		},
 		ServerInfo: serverInfo{Name: s.serverName, Version: s.serverVersion},

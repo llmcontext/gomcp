@@ -94,7 +94,7 @@ func (r *ToolCallResultImpl) AddJSONTextContent(content interface{}) {
 	})
 }
 
-func (r *ToolCallResultImpl) AddImageContent(base64Data string, mimeType string) {
+func (r *ToolCallResultImpl) AddImageContent(mimeType string, base64Data string) {
 	r.Content = append(r.Content, map[string]interface{}{
 		"type":     "image",
 		"data":     base64Data,

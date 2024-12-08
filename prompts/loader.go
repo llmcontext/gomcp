@@ -24,7 +24,6 @@ type PromptDefinition struct {
 
 type ArgumentDefinition struct {
 	Name        string `json:"name" yaml:"name"`
-	Type        string `json:"type" yaml:"type"`
 	Description string `json:"description" yaml:"description"`
 	Required    bool   `json:"required" yaml:"required"`
 }

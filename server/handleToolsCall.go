@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/logger"
 )
 
 func (s *MCPServer) handleToolsCall(request *jsonrpc.JsonRpcRequest) error {
@@ -15,7 +14,7 @@ func (s *MCPServer) handleToolsCall(request *jsonrpc.JsonRpcRequest) error {
 	if reqParams == nil || reqParams.NamedParams == nil {
 		s.sendError(&jsonrpc.JsonRpcError{
 			Code:    jsonrpc.RpcInvalidParams,
-			Message: "invalid call parameters",
+			Message: "invalid call parameters, not an object",
 		}, request.Id)
 		return nil
 	}
@@ -51,10 +50,6 @@ func (s *MCPServer) handleToolsCall(request *jsonrpc.JsonRpcRequest) error {
 		}, request.Id)
 		return nil
 	}
-
-	logger.Info("tool result", logger.Arg{
-		"toolResponse": response,
-	})
 
 	// marshal response
 	responseBytes, err := json.Marshal(response)
