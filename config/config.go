@@ -29,10 +29,11 @@ type ToolConfig struct {
 }
 
 type LoggingInfo struct {
-	File       string `json:"file,omitempty"`
-	IsFifo     bool   `json:"isFifo,omitempty"`
-	Level      string `json:"level,omitempty"`
-	WithStderr bool   `json:"withStderr,omitempty"`
+	File              string `json:"file,omitempty"`
+	IsFifo            bool   `json:"isFifo,omitempty"`
+	Level             string `json:"level,omitempty"`
+	WithStderr        bool   `json:"withStderr,omitempty"`
+	ProtocolDebugFile string `json:"protocolDebugFile,omitempty"`
 }
 
 type PromptConfig struct {

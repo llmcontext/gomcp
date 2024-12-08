@@ -51,7 +51,7 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 }
 
 func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
-	transport := transport.NewStdioTransportWithDebug()
+	transport := transport.NewStdioTransport(mcp.config.Logging.ProtocolDebugFile)
 	return transport
 }
 
