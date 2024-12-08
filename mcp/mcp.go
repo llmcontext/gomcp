@@ -53,7 +53,7 @@ func (mcp *ModelContextProtocolImpl) DeclareToolProvider(toolName string, toolIn
 	return toolProvider, nil
 }
 
-func (mcp *ModelContextProtocolImpl) Start(serverName string, serverVersion string, transport types.Transport) error {
+func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 	// All the tools are initialized, we can prepare the tools registry
 	// so that it can be used by the server
 	err := mcp.toolsRegistry.Prepare(mcp.config.Tools)
@@ -62,7 +62,9 @@ func (mcp *ModelContextProtocolImpl) Start(serverName string, serverVersion stri
 	}
 
 	// Initialize server
-	server := server.NewMCPServer(transport, mcp.toolsRegistry, serverName, serverVersion)
+	server := server.NewMCPServer(transport, mcp.toolsRegistry,
+		mcp.config.ServerInfo.Name,
+		mcp.config.ServerInfo.Version)
 
 	// Start server
 	err = server.Start()

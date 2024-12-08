@@ -11,5 +11,5 @@ type ToolRegistry interface {
 type ModelContextProtocol interface {
 	StdioTransport() Transport
 	GetToolRegistry() ToolRegistry
-	Start(serverName string, serverVersion string, transport Transport) error
+	Start(transport Transport) error
 }
