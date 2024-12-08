@@ -78,7 +78,7 @@ The `serverInfo` section is used to identify the server and its version, it is m
 
 The `logging` section is used to configure the logging system. The `file` field is the path to the log file, the `level` field is the logging level (debug, info, warn, error) and the `withStderr` field is used to redirect the logging to the standard error stream.
 
-The `prompts` section is used to define the path to the YAML file containing the prompts to expose to the LLM. See below the definition of the prompts.
+The `prompts` section is used to define the path to the YAML file containing the prompts to expose to the LLM. See below for a description of the YAML syntax to define the prompts.
 
 The `tools` section is used to define the tools that will be exposed to the LLM. This is an array of tool providers, each provider is an object with a `name` and a `description` field. The `configuration` field is an object that contains the configuration for the tool provider.
 
@@ -86,10 +86,146 @@ In our case, we have a single tool provider called `notion` that has a single to
 
 The configuration for the `notion` tool provider is the Notion token.
 
+This configuration must be backed by a Golang struct that will be used to parse the configuration file:
+
+```go
+type NotionGetDocumentConfiguration struct {
+	NotionToken string `json:"notionToken" jsonschema_description:"the notion token for the Notion client."`
+}
+```
+The tags here (`json` and `jsonschema_description`) are used to generate the JSON Schema for the configuration data.
+If the configuration is invalid, the `mcp` command will fail to start.
+
+You then create a function that will use those configuration data to generate a `Tool Context`:
+
+```go
+func NotionToolInit(ctx context.Context, config *NotionGetDocumentConfiguration) (*NotionGetDocumentContext, error) {
+	client := notionapi.NewClient(notionapi.Token(config.NotionToken))
+
+	// we need to initialize the Notion client
+	return &NotionGetDocumentContext{NotionClient: client}, nil
+}
+```
+
+And the definition of the `Tool Context`:
+
+```go
+type NotionGetDocumentContext struct {
+	// The Notion client.
+	NotionClient *notionapi.Client
+}
+```
+This time, you don't need to add tags to your type as this struct is internal to the tool provider: the instance of this struct is created by the `ToolInit` function and is passed to the functions implementing the tool(s).
+
+A tool function is defined like this:
+
+```go
+func NotionGetPage(
+        ctx context.Context, 
+        toolCtx *NotionGetDocumentContext, 
+        input *NotionGetDocumentInput, 
+        output types.ToolCallResult) error {
+	logger := gomcp.GetLogger(ctx)
+	logger.Info("NotionGetPage", types.LogArg{
+		"pageId": input.PageId,
+	})
+
+	content, err := getPageContent(ctx, toolCtx.NotionClient, input.PageId)
+	if err != nil {
+		return err
+	}
+	output.AddTextContent(strings.Join(content, "\n"))
+
+	return nil
+}
+```
+The first parameter is the context, it is mandatory as it is used to retrieve the logger.
+
+The second parameter is the tool context, it is the instance of the struct created by the `ToolInit` function.
+
+The third parameter is the input, it is an object that contains the input data for the tool call. Those input parameter are provided by the LLM when the tool is called.
+
+The last parameter is the output, it is an interface that allows the function to construct the data it wants to return to the LLM.
+
+Here again, the input type must be tagged appropriately:
+
+```go
+type NotionGetDocumentInput struct {
+	PageId string `json:"pageId" jsonschema_description:"the ID of the Notion page to retrieve."`
+}
+```
+
+Those tags will be used to generate the JSON Schema for the input data:
+* they will be returned to the LLM during the discovery phase of the MCP protocol
+* they will be used to validate the input data when the tool is called
+
+Once those typea and functions are defined, you can bind them in the MCP server by calling the `RegisterTool` function:
 
 
+```go
+func RegisterTools(toolRegistry types.ToolRegistry) error {
+	toolProvider, err := toolRegistry.DeclareToolProvider("notion", NotionToolInit)
+	if err != nil {
+		return err
+	}
+	err = toolProvider.AddTool("notion_get_page", "Get the markdown content of a notion page", NotionGetPage)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+```
+
+This `RegisterTools` function is called from the `main()` function of your MCP server:
+
+```go
+package main
+
+import (
+	"flag"
+	"fmt"
+	"os"
+
+	"github.com/llmcontext/gomcp"
+	"github.com/llmcontext/mcpnotion/tools"
+)
+
+func main() {
+	configFile := flag.String("configFile", "", "config file path (required)")
+	flag.Parse()
+
+	if *configFile == "" {
+		fmt.Println("Config file is required")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	mcp, err := gomcp.NewModelContextProtocolServer(*configFile)
+	if err != nil {
+		fmt.Println("Error creating MCP server:", err)
+		os.Exit(1)
+	}
+	toolRegistry := mcp.GetToolRegistry()
+
+	err = tools.RegisterTools(toolRegistry)
+	if err != nil {
+		fmt.Println("Error registering tools:", err)
+		os.Exit(1)
+	}
+
+	transport := mcp.StdioTransport()
+
+	mcp.Start(transport)
+}
+```
+
+* `gomcp.NewModelContextProtocolServer(*configFile)` creates a new MCP server with the configuration file
+* `mcp.GetToolRegistry()` returns the tool registry, it is used to register the tools. The `tools.RegisterTools` is the function we defined earlier and that binds the tools to the MCP server.
+* `mcp.StdioTransport()` creates a new transport based on standard input/output streams. That's the transport used to integrate with the Claude desktop application.
+* `mcp.Start(transport)` starts the MCP server with the given transport
 
 
+## integration with Claude desktop application
 
 ## Changelog
 
