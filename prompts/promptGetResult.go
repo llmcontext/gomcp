@@ -80,8 +80,10 @@ func NewPromptGetResult(description string) types.PromptGetResult {
 func (r *PromptGetResultImpl) AddTextContent(role types.Role, content string) {
 	r.Messages = append(r.Messages, map[string]interface{}{
 		"role": role,
-		"type": "text",
-		"text": content,
+		"content": map[string]interface{}{
+			"type": "text",
+			"text": content,
+		},
 	})
 }
 
