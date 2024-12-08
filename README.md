@@ -13,8 +13,8 @@ extend their capabilities.
 ## Reference documentation
 
 * the full documentation of the Model Context Protocol is [here](https://modelcontextprotocol.io/introduction)
-* the official TypeScript SDK is available[here](https://github.com/modelcontextprotocol/typescript-sdk)
-* the official Python SDK is available[here](https://github.com/modelcontextprotocol/python-sdk)
+* the official TypeScript SDK is available [here](https://github.com/modelcontextprotocol/typescript-sdk)
+* the official Python SDK is available [here](https://github.com/modelcontextprotocol/python-sdk)
 
 ## Installation
 
@@ -44,7 +44,7 @@ In our case, we have a single provider called `notion` that has a single tool to
 
 ### configuration file
 
-Once compiled, the `mcp` command needs a configuration file to start the server.
+Your mcp server needs a configuration file to start.
 
 An example of configuration file would be:
 
@@ -224,8 +224,36 @@ func main() {
 * `mcp.StdioTransport()` creates a new transport based on standard input/output streams. That's the transport used to integrate with the Claude desktop application.
 * `mcp.Start(transport)` starts the MCP server with the given transport
 
+## prompts definition file
+
+The prompts definition file is a YAML file that defines the prompts to expose to the LLM.
+
+Here is an example of a _dummy_ prompts definition file:
+
+```yaml
+prompts:
+  - name: "hello"
+    description: "Says hello"
+    arguments:
+      - name: "name"
+        description: "The name to say hello to"
+        required: true
+    prompt: >
+      Hello {{.name}}, how are you?
+      Please respond in a friendly and engaging manner.
+```
+
+This file is self-explanatory:
+* the `prompts` section is an array of prompts
+* each prompt is an object with a `name` and a `description` field
+* the `arguments` section is an array of arguments, each argument is an object with a `name`, a `description` and a `required` field
+* the `prompt` section is the prompt to expose to the LLM. It uses the [Go template syntax](https://pkg.go.dev/text/template) to embed the arguments in the prompt
+
+Check the documentation [here](https://github.com/llmcontext/mcpnotion?tab=readme-ov-file#prompts-access) for more information on how to access the prompts from Claude.
 
 ## integration with Claude desktop application
+
+Check the [README](https://github.com/llmcontext/mcpnotion/blob/main/README.md) of the [mcpnotion](https://github.com/llmcontext/mcpnotion) project for more information on how to integrate your MCP server with the Claude desktop application.
 
 ## Changelog
 
