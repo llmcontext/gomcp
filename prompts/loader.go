@@ -12,28 +12,32 @@ import (
 
 // PromptConfig represents the root YAML structure
 type PromptConfig struct {
-	Prompts []struct {
-		Name        string `json:"name" yaml:"name"`
-		Description string `json:"description" yaml:"description"`
-		Arguments   []struct {
-			Name        string `json:"name" yaml:"name"`
-			Type        string `json:"type" yaml:"type"`
-			Description string `json:"description" yaml:"description"`
-			Required    bool   `json:"required" yaml:"required"`
-		} `json:"arguments,omitempty" yaml:"arguments,omitempty"`
-		Prompt string `json:"prompt" yaml:"prompt"`
-	} `json:"prompts" yaml:"prompts"`
+	Prompts []PromptDefinition `json:"prompts" yaml:"prompts"`
 }
 
-// LoadPrompts reads and parses the prompts.yaml file
-func LoadPrompts(filepath string) (*PromptConfig, error) {
+type PromptDefinition struct {
+	Name        string               `json:"name" yaml:"name"`
+	Description string               `json:"description" yaml:"description"`
+	Arguments   []ArgumentDefinition `json:"arguments,omitempty" yaml:"arguments,omitempty"`
+	Prompt      string               `json:"prompt" yaml:"prompt"`
+}
+
+type ArgumentDefinition struct {
+	Name        string `json:"name" yaml:"name"`
+	Type        string `json:"type" yaml:"type"`
+	Description string `json:"description" yaml:"description"`
+	Required    bool   `json:"required" yaml:"required"`
+}
+
+// loadPrompts reads and parses the prompts.yaml file
+func loadPrompts(filepath string) (*PromptConfig, error) {
 	yamlData, err := os.ReadFile(filepath)
 	if err != nil {
 		return nil, err
 	}
 
 	// retrieve the schema for the PromptConfig struct
-	configSchema, _, err := utils.GetSchemaFromType(reflect.TypeOf(&PromptConfig{}))
+	configSchema, _, err := utils.GetFullSchemaFromInterface(reflect.TypeOf(&PromptConfig{}))
 	if err != nil {
 		return nil, fmt.Errorf("error generating schema for toolInitFunctiom argument")
 	}

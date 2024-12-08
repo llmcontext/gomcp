@@ -13,6 +13,9 @@ func ValidateJsonSchemaWithBytes(schema *jsonschema.Schema, data []byte) error {
 
 	schemaLoader := gojsonschema.NewStringLoader(string(schemaBytes))
 
+	fmt.Printf("@@@ schema: %s\n", string(schemaBytes))
+	fmt.Printf("@@@ data: %s\n", string(data))
+
 	documentLoader := gojsonschema.NewStringLoader(string(data))
 
 	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
