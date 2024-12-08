@@ -67,7 +67,7 @@ An example of configuration file would be:
             "name": "notion",
             "description": "Get a notion document",
             "configuration": {
-                "notionToken": "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"
+                "notionToken": "ntn_<redacted>"
             }
         }
     ]
