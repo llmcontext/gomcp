@@ -5,29 +5,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/llmcontext/gomcp/inspector"
 	"github.com/llmcontext/gomcp/logger"
 )
 
 type StdioTransport struct {
 	debug             bool
 	protocolDebugFile string
+	inspector         *inspector.Inspector
 	onMessage         func(json.RawMessage)
 	onClose           func()
 	onError           func(error)
 	done              chan struct{}
 }
 
-func NewStdioTransport(protocolDebugFile string) *StdioTransport {
-	if protocolDebugFile == "" {
-		return &StdioTransport{
-			debug: false,
-		}
-	} else {
-		return &StdioTransport{
-			debug:             true,
-			protocolDebugFile: protocolDebugFile,
-		}
+func NewStdioTransport(protocolDebugFile string, inspector *inspector.Inspector) *StdioTransport {
+	return &StdioTransport{
+		debug:             protocolDebugFile != "",
+		protocolDebugFile: protocolDebugFile,
+		inspector:         inspector,
 	}
 }
 
@@ -44,6 +42,15 @@ func (t *StdioTransport) Send(message json.RawMessage) error {
 	if t.debug {
 		t.logProtocolMessages(string(message), "sending")
 	}
+
+	if t.inspector != nil {
+		t.inspector.EnqueueMessage(inspector.MessageInfo{
+			Timestamp: time.Now().Format(time.RFC3339),
+			Direction: inspector.MessageDirectionResponse,
+			Content:   string(message),
+		})
+	}
+
 	_, err := fmt.Fprintf(os.Stdout, "%s\n", message)
 	return err
 }
@@ -78,6 +85,14 @@ func (t *StdioTransport) readLoop() {
 				line := scanner.Bytes()
 				if t.debug {
 					t.logProtocolMessages(string(line), "receiving")
+				}
+
+				if t.inspector != nil {
+					t.inspector.EnqueueMessage(inspector.MessageInfo{
+						Timestamp: time.Now().Format(time.RFC3339),
+						Direction: inspector.MessageDirectionRequest,
+						Content:   string(line),
+					})
 				}
 
 				t.onMessage(json.RawMessage(line))

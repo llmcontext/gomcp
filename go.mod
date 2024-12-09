@@ -3,6 +3,7 @@ module github.com/llmcontext/gomcp
 go 1.23.2
 
 require (
+	github.com/gorilla/websocket v1.5.3
 	github.com/invopop/jsonschema v0.12.0
 	github.com/stretchr/testify v1.8.1
 	github.com/xeipuuv/gojsonschema v1.2.0

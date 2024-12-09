@@ -5,10 +5,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GoMCP Inspector</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
 </head>
 
 <body>
-    <h1 class="text-2xl">GoMCP Inspector</h1>
+    <nav class="navbar is-primary">
+        <div class="navbar-brand">
+            <div class="navbar-item">
+                <strong>GoMCP Inspector</strong>
+            </div>
+        </div>
+    </nav>
+
+    <section class="section">
+        <div class="container">
+            <table class="table is-fullwidth is-striped">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Direction</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody id="mcp-messages">
+                    <!-- Messages will be populated here via WebSocket -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
 </body>
 
 </html>

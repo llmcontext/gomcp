@@ -17,6 +17,7 @@ type ModelContextProtocolImpl struct {
 	config          *config.Config
 	toolsRegistry   *tools.ToolsRegistry
 	promptsRegistry *prompts.PromptsRegistry
+	inspector       *inspector.Inspector
 }
 
 func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocolImpl, error) {
@@ -44,15 +45,24 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 		}
 	}
 
+	// Start inspector if enabled
+	var inspectorInstance *inspector.Inspector = nil
+	if config.Inspector != nil && config.Inspector.Enabled {
+		inspectorInstance = inspector.NewInspector(config.Inspector)
+	}
+
 	return &ModelContextProtocolImpl{
 		config:          config,
 		toolsRegistry:   toolsRegistry,
 		promptsRegistry: promptsRegistry,
+		inspector:       inspectorInstance,
 	}, nil
 }
 
 func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
-	transport := transport.NewStdioTransport(mcp.config.Logging.ProtocolDebugFile)
+	transport := transport.NewStdioTransport(
+		mcp.config.Logging.ProtocolDebugFile,
+		mcp.inspector)
 	return transport
 }
 
@@ -74,15 +84,15 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 		return fmt.Errorf("error preparing tools registry: %s", err)
 	}
 
-	// Start inspector if enabled
-	if mcp.config.Inspector != nil && mcp.config.Inspector.Enabled {
-		go inspector.StartInspector(mcp.config.Inspector)
-	}
-
 	// Initialize server
 	server := server.NewMCPServer(transport, mcp.toolsRegistry, mcp.promptsRegistry,
 		mcp.config.ServerInfo.Name,
 		mcp.config.ServerInfo.Version)
+
+	// Start inspector if enabled
+	if mcp.config.Inspector != nil {
+		go mcp.inspector.StartInspector()
+	}
 
 	// Start server
 	err = server.Start()
