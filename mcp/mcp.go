@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/inspector"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/server"
@@ -71,6 +72,11 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 	err := mcp.toolsRegistry.Prepare(mcp.config.Tools)
 	if err != nil {
 		return fmt.Errorf("error preparing tools registry: %s", err)
+	}
+
+	// Start inspector if enabled
+	if mcp.config.Inspector != nil && mcp.config.Inspector.Enabled {
+		go inspector.StartInspector(mcp.config.Inspector)
 	}
 
 	// Initialize server
