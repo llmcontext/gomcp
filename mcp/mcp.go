@@ -66,9 +66,19 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 }
 
 func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
+	// delete the protocol debug file if it exists
+	if mcp.config.Logging.ProtocolDebugFile != "" {
+		if _, err := os.Stat(mcp.config.Logging.ProtocolDebugFile); err == nil {
+			os.Remove(mcp.config.Logging.ProtocolDebugFile)
+		}
+	}
+
+	// we create the transport
 	transport := transport.NewStdioTransport(
 		mcp.config.Logging.ProtocolDebugFile,
 		mcp.inspector)
+
+	// we return the transport
 	return transport
 }
 
@@ -98,8 +108,8 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 		return fmt.Errorf("error preparing tools registry: %s", err)
 	}
 
-	// Start inspector if enabled
-	if mcp.config.Inspector != nil {
+	// Start inspector if it was enabled
+	if mcp.inspector != nil {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -143,6 +153,7 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 				signalChan <- os.Interrupt
 				return
 			}
+			// we wait 10 seconds before checking again
 			time.Sleep(10 * time.Second)
 		}
 	}()
