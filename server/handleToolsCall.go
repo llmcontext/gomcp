@@ -1,13 +1,14 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 )
 
-func (s *MCPServer) handleToolsCall(request *jsonrpc.JsonRpcRequest) error {
+func (s *MCPServer) handleToolsCall(ctx context.Context, request *jsonrpc.JsonRpcRequest) error {
 	// let's unmarshal the params
 	reqParams := request.Params
 
@@ -42,7 +43,7 @@ func (s *MCPServer) handleToolsCall(request *jsonrpc.JsonRpcRequest) error {
 	}
 
 	// let's call the tool
-	response, err := s.toolsRegistry.CallTool(toolName, toolArgs)
+	response, err := s.toolsRegistry.CallTool(ctx, toolName, toolArgs)
 	if err != nil {
 		s.sendError(&jsonrpc.JsonRpcError{
 			Code:    jsonrpc.RpcInternalError,

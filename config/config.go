@@ -10,10 +10,11 @@ import (
 )
 
 type Config struct {
-	Logging    LoggingInfo   `json:"logging,omitempty"`
-	ServerInfo ServerInfo    `json:"serverInfo"`
-	Tools      []ToolConfig  `json:"tools"`
-	Prompts    *PromptConfig `json:"prompts,omitempty"`
+	Logging    LoggingInfo    `json:"logging,omitempty"`
+	ServerInfo ServerInfo     `json:"serverInfo"`
+	Inspector  *InspectorInfo `json:"inspector,omitempty"`
+	Tools      []ToolConfig   `json:"tools"`
+	Prompts    *PromptConfig  `json:"prompts,omitempty"`
 }
 
 type ServerInfo struct {
@@ -29,10 +30,16 @@ type ToolConfig struct {
 }
 
 type LoggingInfo struct {
-	File       string `json:"file,omitempty"`
-	IsFifo     bool   `json:"isFifo,omitempty"`
-	Level      string `json:"level,omitempty"`
-	WithStderr bool   `json:"withStderr,omitempty"`
+	File              string `json:"file,omitempty"`
+	IsFifo            bool   `json:"isFifo,omitempty"`
+	Level             string `json:"level,omitempty"`
+	WithStderr        bool   `json:"withStderr,omitempty"`
+	ProtocolDebugFile string `json:"protocolDebugFile,omitempty"`
+}
+
+type InspectorInfo struct {
+	Enabled       bool   `json:"enabled"`
+	ListenAddress string `json:"listenAddress"`
 }
 
 type PromptConfig struct {

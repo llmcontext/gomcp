@@ -81,7 +81,7 @@ func (r *ToolsRegistry) checkConfiguration(toolConfigs []config.ToolConfig) erro
 	return nil
 }
 
-func (r *ToolsRegistry) initializeProviders(toolConfigs []config.ToolConfig) error {
+func (r *ToolsRegistry) initializeProviders(ctx context.Context, toolConfigs []config.ToolConfig) error {
 	for _, toolProvider := range r.ToolProviders {
 		if toolProvider.isDisabled {
 			continue
@@ -93,7 +93,7 @@ func (r *ToolsRegistry) initializeProviders(toolConfigs []config.ToolConfig) err
 				if toolConfig.Name == toolProvider.toolName {
 					// we found the tool configuration
 					// let's initialize the tool provider
-					ctx := MakeContextWithLogger(context.Background(), toolProvider.toolName)
+					ctx := makeContextWithLogger(ctx, toolProvider.toolName)
 					result, callErr, err := utils.CallFunction(toolProvider.toolInitFunction, ctx, toolConfig.Configuration)
 					if err != nil {
 						return err
@@ -114,7 +114,7 @@ func (r *ToolsRegistry) initializeProviders(toolConfigs []config.ToolConfig) err
 	return nil
 }
 
-func (r *ToolsRegistry) Prepare(toolConfigs []config.ToolConfig) error {
+func (r *ToolsRegistry) Prepare(ctx context.Context, toolConfigs []config.ToolConfig) error {
 	// we check that the configuration for each tool provider is valid
 	err := r.checkConfiguration(toolConfigs)
 	if err != nil {
@@ -141,18 +141,11 @@ func (r *ToolsRegistry) Prepare(toolConfigs []config.ToolConfig) error {
 	}
 
 	// now, we can initialize the tool providers with their configuration
-	err = r.initializeProviders(toolConfigs)
+	err = r.initializeProviders(ctx, toolConfigs)
 	if err != nil {
 		return fmt.Errorf("error initializing tool providers: %w", err)
 	}
 
-	// we log the tool providers
-	for _, toolProvider := range r.ToolProviders {
-		logger.Info("tool provider", logger.Arg{
-			"tool":       toolProvider.toolName,
-			"isDisabled": toolProvider.isDisabled,
-		})
-	}
 	return nil
 }
 
@@ -172,7 +165,7 @@ func (r *ToolsRegistry) getTool(toolName string) (*ToolDefinition, *ToolProvider
 	return tool.ToolDefinition, tool.ToolProvider, nil
 }
 
-func (r *ToolsRegistry) CallTool(toolName string, toolArgs map[string]interface{}) (interface{}, error) {
+func (r *ToolsRegistry) CallTool(ctx context.Context, toolName string, toolArgs map[string]interface{}) (interface{}, error) {
 	toolDefinition, toolProvider, err := r.getTool(toolName)
 	if err != nil {
 		return nil, err
@@ -184,7 +177,7 @@ func (r *ToolsRegistry) CallTool(toolName string, toolArgs map[string]interface{
 	}
 
 	// let's call the tool
-	goCtx := MakeContextWithLogger(context.Background(), toolProvider.toolName)
+	goCtx := makeContextWithLogger(ctx, toolProvider.toolName)
 
 	// let's create the output
 	output := NewToolCallResult()

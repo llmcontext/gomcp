@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -9,7 +10,7 @@ import (
 )
 
 // processing a valid request
-func (s *MCPServer) processRequest(request *jsonrpc.JsonRpcRequest) error {
+func (s *MCPServer) processRequest(ctx context.Context, request *jsonrpc.JsonRpcRequest) error {
 	logger.Debug("JsonRpcRequest", logger.Arg{
 		"request": request,
 	})
@@ -23,7 +24,7 @@ func (s *MCPServer) processRequest(request *jsonrpc.JsonRpcRequest) error {
 	case "tools/list":
 		return s.handleToolsList(request)
 	case "tools/call":
-		return s.handleToolsCall(request)
+		return s.handleToolsCall(ctx, request)
 	case "resources/list":
 		return s.handleResourcesList(request)
 	case "prompts/list":
