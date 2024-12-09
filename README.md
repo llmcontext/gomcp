@@ -257,12 +257,17 @@ Check the [README](https://github.com/llmcontext/mcpnotion/blob/main/README.md) 
 
 ## Changelog
 
-### [0.1.0](https://github.com/llmcontext/gomcp/tree/v0.1.0)
+### [0.3.0](https://github.com/llmcontext/gomcp/tree/v0.3.0) - 2024-12-08
+
+- Add support for protocol debug file. In the configuration file, set the `logging.protocolDebugFile` field to the path to the file where to write the protocol debug information.
+
+### [0.2.0](https://github.com/llmcontext/gomcp/tree/v0.2.0) - 2024-12-07
+
+- Change signature of `mcp.Start(serverName, serverVersion, transport)` to `mcp.Start(transport)`, the server name and version are now read from the configuration file
+- Add support for prompts stored in a YAML file. File path is read from the configuration file.
+
+### [0.1.0] - deleted
 
 - Initial release
 - Support Tools for the Model Context Protocol
 
-### [0.2.0](https://github.com/llmcontext/gomcp/tree/v0.2.0)
-
-- Change signature of `mcp.Start(serverName, serverVersion, transport)` to `mcp.Start(transport)`, the server name and version are now read from the configuration file
-- Add support for prompts stored in a YAML file. File path is read from the configuration file.
