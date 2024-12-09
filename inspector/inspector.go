@@ -8,12 +8,18 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/logger"
 )
 
 //go:embed html
 var html embed.FS
 
 var t = template.Must(template.ParseFS(html, "html/*"))
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
 type MessageDirection string
 
@@ -24,9 +30,9 @@ const (
 
 // MessageInfo represents a single MCP message for inspection
 type MessageInfo struct {
-	Timestamp string
-	Direction MessageDirection
-	Content   string
+	Timestamp string           `json:"timestamp"`
+	Direction MessageDirection `json:"direction"`
+	Content   string           `json:"content"`
 }
 
 type Inspector struct {
@@ -46,6 +52,7 @@ func NewInspector(config *config.InspectorInfo) *Inspector {
 
 // EnqueueMessage adds a new message to the inspection queue
 func (i *Inspector) EnqueueMessage(msg MessageInfo) {
+	// json encode the message
 	select {
 	case i.messageChan <- msg:
 		// Message enqueued successfully
@@ -56,11 +63,12 @@ func (i *Inspector) EnqueueMessage(msg MessageInfo) {
 
 func (inspector *Inspector) StartInspector() *Inspector {
 	router := http.NewServeMux()
-	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if err := t.ExecuteTemplate(w, "index.html", nil); err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		}
 	})
+	router.HandleFunc("/ws", inspector.serveWs)
 
 	server := &http.Server{
 		Addr:    inspector.listenAddress,
@@ -91,5 +99,36 @@ func (i *Inspector) broadcastMessages() {
 			}
 		}
 		i.mutex.RUnlock()
+	}
+}
+
+func (i *Inspector) serveWs(w http.ResponseWriter, r *http.Request) {
+	c, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		logger.Error("upgrade:", logger.Arg{
+			"error": err,
+		})
+		return
+	}
+	defer c.Close()
+
+	i.mutex.Lock()
+	i.clients[c] = true
+	i.mutex.Unlock()
+
+	defer func() {
+		i.mutex.Lock()
+		delete(i.clients, c)
+		i.mutex.Unlock()
+	}()
+
+	for {
+		_, _, err := c.ReadMessage()
+		if err != nil {
+			logger.Error("read:", logger.Arg{
+				"error": err,
+			})
+			break
+		}
 	}
 }
