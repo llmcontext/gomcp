@@ -1,7 +1,12 @@
 package mcp
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/inspector"
@@ -76,29 +81,65 @@ func (mcp *ModelContextProtocolImpl) DeclareToolProvider(toolName string, toolIn
 	return toolProvider, nil
 }
 
+// Start starts the server and the inspector
 func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
+	// we create a context that will be used to cancel the server and the inspector
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Use a wait group to wait for goroutines to complete
+	var wg sync.WaitGroup
+
 	// All the tools are initialized, we can prepare the tools registry
 	// so that it can be used by the server
-	err := mcp.toolsRegistry.Prepare(mcp.config.Tools)
+	err := mcp.toolsRegistry.Prepare(ctx, mcp.config.Tools)
 	if err != nil {
+		cancel()
 		return fmt.Errorf("error preparing tools registry: %s", err)
 	}
 
-	// Initialize server
-	server := server.NewMCPServer(transport, mcp.toolsRegistry, mcp.promptsRegistry,
-		mcp.config.ServerInfo.Name,
-		mcp.config.ServerInfo.Version)
-
 	// Start inspector if enabled
 	if mcp.config.Inspector != nil {
-		go mcp.inspector.StartInspector()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			mcp.inspector.StartInspector(ctx)
+		}()
 	}
 
-	// Start server
-	err = server.Start()
-	if err != nil {
-		return fmt.Errorf("error starting server: %s", err)
-	}
+	// Start MCP server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		// Initialize server
+		server := server.NewMCPServer(transport, mcp.toolsRegistry, mcp.promptsRegistry,
+			mcp.config.ServerInfo.Name,
+			mcp.config.ServerInfo.Version)
+
+		// Start server
+		err = server.Start(ctx)
+		if err != nil {
+			logger.Error("error starting server", logger.Arg{
+				"error": err,
+			})
+			cancel()
+		}
+	}()
+
+	// Listen for OS signals (e.g., Ctrl+C)
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+
+	// Wait for a signal to stop the server
+	<-signalChan
+	fmt.Println("\nReceived an interrupt, shutting down...")
+
+	// Cancel the context to signal the goroutines to stop
+	cancel()
+
+	// Wait for all goroutines to finish
+	wg.Wait()
+	fmt.Println("All goroutines have stopped. Exiting.")
+
 	return nil
 }
 

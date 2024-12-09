@@ -1,11 +1,10 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/logger"
@@ -42,7 +41,7 @@ func NewMCPServer(transport types.Transport, toolsRegistry *tools.ToolsRegistry,
 	}
 }
 
-func (s *MCPServer) Start() error {
+func (s *MCPServer) Start(ctx context.Context) error {
 	transport := s.transport
 
 	// Set up message handler
@@ -63,7 +62,7 @@ func (s *MCPServer) Start() error {
 				s.sendError(request.Error, request.RequestId)
 				return
 			}
-			err := s.processRequest(request.Request)
+			err := s.processRequest(ctx, request.Request)
 			if err != nil {
 				s.logError("failed to process request", err)
 			}
@@ -82,9 +81,10 @@ func (s *MCPServer) Start() error {
 	}
 
 	// Keep the main thread alive
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
-	<-done
+	// will be interrupted by the context
+	<-ctx.Done()
+
+	fmt.Printf("# [mcpServer] shutdown\n")
 
 	transport.Close()
 	return nil

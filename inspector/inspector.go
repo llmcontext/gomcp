@@ -1,7 +1,9 @@
 package inspector
 
 import (
+	"context"
 	"embed"
+	"fmt"
 	"html/template"
 	"net/http"
 	"sync"
@@ -61,7 +63,7 @@ func (i *Inspector) EnqueueMessage(msg MessageInfo) {
 	}
 }
 
-func (inspector *Inspector) StartInspector() *Inspector {
+func (inspector *Inspector) StartInspector(ctx context.Context) error {
 	router := http.NewServeMux()
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if err := t.ExecuteTemplate(w, "index.html", nil); err != nil {
@@ -81,9 +83,24 @@ func (inspector *Inspector) StartInspector() *Inspector {
 	}()
 
 	// Start the message broadcaster in a goroutine
-	go inspector.broadcastMessages()
+	go func() {
+		inspector.broadcastMessages()
+	}()
 
-	return inspector
+	// wait for the context to be done
+	<-ctx.Done()
+
+	fmt.Printf("# [inspector] shutdown\n")
+
+	// shutdown the server
+	if err := server.Shutdown(ctx); err != nil {
+		fmt.Printf("error shutting down inspector: %s\n", err)
+	}
+
+	// shutdown the inspector
+	inspector.shutdown()
+
+	return nil
 }
 
 // broadcastMessages continuously reads from messageChan
@@ -131,4 +148,13 @@ func (i *Inspector) serveWs(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+}
+
+func (i *Inspector) shutdown() {
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
+	for client := range i.clients {
+		client.Close()
+	}
+	close(i.messageChan)
 }

@@ -12,7 +12,7 @@ type contextKey string
 // loggerContextKey is the key used to store the logger in the context
 var loggerKey = contextKey("logger")
 
-func MakeContextWithLogger(ctx context.Context, toolName string) context.Context {
+func makeContextWithLogger(ctx context.Context, toolName string) context.Context {
 	return context.WithValue(ctx, loggerKey, NewLogger(toolName))
 }
 
