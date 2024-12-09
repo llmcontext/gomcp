@@ -18,5 +18,9 @@ vet:
 	@echo "Vetting code..."
 	@go vet ./...
 
+# Build gomcp-proxy
+build:
+	@echo "Building gomcp-proxy..."
+	@go build -o bin/gomcp-proxy cmd/gomcp-proxy/main.go
 
-.PHONY: test test-coverage fmt vet deps
+.PHONY: test test-coverage fmt vet deps build
