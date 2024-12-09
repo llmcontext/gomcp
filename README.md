@@ -260,6 +260,7 @@ Check the [README](https://github.com/llmcontext/mcpnotion/blob/main/README.md) 
 ### [0.3.0](https://github.com/llmcontext/gomcp/tree/v0.3.0) - 2024-12-08
 
 - Add support for protocol debug file. In the configuration file, set the `logging.protocolDebugFile` field to the path to the file where to write the protocol debug information.
+- Add support for the inspector. In the configuration file, set the `inspector.enabled` and `inspector.listenAddress` fields to set the inspector server address.
 
 ### [0.2.0](https://github.com/llmcontext/gomcp/tree/v0.2.0) - 2024-12-07
 
