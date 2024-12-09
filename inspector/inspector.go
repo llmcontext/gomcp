@@ -3,7 +3,6 @@ package inspector
 import (
 	"context"
 	"embed"
-	"fmt"
 	"html/template"
 	"net/http"
 	"sync"
@@ -90,11 +89,15 @@ func (inspector *Inspector) StartInspector(ctx context.Context) error {
 	// wait for the context to be done
 	<-ctx.Done()
 
-	fmt.Printf("# [inspector] shutdown\n")
+	logger.Info("Shutting down inspector", logger.Arg{
+		"listenAddress": inspector.listenAddress,
+	})
 
 	// shutdown the server
 	if err := server.Shutdown(ctx); err != nil {
-		fmt.Printf("error shutting down inspector: %s\n", err)
+		logger.Error("error shutting down inspector", logger.Arg{
+			"error": err,
+		})
 	}
 
 	// shutdown the inspector
@@ -151,10 +154,19 @@ func (i *Inspector) serveWs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (i *Inspector) shutdown() {
+	logger.Info("shutdown()", logger.Arg{
+		"step": 1,
+	})
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
+	logger.Info("shutdown()", logger.Arg{
+		"step": 2,
+	})
 	for client := range i.clients {
 		client.Close()
 	}
+	logger.Info("shutdown()", logger.Arg{
+		"step": 3,
+	})
 	close(i.messageChan)
 }

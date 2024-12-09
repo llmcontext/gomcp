@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/inspector"
@@ -127,18 +128,35 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 
 	// Listen for OS signals (e.g., Ctrl+C)
 	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGABRT, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGCHLD)
+
+	go func() {
+		for {
+			parentPID := syscall.Getppid()
+			logger.Info("Monitoring parent process", logger.Arg{
+				"pid": parentPID,
+			})
+			if parentPID == 1 {
+				logger.Info("Parent process is init. Shutting down...", logger.Arg{
+					"pid": parentPID,
+				})
+				signalChan <- os.Interrupt
+				return
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}()
 
 	// Wait for a signal to stop the server
-	<-signalChan
-	fmt.Println("\nReceived an interrupt, shutting down...")
+	sig := <-signalChan
+	fmt.Fprintf(os.Stderr, "[mcp] Received an interrupt, shutting down... %s\n", sig)
 
 	// Cancel the context to signal the goroutines to stop
 	cancel()
 
 	// Wait for all goroutines to finish
 	wg.Wait()
-	fmt.Println("All goroutines have stopped. Exiting.")
+	fmt.Fprintf(os.Stderr, "[mcp] All goroutines have stopped. Exiting.\n")
 
 	return nil
 }
