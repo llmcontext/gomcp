@@ -1,3 +1,9 @@
+BINARY_NAME := gomcp-proxy
+# Build directory
+BUILD_DIR=./bin
+
+all: build
+
 # Run tests
 test:
 	@echo "Running tests..."
@@ -20,7 +26,13 @@ vet:
 
 # Build gomcp-proxy
 build:
-	@echo "Building gomcp-proxy..."
-	@go build -o bin/gomcp-proxy cmd/gomcp-proxy/main.go
+	@echo "Building $(BINARY_NAME)..."
+	@go build -o $(BUILD_DIR)/$(BINARY_NAME) cmd/gomcp-proxy/main.go
 
-.PHONY: test test-coverage fmt vet deps build
+# Install binaries to /usr/local/bin
+install: build
+	@echo "Installing binaries to /usr/local/bin..."
+	cp $(BUILD_DIR)/$(BINARY_NAME) /usr/local/bin/
+	@echo "Installation complete"
+
+.PHONY: build test-coverage fmt vet deps

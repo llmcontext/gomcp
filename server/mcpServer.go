@@ -75,7 +75,7 @@ func (s *MCPServer) Start(ctx context.Context) error {
 	})
 
 	// Start the transport
-	if err := transport.Start(); err != nil {
+	if err := transport.Start(ctx); err != nil {
 		s.logError("failed to start transport", err)
 		return err
 	}

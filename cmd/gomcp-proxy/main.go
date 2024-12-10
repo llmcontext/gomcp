@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/llmcontext/gomcp/proxy"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +17,20 @@ var (
 			fmt.Printf("Starting gomcp-proxy on port %d\n", port)
 
 			// display the arguments
-			fmt.Printf("Arguments: %v\n", args)
+			for ix, arg := range args {
+				fmt.Printf("Argument %d: %s\n", ix, arg)
+			}
+
+			if len(args) == 0 {
+				fmt.Println("Please provide a program name as the first argument")
+				os.Exit(1)
+			}
+
+			programName := args[0]
+			args = args[1:]
+
+			client := proxy.NewClient(programName, args)
+			client.Start()
 		},
 	}
 )

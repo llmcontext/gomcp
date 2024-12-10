@@ -1,6 +1,9 @@
 package types
 
-import "encoding/json"
+import (
+	"context"
+	"encoding/json"
+)
 
 // Transport defines the interface for MCP communication
 type Transport interface {
@@ -12,7 +15,7 @@ type Transport interface {
 	//
 	// NOTE: This method should not be called explicitly when using Client,
 	// Server, or Protocol classes, as they will implicitly call start().
-	Start() error
+	Start(ctx context.Context) error
 
 	// Sends a JSON-RPC message (request or response).
 	Send(message json.RawMessage) error

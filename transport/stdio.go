@@ -2,6 +2,7 @@ package transport
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/llmcontext/gomcp/inspector"
 	"github.com/llmcontext/gomcp/logger"
+	"github.com/llmcontext/gomcp/types"
 )
 
 type StdioTransport struct {
@@ -21,7 +23,7 @@ type StdioTransport struct {
 	done              chan struct{}
 }
 
-func NewStdioTransport(protocolDebugFile string, inspector *inspector.Inspector) *StdioTransport {
+func NewStdioTransport(protocolDebugFile string, inspector *inspector.Inspector) types.Transport {
 	return &StdioTransport{
 		debug:             protocolDebugFile != "",
 		protocolDebugFile: protocolDebugFile,
@@ -29,7 +31,7 @@ func NewStdioTransport(protocolDebugFile string, inspector *inspector.Inspector)
 	}
 }
 
-func (t *StdioTransport) Start() error {
+func (t *StdioTransport) Start(ctx context.Context) error {
 	t.done = make(chan struct{})
 
 	// Start goroutine to read from stdin
