@@ -51,9 +51,10 @@ type JsonRpcRequest struct {
 }
 
 type JsonRpcResponse struct {
-	Result *json.RawMessage
-	Error  *JsonRpcError
-	Id     *JsonRpcRequestId
+	JsonRpcVersion string
+	Result         interface{}
+	Error          *JsonRpcError
+	Id             *JsonRpcRequestId
 }
 
 func NewJsonRpcRequestWithNamedParams(method string, params interface{}, id int) *JsonRpcRequest {
