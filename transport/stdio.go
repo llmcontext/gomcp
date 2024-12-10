@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -35,7 +36,7 @@ func (t *StdioTransport) Start(ctx context.Context) error {
 	t.done = make(chan struct{})
 
 	// Start goroutine to read from stdin
-	go t.readLoop()
+	go t.readLoop(ctx)
 	return nil
 }
 
@@ -76,34 +77,50 @@ func (t *StdioTransport) Close() {
 	}
 }
 
-func (t *StdioTransport) readLoop() {
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		select {
-		case <-t.done:
-			return
-		default:
-			if t.onMessage != nil {
-				line := scanner.Bytes()
-				if t.debug {
-					t.logProtocolMessages(string(line), "receiving")
-				}
+func (t *StdioTransport) readLoop(ctx context.Context) {
+	r, w := io.Pipe()
+	go func() {
+		defer w.Close()
+		io.Copy(w, os.Stdin)
+	}()
 
-				if t.inspector != nil {
-					t.inspector.EnqueueMessage(inspector.MessageInfo{
-						Timestamp: time.Now().Format(time.RFC3339),
-						Direction: inspector.MessageDirectionRequest,
-						Content:   string(line),
-					})
-				}
+	scanner := bufio.NewScanner(r)
+	readCh := make(chan struct{})
+	for {
+		go func() {
+			if scanner.Scan() {
+				if t.onMessage != nil {
+					line := scanner.Text()
+					if t.debug {
+						t.logProtocolMessages(line, "receiving")
+					}
 
-				t.onMessage(json.RawMessage(line))
+					if t.inspector != nil {
+						t.inspector.EnqueueMessage(inspector.MessageInfo{
+							Timestamp: time.Now().Format(time.RFC3339),
+							Direction: inspector.MessageDirectionRequest,
+							Content:   line,
+						})
+					}
+
+					fmt.Printf("@@ [proxy] received message: (%s)\n", line)
+					t.onMessage(json.RawMessage(line))
+				}
 			}
-		}
-	}
+			close(readCh)
+		}()
 
-	if err := scanner.Err(); err != nil && t.onError != nil {
-		t.onError(err)
+		select {
+		// check if we need to stop
+		case <-ctx.Done():
+			// close the pipe
+			r.Close()
+			return
+		// we'veread a message, let's read another one
+		case <-readCh:
+			readCh = make(chan struct{})
+			continue
+		}
 	}
 }
 
