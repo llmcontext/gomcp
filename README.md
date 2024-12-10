@@ -257,6 +257,12 @@ Check the [README](https://github.com/llmcontext/mcpnotion/blob/main/README.md) 
 
 ## Changelog
 
+### 0.4.0
+
+- Add support for the proxy. In the configuration file, set the `proxy.enabled` field to true to enable the proxy. The proxy is a tool that allows you to proxy messages between any MCP server and the LLM.
+- Add pterm for the output of the proxy
+- Refactor the JSON protocol messages to handle both client and server messages
+
 ### [0.3.0](https://github.com/llmcontext/gomcp/tree/v0.3.0) - 2024-12-08
 
 - Add support for protocol debug file. In the configuration file, set the `logging.protocolDebugFile` field to the path to the file where to write the protocol debug information.

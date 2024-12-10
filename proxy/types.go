@@ -1,8 +1,9 @@
 package proxy
 
 import (
-	"encoding/json"
 	"fmt"
+
+	"github.com/llmcontext/gomcp/jsonrpc"
 )
 
 const (
@@ -15,20 +16,13 @@ type ClientInfo struct {
 	Version string `json:"version"`
 }
 
-type JsonRpcCall struct {
-	Method  string      `json:"method"`
-	Params  interface{} `json:"params"`
-	JsonRpc string      `json:"jsonrpc"`
-	Id      int         `json:"id"`
-}
-
 type ParamsInitialize struct {
 	ProtocolVersion string                 `json:"protocolVersion"`
 	Capabilities    map[string]interface{} `json:"capabilities"`
 	ClientInfo      ClientInfo             `json:"clientInfo"`
 }
 
-func mkRpcCallInitialize(clientName string, clientVersion string, id int) json.RawMessage {
+func mkRpcCallInitialize(clientName string, clientVersion string, id int) (*jsonrpc.JsonRpcRequest, error) {
 	params := ParamsInitialize{
 		ProtocolVersion: ProtocolVersion,
 		Capabilities:    map[string]interface{}{},
@@ -38,18 +32,11 @@ func mkRpcCallInitialize(clientName string, clientVersion string, id int) json.R
 		},
 	}
 
-	req := JsonRpcCall{
-		JsonRpc: JsonRpcVersion,
-		Method:  "initialize",
-		Params:  params,
-		Id:      id,
+	req := jsonrpc.NewJsonRpcRequestWithNamedParams("initialize", params, id)
+
+	if req == nil {
+		return nil, fmt.Errorf("failed to create initialize request")
 	}
 
-	// marshal to json
-	json, err := json.Marshal(req)
-	if err != nil {
-		fmt.Printf("[proxy] failed to marshal initialize request: %s\n", err)
-		return nil
-	}
-	return json
+	return req, nil
 }

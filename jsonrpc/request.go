@@ -11,15 +11,12 @@ const debugParseRequest = false
 // JSON-RPC 2.0 Specification
 // https://www.jsonrpc.org/specification
 
-const (
-	// JSON-RPC 2.0 Specification
-	// https://www.jsonrpc.org/specification#error_object
-	RpcParseError     = -32700
-	RpcInvalidRequest = -32600
-	RpcMethodNotFound = -32601
-	RpcInvalidParams  = -32602
-	RpcInternalError  = -32603
-)
+type RawJsonRpcRequestMessage struct {
+	JsonRpcVersion string      `json:"jsonrpc"`
+	Method         string      `json:"method"`
+	Params         interface{} `json:"params,omitempty"`
+	Id             interface{} `json:"id"`
+}
 
 type JsonRequestParseResponse struct {
 	Request   *JsonRpcRequest
@@ -177,4 +174,32 @@ func extractId(rawJson map[string]interface{}) *JsonRpcRequestId {
 	default:
 		return nil
 	}
+}
+
+func MarshalJsonRpcRequest(request *JsonRpcRequest) ([]byte, error) {
+	var rawParams interface{} = nil
+	if request.Params != nil {
+		if request.Params.IsPositional() {
+			rawParams = request.Params.PositionalParams
+		} else {
+			rawParams = request.Params.NamedParams
+		}
+	}
+
+	var rawId interface{} = nil
+	if request.Id != nil {
+		if request.Id.Number != nil {
+			rawId = *request.Id.Number
+		} else if request.Id.String != nil {
+			rawId = *request.Id.String
+		}
+	}
+
+	rawJson := RawJsonRpcRequestMessage{
+		JsonRpcVersion: JsonRpcVersion,
+		Method:         request.Method,
+		Params:         rawParams,
+		Id:             rawId,
+	}
+	return json.Marshal(rawJson)
 }
