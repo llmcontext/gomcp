@@ -31,7 +31,7 @@ func TestParseSimpleRequest(t *testing.T) {
 				JsonRpcVersion: "2.0",
 				Method:         "subtract",
 				Params:         &JsonRpcParams{NamedParams: map[string]interface{}{"minuend": float64(42), "subtrahend": float64(23)}},
-				Id:             &JsonRpcRequestId{String: strPtr("1")},
+				Id:             &JsonRpcRequestId{String: stringPtr("1")},
 			},
 			wantError: nil,
 		},
@@ -106,12 +106,12 @@ func TestParseSimpleRequest(t *testing.T) {
 			gotRequest, _, gotError := ParseSimpleRequest(rawJson)
 
 			if !reflect.DeepEqual(gotError, tt.wantError) {
-				t.Errorf("ParseRequest() error = %v, wantError %v", gotError, tt.wantError)
+				t.Errorf("ParseRequest() error = %#v, wantError %#v", gotError, tt.wantError)
 				return
 			}
 
 			if !reflect.DeepEqual(gotRequest, tt.wantRequest) {
-				t.Errorf("ParseRequest() = %v, want %v", gotRequest, tt.wantRequest)
+				t.Errorf("ParseRequest() = %#v, want %#v", gotRequest, tt.wantRequest)
 			}
 		})
 	}
@@ -144,7 +144,7 @@ func TestMarshalJsonRpcRequest(t *testing.T) {
 				JsonRpcVersion: "2.0",
 				Method:         "subtract",
 				Params:         &JsonRpcParams{NamedParams: map[string]interface{}{"minuend": float64(42), "subtrahend": float64(23)}},
-				Id:             &JsonRpcRequestId{String: strPtr("1")},
+				Id:             &JsonRpcRequestId{String: stringPtr("1")},
 			},
 			wantJson:  `{"jsonrpc":"2.0","method":"subtract","params":{"minuend":42,"subtrahend":23},"id":"1"}`,
 			wantError: false,
@@ -163,13 +163,4 @@ func TestMarshalJsonRpcRequest(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Helper functions to create pointers
-func intPtr(i int) *int {
-	return &i
-}
-
-func strPtr(s string) *string {
-	return &s
 }

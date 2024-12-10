@@ -1,5 +1,7 @@
 package jsonrpc
 
+import "encoding/json"
+
 func extractId(rawJson map[string]interface{}) *JsonRpcRequestId {
 	value, ok := rawJson["id"]
 	if !ok {
@@ -18,4 +20,17 @@ func extractId(rawJson map[string]interface{}) *JsonRpcRequestId {
 	default:
 		return nil
 	}
+}
+
+func stringPtr(s string) *string {
+	return &s
+}
+
+func intPtr(i int) *int {
+	return &i
+}
+
+func rawMessagePtr(s string) *json.RawMessage {
+	rm := json.RawMessage(s)
+	return &rm
 }

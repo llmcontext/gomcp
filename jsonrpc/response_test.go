@@ -3,6 +3,7 @@ package jsonrpc
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -125,4 +126,94 @@ func TestMarshalJsonRpcResponse(t *testing.T) {
 		assert.Error(t, err)
 		assert.Equal(t, "error or result is required", err.Error())
 	})
+}
+
+func TestParseJsonRpcResponse(t *testing.T) {
+	tests := []struct {
+		name             string
+		raw              []byte
+		expectedResponse *JsonRpcResponse
+		wantError        *JsonRpcError
+	}{
+		{
+			name: "success with string result",
+			raw: []byte(`{
+				"jsonrpc": "2.0",
+				"id": "123",
+				"result": "hello"
+			}`),
+			expectedResponse: &JsonRpcResponse{
+				JsonRpcVersion: "2.0",
+				Id:             &JsonRpcRequestId{String: stringPtr("123")},
+				Result:         "hello",
+			},
+			wantError: nil,
+		},
+		{
+			name: "success with numeric id",
+			raw: []byte(`{
+				"jsonrpc": "2.0",
+				"id": 42,
+				"result": true
+			}`),
+			expectedResponse: &JsonRpcResponse{
+				JsonRpcVersion: "2.0",
+				Id:             &JsonRpcRequestId{Number: intPtr(42)},
+				Result:         true,
+			},
+			wantError: nil,
+		},
+		{
+			name: "error response",
+			raw: []byte(`{
+				"jsonrpc": "2.0",
+				"id": "123",
+				"error": {
+					"code": -32600,
+					"message": "Invalid Request"
+				}
+			}`),
+			expectedResponse: &JsonRpcResponse{
+				JsonRpcVersion: "2.0",
+				Id:             &JsonRpcRequestId{String: stringPtr("123")},
+				Error: &JsonRpcError{
+					Code:    -32600,
+					Message: "Invalid Request",
+				},
+			},
+			wantError: nil,
+		},
+		{
+			name: "error: invalid json",
+			raw:  []byte(`{invalid json`),
+			wantError: &JsonRpcError{
+				Code:    RpcParseError,
+				Message: "invalid JSON-RPC version",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// we convert the input to a map[string]interface{}
+			var rawJson map[string]interface{}
+			if err := json.Unmarshal(tt.raw, &rawJson); err != nil {
+				if tt.wantError == nil {
+					t.Errorf("failed to unmarshal input: %v", err)
+					return
+				}
+				// we skip the test if we expect an error
+				t.Skip()
+			}
+			gotResponse, _, gotError := ParseJsonRpcResponse(rawJson)
+			if !reflect.DeepEqual(gotError, tt.wantError) {
+				t.Errorf("ParseRequest() error = %v, wantError %v", gotError, tt.wantError)
+				return
+			}
+
+			if !reflect.DeepEqual(gotResponse, tt.expectedResponse) {
+				t.Errorf("ParseRequest() = %v, want %v", gotResponse, tt.expectedResponse)
+			}
+		})
+	}
 }
