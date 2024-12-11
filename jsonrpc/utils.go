@@ -41,6 +41,10 @@ func intPtr(i int) *int {
 	return &i
 }
 
+func BoolPtr(b bool) *bool {
+	return &b
+}
+
 // func rawMessagePtr(s string) *json.RawMessage {
 // 	rm := json.RawMessage(s)
 // 	return &rm

@@ -28,11 +28,11 @@ func (s *MCPServer) handleInitialize(request *jsonrpc.JsonRpcRequest) error {
 	response := messages.JsonRpcResponseInitialize{
 		ProtocolVersion: s.protocolVersion,
 		Capabilities: messages.ServerCapabilities{
-			Tools: messages.ServerCapabilitiesTools{
-				ListChanged: false,
+			Tools: &messages.ServerCapabilitiesTools{
+				ListChanged: jsonrpc.BoolPtr(false),
 			},
-			Prompts: messages.ServerCapabilitiesPrompts{
-				ListChanged: false,
+			Prompts: &messages.ServerCapabilitiesPrompts{
+				ListChanged: jsonrpc.BoolPtr(false),
 			},
 		},
 		ServerInfo: messages.ServerInfo{Name: s.serverName, Version: s.serverVersion},
