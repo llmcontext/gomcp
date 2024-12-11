@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/llmcontext/gomcp/proxy"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
@@ -14,20 +15,21 @@ var (
 		Use:   "gomcp-proxy",
 		Short: "A proxy server for MCP connections",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Starting gomcp-proxy on port %d\n", port)
-
-			// display the arguments
-			for ix, arg := range args {
-				fmt.Printf("Argument %d: %s\n", ix, arg)
-			}
-
+			pterm.Println(fmt.Sprintf("%s, version %s", proxy.GomcpProxyClientVersion, proxy.GomcpProxyClientName))
 			if len(args) == 0 {
-				fmt.Println("Please provide a program name as the first argument")
+				pterm.Error.Println("Please provide a program name as the first argument")
 				os.Exit(1)
 			}
 
 			programName := args[0]
 			args = args[1:]
+
+			// Print an informational message using PTerm's Info printer.
+			// This message will stay in place while the area updates.
+			pterm.Info.Println("MCP Proxy is starting")
+			pterm.Info.Println(fmt.Sprintf("- ws port is: %d\n", port))
+			pterm.Info.Println(fmt.Sprintf("- program name is: %s\n", programName))
+			pterm.Info.Println(fmt.Sprintf("- program args are: %v\n", args))
 
 			client := proxy.NewClient(programName, args)
 			client.Start()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/jsonrpc/messages"
 )
 
 const (
@@ -32,7 +33,7 @@ func mkRpcCallInitialize(clientName string, clientVersion string, id int) (*json
 		},
 	}
 
-	req := jsonrpc.NewJsonRpcRequestWithNamedParams("initialize", params, id)
+	req := jsonrpc.NewJsonRpcRequestWithNamedParams(messages.RpcRequestMethodInitialize, params, id)
 
 	if req == nil {
 		return nil, fmt.Errorf("failed to create initialize request")

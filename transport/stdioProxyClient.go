@@ -31,7 +31,6 @@ func NewStdioProxyClientTransport(programName string, args []string) types.Trans
 }
 
 func (t *StdioProxyClientTransport) Start(ctx context.Context) error {
-	fmt.Printf("@@ Starting %s with args %v\n", t.programName, t.args)
 	t.cmd = exec.Command(t.programName, t.args...)
 
 	stdin, err := t.cmd.StdinPipe()

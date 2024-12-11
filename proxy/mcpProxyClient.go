@@ -4,15 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/types"
 )
 
 const (
-	ClientName    = "gomcp-proxy"
-	ClientVersion = "0.1.0"
+	GomcpProxyClientName    = "gomcp-proxy"
+	GomcpProxyClientVersion = "0.1.0"
 )
 
 type PendingRequest struct {
@@ -24,14 +23,14 @@ type MCPProxyClient struct {
 	transport types.Transport
 	clientId  int
 	// pendingRequests is a map of message id to pending request
-	pendingRequests map[string]PendingRequest
+	pendingRequests map[string]*PendingRequest
 }
 
 func NewMCPProxyClient(transport types.Transport) *MCPProxyClient {
 	return &MCPProxyClient{
 		transport:       transport,
 		clientId:        0,
-		pendingRequests: make(map[string]PendingRequest),
+		pendingRequests: make(map[string]*PendingRequest),
 	}
 }
 
@@ -47,6 +46,7 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 			return
 		}
 
+		// the MCP protocol does not support batch requests
 		if nature == jsonrpc.MessageNatureBatchRequest {
 			c.sendError(jsonrpc.RpcParseError, "response not supported yet", nil)
 			return
@@ -70,7 +70,7 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 	}
 
 	// First message to send is always an initialize request
-	req, err := mkRpcCallInitialize(ClientName, ClientVersion, c.clientId)
+	req, err := mkRpcCallInitialize(GomcpProxyClientName, GomcpProxyClientVersion, c.clientId)
 	if err != nil {
 		fmt.Printf("[proxy] failed to create initialize request: %s\n", err)
 		return err
@@ -101,7 +101,9 @@ func (c *MCPProxyClient) sendJsonRpcRequest(request *jsonrpc.JsonRpcRequest) {
 	// send the message
 	c.transport.Send(jsonRequest)
 
-	c.pendingRequests[requestIdToString(request.Id)] = PendingRequest{
+	// we store the request in the pending requests map
+	// so we can match the response with the request
+	c.pendingRequests[jsonrpc.RequestIdToString(request.Id)] = &PendingRequest{
 		method:    request.Method,
 		messageId: request.Id,
 	}
@@ -128,11 +130,7 @@ func (c *MCPProxyClient) sendError(code int, message string, id *jsonrpc.JsonRpc
 	return nil
 }
 
-func requestIdToString(id *jsonrpc.JsonRpcRequestId) string {
-	if id.Number != nil {
-		return strconv.Itoa(*id.Number)
-	} else if id.String != nil {
-		return *id.String
-	}
-	return "*"
+func (c *MCPProxyClient) getPendingRequest(reqId *jsonrpc.JsonRpcRequestId) *PendingRequest {
+	requestIdString := jsonrpc.RequestIdToString(reqId)
+	return c.pendingRequests[requestIdString]
 }
