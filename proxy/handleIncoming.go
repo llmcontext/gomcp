@@ -32,6 +32,8 @@ func (c *MCPProxyClient) handleIncomingMessage(message jsonrpc.JsonRpcRawMessage
 			switch pendingRequest.method {
 			case messages.RpcRequestMethodInitialize:
 				c.handleInitializeResponse(response)
+			case messages.RpcRequestMethodToolsList:
+				c.handleToolsListResponse(response)
 			}
 		} else {
 			c.logger.Debug(fmt.Sprintf("[proxy] no pending request found for response id: %s\n", responseIdString))

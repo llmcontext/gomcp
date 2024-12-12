@@ -25,7 +25,7 @@ func (s *MCPServer) handleInitialize(request *jsonrpc.JsonRpcRequest) error {
 	}
 
 	// prepare response
-	response := messages.JsonRpcResponseInitialize{
+	response := messages.JsonRpcResponseInitializeResult{
 		ProtocolVersion: s.protocolVersion,
 		Capabilities: messages.ServerCapabilities{
 			Tools: &messages.ServerCapabilitiesTools{

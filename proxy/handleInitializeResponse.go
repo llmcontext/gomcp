@@ -8,14 +8,14 @@ import (
 )
 
 func (c *MCPProxyClient) handleInitializeResponse(response *jsonrpc.JsonRpcResponse) {
-	initialize, err := messages.ParseJsonRpcResponseInitialize(response)
+	initializeResponse, err := messages.ParseJsonRpcResponseInitialize(response)
 	if err != nil {
 		c.logger.Error(fmt.Sprintf("error in handleInitializeResponse: %+v\n", err))
 		return
 	}
 	c.logger.Info(fmt.Sprintf("init response: %s, %s\n",
-		initialize.ServerInfo.Name,
-		initialize.ServerInfo.Version,
+		initializeResponse.ServerInfo.Name,
+		initializeResponse.ServerInfo.Version,
 	))
 
 	// we send the "notifications/initialized" notification

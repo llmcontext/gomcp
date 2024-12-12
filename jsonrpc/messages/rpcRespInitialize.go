@@ -1,12 +1,10 @@
 package messages
 
 import (
-	"fmt"
-
 	"github.com/llmcontext/gomcp/jsonrpc"
 )
 
-type JsonRpcResponseInitialize struct {
+type JsonRpcResponseInitializeResult struct {
 	ProtocolVersion string             `json:"protocolVersion"`
 	Capabilities    ServerCapabilities `json:"capabilities"`
 	ServerInfo      ServerInfo         `json:"serverInfo"`
@@ -40,49 +38,45 @@ type ServerCapabilitiesResources struct {
 	Subscribe   *bool `json:"subscribe,omitempty"`
 }
 
-func ParseJsonRpcResponseInitialize(response *jsonrpc.JsonRpcResponse) (*JsonRpcResponseInitialize, error) {
-	resp := JsonRpcResponseInitialize{}
+func ParseJsonRpcResponseInitialize(response *jsonrpc.JsonRpcResponse) (*JsonRpcResponseInitializeResult, error) {
+	resp := JsonRpcResponseInitializeResult{}
 
 	// parse params
-	if response.Result == nil {
-		return nil, fmt.Errorf("missing result")
-	}
-
-	result, ok := response.Result.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("result must be an object")
+	result, err := checkIsObject(response.Result, "result")
+	if err != nil {
+		return nil, err
 	}
 
 	// read protocol version
-	protocolVersion, ok := result["protocolVersion"].(string)
-	if !ok {
-		return nil, fmt.Errorf("missing protocolVersion")
+	protocolVersion, err := getStringField(result, "protocolVersion")
+	if err != nil {
+		return nil, err
 	}
 	resp.ProtocolVersion = protocolVersion
 
 	// read server info
-	serverInfo, ok := result["serverInfo"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("missing serverInfo")
+	serverInfo, err := getObjectField(result, "serverInfo")
+	if err != nil {
+		return nil, err
 	}
 	// read name
-	name, ok := serverInfo["name"].(string)
-	if !ok {
-		return nil, fmt.Errorf("missing name")
+	name, err := getStringField(serverInfo, "name")
+	if err != nil {
+		return nil, err
 	}
 	resp.ServerInfo.Name = name
 
 	// read version
-	version, ok := serverInfo["version"].(string)
-	if !ok {
-		return nil, fmt.Errorf("missing version")
+	version, err := getStringField(serverInfo, "version")
+	if err != nil {
+		return nil, err
 	}
 	resp.ServerInfo.Version = version
 
 	// read capabilities
-	capabilities, ok := result["capabilities"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("missing or wrong capabilities")
+	capabilities, err := checkIsObject(result, "capabilities")
+	if err != nil {
+		return nil, err
 	}
 	// check if logging capability is present
 	if _, ok := capabilities["logging"]; ok {
@@ -90,65 +84,52 @@ func ParseJsonRpcResponseInitialize(response *jsonrpc.JsonRpcResponse) (*JsonRpc
 	}
 
 	// check if resources capability is present
-	if capabilitiesResources, ok := capabilities["resources"]; ok {
-		// check if resources is an object
-		props, ok := capabilitiesResources.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("resources must be an object")
-		}
+	capabilitiesResources := getOptionalObjectField(capabilities, "resources")
+	if capabilitiesResources != nil {
 		resp.Capabilities.Resources = &ServerCapabilitiesResources{}
 		// check if listChanged is present
-		if listChanged, ok := props["listChanged"].(bool); ok {
-			resp.Capabilities.Resources.ListChanged = &listChanged
+		listChanged := getOptionalBoolField(capabilitiesResources, "listChanged")
+		if listChanged != nil {
+			resp.Capabilities.Resources.ListChanged = listChanged
 		}
 		// check if subscribe is present
-		if subscribe, ok := props["subscribe"].(bool); ok {
-			resp.Capabilities.Resources.Subscribe = &subscribe
+		subscribe := getOptionalBoolField(capabilitiesResources, "subscribe")
+		if subscribe != nil {
+			resp.Capabilities.Resources.Subscribe = subscribe
 		}
 	} else {
 		resp.Capabilities.Resources = nil
 	}
 
 	// check if tools capability is present
-	if capabilitiesTools, ok := capabilities["tools"]; ok {
-		// check if tools is an object
-		props, ok := capabilitiesTools.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("tools must be an object")
-		}
+	capabilitiesTools := getOptionalObjectField(capabilities, "tools")
+	if capabilitiesTools != nil {
 		resp.Capabilities.Tools = &ServerCapabilitiesTools{}
 		// check if listChanged is present
-		if listChanged, ok := props["listChanged"].(bool); ok {
-			resp.Capabilities.Tools.ListChanged = &listChanged
+		listChanged := getOptionalBoolField(capabilitiesTools, "listChanged")
+		if listChanged != nil {
+			resp.Capabilities.Tools.ListChanged = listChanged
 		}
 	} else {
 		resp.Capabilities.Tools = nil
 	}
 
 	// check if prompts capability is present
-	if capabilitiesPrompts, ok := capabilities["prompts"]; ok {
-		// check if prompts is an object
-		props, ok := capabilitiesPrompts.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("prompts must be an object")
-		}
+	capabilitiesPrompts := getOptionalObjectField(capabilities, "prompts")
+	if capabilitiesPrompts != nil {
 		resp.Capabilities.Prompts = &ServerCapabilitiesPrompts{}
-
 		// check if listChanged is present
-		if listChanged, ok := props["listChanged"].(bool); ok {
-			resp.Capabilities.Prompts.ListChanged = &listChanged
+		listChanged := getOptionalBoolField(capabilitiesPrompts, "listChanged")
+		if listChanged != nil {
+			resp.Capabilities.Prompts.ListChanged = listChanged
 		}
 	} else {
 		resp.Capabilities.Prompts = nil
 	}
 
 	// check if logging capability is present
-	if capabilitiesLogging, ok := capabilities["logging"]; ok {
-		// check if logging is an object
-		_, ok := capabilitiesLogging.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("logging must be an object")
-		}
+	logging := getOptionalObjectField(capabilities, "logging")
+	if logging != nil {
 		resp.Capabilities.Logging = &ServerCapabilitiesLogging{}
 	} else {
 		resp.Capabilities.Logging = nil
