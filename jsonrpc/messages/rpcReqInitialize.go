@@ -13,7 +13,7 @@ const (
 	RpcRequestMethodInitialize = "initialize"
 )
 
-type JsonRpcRequestInitialize struct {
+type JsonRpcRequestInitializeParams struct {
 	ProtocolVersion string             `json:"protocolVersion"`
 	Capabilities    ClientCapabilities `json:"capabilities"`
 	ClientInfo      ClientInfo         `json:"clientInfo"`
@@ -36,8 +36,8 @@ type ClientInfo struct {
 	Version string `json:"version"`
 }
 
-func ParseJsonRpcRequestInitialize(request *jsonrpc.JsonRpcRequest) (*JsonRpcRequestInitialize, error) {
-	req := JsonRpcRequestInitialize{}
+func ParseJsonRpcRequestInitialize(request *jsonrpc.JsonRpcRequest) (*JsonRpcRequestInitializeParams, error) {
+	req := JsonRpcRequestInitializeParams{}
 
 	// parse params
 	if request.Params == nil {

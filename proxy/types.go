@@ -15,7 +15,7 @@ const (
 func mkRpcRequestInitialize(clientName string, clientVersion string, id int) (*jsonrpc.JsonRpcRequest, error) {
 	// we create the parameters for the initialize request
 	// the proxy does not have any capabilities
-	params := messages.JsonRpcRequestInitialize{
+	params := messages.JsonRpcRequestInitializeParams{
 		ProtocolVersion: ProtocolVersion,
 		Capabilities:    messages.ClientCapabilities{},
 		ClientInfo: messages.ClientInfo{
@@ -41,6 +41,19 @@ func mkRpcNotification(method string) (*jsonrpc.JsonRpcRequest, error) {
 
 	if req == nil {
 		return nil, fmt.Errorf("failed to create notification")
+	}
+
+	return req, nil
+}
+
+func mkRpcRequestToolsList(id int) (*jsonrpc.JsonRpcRequest, error) {
+	params := messages.JsonRpcRequestToolsListParams{}
+
+	req := jsonrpc.NewJsonRpcRequestWithNamedParams(
+		messages.RpcRequestMethodToolsList, params, id)
+
+	if req == nil {
+		return nil, fmt.Errorf("failed to create tools list request")
 	}
 
 	return req, nil
