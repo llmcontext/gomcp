@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/types"
@@ -22,6 +23,7 @@ type PendingRequest struct {
 type MCPProxyClient struct {
 	transport types.Transport
 	clientId  int
+	logger    *ProxyLogger
 	// pendingRequests is a map of message id to pending request
 	pendingRequests map[string]*PendingRequest
 }
@@ -31,6 +33,7 @@ func NewMCPProxyClient(transport types.Transport) *MCPProxyClient {
 		transport:       transport,
 		clientId:        0,
 		pendingRequests: make(map[string]*PendingRequest),
+		logger:          NewProxyLogger(),
 	}
 }
 
@@ -39,10 +42,11 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 
 	transport.OnMessage(func(msg json.RawMessage) {
 		// check the message nature
+		c.logger.Debug(fmt.Sprintf("received message: %s\n", string(msg)))
 		nature, jsonRpcRawMessage, err := jsonrpc.CheckJsonMessage(msg)
 		if err != nil {
-			c.sendError(jsonrpc.RpcParseError, err.Error(), nil)
-			fmt.Printf("@@ [proxy] invalid transport received message: %s\n", string(msg))
+			c.logger.Error(fmt.Sprintf("invalid received message: %s\n", string(msg)))
+			os.Exit(1)
 			return
 		}
 
@@ -51,8 +55,6 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 			c.sendError(jsonrpc.RpcParseError, "response not supported yet", nil)
 			return
 		}
-		fmt.Printf("[proxy] received request: %+v\n", jsonRpcRawMessage)
-
 		// we process the message here
 		c.handleIncomingMessage(jsonRpcRawMessage, nature)
 
@@ -96,7 +98,7 @@ func (c *MCPProxyClient) sendJsonRpcRequest(request *jsonrpc.JsonRpcRequest) {
 		return
 	}
 
-	fmt.Printf("@@ [proxy] sending request: %s\n", string(jsonRequest))
+	c.logger.Debug(fmt.Sprintf("sending request: %s\n", string(jsonRequest)))
 
 	// send the message
 	c.transport.Send(jsonRequest)

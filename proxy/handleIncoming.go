@@ -8,18 +8,17 @@ import (
 )
 
 func (c *MCPProxyClient) handleIncomingMessage(message jsonrpc.JsonRpcRawMessage, nature jsonrpc.MessageNature) {
-	fmt.Printf("[proxy] received message (%d): %+v\n", nature, message)
-
 	if nature == jsonrpc.MessageNatureRequest {
+		c.logger.Error(fmt.Sprintf("received JsonRpcRequest: %+v\n", message))
 	} else if nature == jsonrpc.MessageNatureResponse {
 		response, responseId, err := jsonrpc.ParseJsonRpcResponse(message)
 		if err != nil {
-			fmt.Printf("[proxy] error parsing response: %+v\n", err)
+			c.logger.Error(fmt.Sprintf("error parsing response: %+v\n", err))
 			return
 		}
 
 		if response.Error != nil {
-			fmt.Printf("[proxy] error in response: %+v\n", response.Error)
+			c.logger.Error(fmt.Sprintf("error in response: %+v\n", response.Error))
 			return
 		}
 
@@ -32,12 +31,12 @@ func (c *MCPProxyClient) handleIncomingMessage(message jsonrpc.JsonRpcRawMessage
 		if pendingRequest != nil {
 			switch pendingRequest.method {
 			case messages.RpcRequestMethodInitialize:
-				handleInitializeResponse(response)
+				c.handleInitializeResponse(response)
 			}
 		} else {
-			fmt.Printf("[proxy] no pending request found for response id: %s\n", responseIdString)
+			c.logger.Debug(fmt.Sprintf("[proxy] no pending request found for response id: %s\n", responseIdString))
 		}
-
-		fmt.Printf("[proxy] response: %+v\n", response)
+	} else {
+		c.logger.Error(fmt.Sprintf("received message with unexpected nature (%d): %+v\n", nature, message))
 	}
 }

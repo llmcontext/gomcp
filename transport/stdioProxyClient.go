@@ -68,7 +68,6 @@ func (t *StdioProxyClientTransport) readLoop(ctx context.Context) {
 			if scanner.Scan() {
 				if t.onMessage != nil {
 					line := scanner.Text()
-					fmt.Printf("@@ [proxy] received message: (%s)\n", line)
 					t.onMessage(json.RawMessage(line))
 				}
 			}

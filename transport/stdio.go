@@ -102,8 +102,6 @@ func (t *StdioTransport) readLoop(ctx context.Context) {
 							Content:   line,
 						})
 					}
-
-					fmt.Printf("@@ [proxy] received message: (%s)\n", line)
 					t.onMessage(json.RawMessage(line))
 				}
 			}
