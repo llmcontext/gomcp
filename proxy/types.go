@@ -12,31 +12,35 @@ const (
 	JsonRpcVersion  = "2.0"
 )
 
-type ClientInfo struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
-}
-
-type ParamsInitialize struct {
-	ProtocolVersion string                 `json:"protocolVersion"`
-	Capabilities    map[string]interface{} `json:"capabilities"`
-	ClientInfo      ClientInfo             `json:"clientInfo"`
-}
-
-func mkRpcCallInitialize(clientName string, clientVersion string, id int) (*jsonrpc.JsonRpcRequest, error) {
-	params := ParamsInitialize{
+func mkRpcRequestInitialize(clientName string, clientVersion string, id int) (*jsonrpc.JsonRpcRequest, error) {
+	// we create the parameters for the initialize request
+	// the proxy does not have any capabilities
+	params := messages.JsonRpcRequestInitialize{
 		ProtocolVersion: ProtocolVersion,
-		Capabilities:    map[string]interface{}{},
-		ClientInfo: ClientInfo{
+		Capabilities:    messages.ClientCapabilities{},
+		ClientInfo: messages.ClientInfo{
 			Name:    clientName,
 			Version: clientVersion,
 		},
 	}
 
-	req := jsonrpc.NewJsonRpcRequestWithNamedParams(messages.RpcRequestMethodInitialize, params, id)
+	// we create the JSON-RPC request
+	req := jsonrpc.NewJsonRpcRequestWithNamedParams(
+		messages.RpcRequestMethodInitialize, params, id)
 
 	if req == nil {
 		return nil, fmt.Errorf("failed to create initialize request")
+	}
+
+	return req, nil
+}
+
+func mkRpcNotification(method string) (*jsonrpc.JsonRpcRequest, error) {
+	// we create the JSON-RPC request
+	req := jsonrpc.NewJsonRpcNotification(method)
+
+	if req == nil {
+		return nil, fmt.Errorf("failed to create notification")
 	}
 
 	return req, nil

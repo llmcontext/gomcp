@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/types"
@@ -46,7 +45,6 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 		nature, jsonRpcRawMessage, err := jsonrpc.CheckJsonMessage(msg)
 		if err != nil {
 			c.logger.Error(fmt.Sprintf("invalid received message: %s\n", string(msg)))
-			os.Exit(1)
 			return
 		}
 
@@ -72,7 +70,7 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 	}
 
 	// First message to send is always an initialize request
-	req, err := mkRpcCallInitialize(GomcpProxyClientName, GomcpProxyClientVersion, c.clientId)
+	req, err := mkRpcRequestInitialize(GomcpProxyClientName, GomcpProxyClientVersion, c.clientId)
 	if err != nil {
 		fmt.Printf("[proxy] failed to create initialize request: %s\n", err)
 		return err
@@ -85,16 +83,15 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 
 	transport.Close()
 
-	fmt.Printf("@@ [proxy] shutdown\n")
+	c.logger.Info("shutdown\n")
 
 	return nil
 }
 
 func (c *MCPProxyClient) sendJsonRpcRequest(request *jsonrpc.JsonRpcRequest) {
-
 	jsonRequest, err := jsonrpc.MarshalJsonRpcRequest(request)
 	if err != nil {
-		fmt.Printf("[proxy] failed to marshal request: %s\n", err)
+		c.logger.Error(fmt.Sprintf("failed to marshal request: %s\n", err))
 		return
 	}
 

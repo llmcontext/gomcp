@@ -17,4 +17,12 @@ func (c *MCPProxyClient) handleInitializeResponse(response *jsonrpc.JsonRpcRespo
 		initialize.ServerInfo.Name,
 		initialize.ServerInfo.Version,
 	))
+
+	// we send the "notifications/initialized" notification
+	notification, err := mkRpcNotification(messages.RpcNotificationMethodInitialized)
+	if err != nil {
+		c.logger.Error(fmt.Sprintf("failed to create initialized notification: %s\n", err))
+		return
+	}
+	c.sendJsonRpcRequest(notification)
 }

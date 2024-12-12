@@ -58,15 +58,9 @@ type JsonRpcResponse struct {
 }
 
 func NewJsonRpcRequestWithNamedParams(method string, params interface{}, id int) *JsonRpcRequest {
-	// First marshal to JSON bytes
-	jsonBytes, err := json.Marshal(params)
+	// we convert the params to a map[string]interface{}
+	namedParams, err := structToMap(params)
 	if err != nil {
-		return nil
-	}
-
-	// Then unmarshal into map[string]interface{}
-	var namedParams map[string]interface{}
-	if err := json.Unmarshal(jsonBytes, &namedParams); err != nil {
 		return nil
 	}
 
@@ -75,5 +69,12 @@ func NewJsonRpcRequestWithNamedParams(method string, params interface{}, id int)
 		Method:         method,
 		Params:         &JsonRpcParams{NamedParams: namedParams},
 		Id:             &JsonRpcRequestId{Number: &id},
+	}
+}
+
+func NewJsonRpcNotification(method string) *JsonRpcRequest {
+	return &JsonRpcRequest{
+		JsonRpcVersion: JsonRpcVersion,
+		Method:         method,
 	}
 }
