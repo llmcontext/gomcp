@@ -7,11 +7,11 @@ import (
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/types"
+	"github.com/llmcontext/gomcp/version"
 )
 
 const (
-	GomcpProxyClientName    = "gomcp-proxy"
-	GomcpProxyClientVersion = "0.1.0"
+	GomcpProxyClientName = "gomcp-proxy"
 )
 
 type PendingRequest struct {
@@ -70,7 +70,7 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 	}
 
 	// First message to send is always an initialize request
-	req, err := mkRpcRequestInitialize(GomcpProxyClientName, GomcpProxyClientVersion, c.clientId)
+	req, err := mkRpcRequestInitialize(GomcpProxyClientName, version.Version, c.clientId)
 	if err != nil {
 		fmt.Printf("[proxy] failed to create initialize request: %s\n", err)
 		return err

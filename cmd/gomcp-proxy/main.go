@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/llmcontext/gomcp/proxy"
+	"github.com/llmcontext/gomcp/version"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
@@ -15,7 +16,7 @@ var (
 		Use:   "gomcp-proxy",
 		Short: "A proxy server for MCP connections",
 		Run: func(cmd *cobra.Command, args []string) {
-			pterm.Println(fmt.Sprintf("%s, version %s", proxy.GomcpProxyClientVersion, proxy.GomcpProxyClientName))
+			pterm.Println(fmt.Sprintf("%s, version %s", version.Version, proxy.GomcpProxyClientName))
 			if len(args) == 0 {
 				pterm.Error.Println("Please provide a program name as the first argument")
 				os.Exit(1)

@@ -10,11 +10,12 @@ import (
 )
 
 type Config struct {
-	ServerInfo ServerInfo     `json:"serverInfo"`
-	Logging    LoggingInfo    `json:"logging,omitempty"`
-	Inspector  *InspectorInfo `json:"inspector,omitempty"`
-	Tools      []ToolConfig   `json:"tools,omitempty"`
-	Prompts    *PromptConfig  `json:"prompts,omitempty"`
+	ConfigVersion int            `json:"v"`
+	ServerInfo    ServerInfo     `json:"serverInfo"`
+	Logging       LoggingInfo    `json:"logging,omitempty"`
+	Inspector     *InspectorInfo `json:"inspector,omitempty"`
+	Tools         []ToolConfig   `json:"tools,omitempty"`
+	Prompts       *PromptConfig  `json:"prompts,omitempty"`
 }
 
 type ServerInfo struct {
