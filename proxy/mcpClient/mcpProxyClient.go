@@ -64,6 +64,8 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 
 	c.logger.Info("connected to mux server")
 
+	// c.muxClient.SendRequest(jsonrpc.NewJsonRpcNotification(mcp.RpcNotificationMethodInitialized))
+
 	transport.OnMessage(func(msg json.RawMessage) {
 		// check the message nature
 		c.logger.Debug(fmt.Sprintf("received message: %s\n", string(msg)))

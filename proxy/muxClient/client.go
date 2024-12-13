@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 )
@@ -60,15 +61,20 @@ func (c *MuxClient) Start(ctx context.Context) error {
 }
 
 // SendMessage sends a JSON-encodable message through the transport
-func (c *MuxClient) SendMessage(ctx context.Context, message interface{}) error {
+func (c *MuxClient) SendRequest(message *jsonrpc.JsonRpcRequest) error {
 	// Convert message to JSON
 	jsonData, err := json.Marshal(message)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}
 
+	return c.Send(jsonData)
+}
+
+func (c *MuxClient) Send(message json.RawMessage) error {
+
 	// Send the message
-	if err := c.transport.Send(jsonData); err != nil {
+	if err := c.transport.Send(message); err != nil {
 		return fmt.Errorf("failed to send message: %w", err)
 	}
 
