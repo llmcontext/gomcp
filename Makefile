@@ -1,8 +1,28 @@
-BINARY_NAME := gomcp-proxy
+# Define all binary names
+BINARIES := gomcp gomcp-proxy
+
 # Build directory
 BUILD_DIR=./bin
 
+.PHONY: build test-coverage fmt vet deps
+
 all: build
+
+# Build all binaries
+build:
+	@echo "Building binaries..."
+	@for binary in $(BINARIES); do \
+		echo "Building $$binary..."; \
+		go build -o $(BUILD_DIR)/$$binary cmd/$$binary/main.go; \
+	done
+
+# Install binaries to /usr/local/bin
+install: build
+	@echo "Installing binaries to /usr/local/bin..."
+	@for binary in $(BINARIES); do \
+		cp $(BUILD_DIR)/$$binary /usr/local/bin/; \
+	done
+	@echo "Installation complete"
 
 # Run tests
 test:
@@ -24,15 +44,7 @@ vet:
 	@echo "Vetting code..."
 	@go vet ./...
 
-# Build gomcp-proxy
-build:
-	@echo "Building $(BINARY_NAME)..."
-	@go build -o $(BUILD_DIR)/$(BINARY_NAME) cmd/gomcp-proxy/main.go
-
-# Install binaries to /usr/local/bin
-install: build
-	@echo "Installing binaries to /usr/local/bin..."
-	cp $(BUILD_DIR)/$(BINARY_NAME) /usr/local/bin/
-	@echo "Installation complete"
-
-.PHONY: build test-coverage fmt vet deps
+# staticcheck
+staticcheck:
+	@echo "Running staticcheck..."
+	@staticcheck ./...
