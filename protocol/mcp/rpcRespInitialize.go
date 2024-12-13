@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/protocol"
 )
 
 type JsonRpcResponseInitializeResult struct {
@@ -42,39 +43,39 @@ func ParseJsonRpcResponseInitialize(response *jsonrpc.JsonRpcResponse) (*JsonRpc
 	resp := JsonRpcResponseInitializeResult{}
 
 	// parse params
-	result, err := checkIsObject(response.Result, "result")
+	result, err := protocol.CheckIsObject(response.Result, "result")
 	if err != nil {
 		return nil, err
 	}
 
 	// read protocol version
-	protocolVersion, err := getStringField(result, "protocolVersion")
+	protocolVersion, err := protocol.GetStringField(result, "protocolVersion")
 	if err != nil {
 		return nil, err
 	}
 	resp.ProtocolVersion = protocolVersion
 
 	// read server info
-	serverInfo, err := getObjectField(result, "serverInfo")
+	serverInfo, err := protocol.GetObjectField(result, "serverInfo")
 	if err != nil {
 		return nil, err
 	}
 	// read name
-	name, err := getStringField(serverInfo, "name")
+	name, err := protocol.GetStringField(serverInfo, "name")
 	if err != nil {
 		return nil, err
 	}
 	resp.ServerInfo.Name = name
 
 	// read version
-	version, err := getStringField(serverInfo, "version")
+	version, err := protocol.GetStringField(serverInfo, "version")
 	if err != nil {
 		return nil, err
 	}
 	resp.ServerInfo.Version = version
 
 	// read capabilities
-	capabilities, err := checkIsObject(result, "capabilities")
+	capabilities, err := protocol.CheckIsObject(result, "capabilities")
 	if err != nil {
 		return nil, err
 	}
@@ -84,16 +85,16 @@ func ParseJsonRpcResponseInitialize(response *jsonrpc.JsonRpcResponse) (*JsonRpc
 	}
 
 	// check if resources capability is present
-	capabilitiesResources := getOptionalObjectField(capabilities, "resources")
+	capabilitiesResources := protocol.GetOptionalObjectField(capabilities, "resources")
 	if capabilitiesResources != nil {
 		resp.Capabilities.Resources = &ServerCapabilitiesResources{}
 		// check if listChanged is present
-		listChanged := getOptionalBoolField(capabilitiesResources, "listChanged")
+		listChanged := protocol.GetOptionalBoolField(capabilitiesResources, "listChanged")
 		if listChanged != nil {
 			resp.Capabilities.Resources.ListChanged = listChanged
 		}
 		// check if subscribe is present
-		subscribe := getOptionalBoolField(capabilitiesResources, "subscribe")
+		subscribe := protocol.GetOptionalBoolField(capabilitiesResources, "subscribe")
 		if subscribe != nil {
 			resp.Capabilities.Resources.Subscribe = subscribe
 		}
@@ -102,11 +103,11 @@ func ParseJsonRpcResponseInitialize(response *jsonrpc.JsonRpcResponse) (*JsonRpc
 	}
 
 	// check if tools capability is present
-	capabilitiesTools := getOptionalObjectField(capabilities, "tools")
+	capabilitiesTools := protocol.GetOptionalObjectField(capabilities, "tools")
 	if capabilitiesTools != nil {
 		resp.Capabilities.Tools = &ServerCapabilitiesTools{}
 		// check if listChanged is present
-		listChanged := getOptionalBoolField(capabilitiesTools, "listChanged")
+		listChanged := protocol.GetOptionalBoolField(capabilitiesTools, "listChanged")
 		if listChanged != nil {
 			resp.Capabilities.Tools.ListChanged = listChanged
 		}
@@ -115,11 +116,11 @@ func ParseJsonRpcResponseInitialize(response *jsonrpc.JsonRpcResponse) (*JsonRpc
 	}
 
 	// check if prompts capability is present
-	capabilitiesPrompts := getOptionalObjectField(capabilities, "prompts")
+	capabilitiesPrompts := protocol.GetOptionalObjectField(capabilities, "prompts")
 	if capabilitiesPrompts != nil {
 		resp.Capabilities.Prompts = &ServerCapabilitiesPrompts{}
 		// check if listChanged is present
-		listChanged := getOptionalBoolField(capabilitiesPrompts, "listChanged")
+		listChanged := protocol.GetOptionalBoolField(capabilitiesPrompts, "listChanged")
 		if listChanged != nil {
 			resp.Capabilities.Prompts.ListChanged = listChanged
 		}
@@ -128,7 +129,7 @@ func ParseJsonRpcResponseInitialize(response *jsonrpc.JsonRpcResponse) (*JsonRpc
 	}
 
 	// check if logging capability is present
-	logging := getOptionalObjectField(capabilities, "logging")
+	logging := protocol.GetOptionalObjectField(capabilities, "logging")
 	if logging != nil {
 		resp.Capabilities.Logging = &ServerCapabilitiesLogging{}
 	} else {

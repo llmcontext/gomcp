@@ -1,8 +1,8 @@
-package mcp
+package protocol
 
 import "fmt"
 
-func checkIsObject(result interface{}, name string) (map[string]interface{}, error) {
+func CheckIsObject(result interface{}, name string) (map[string]interface{}, error) {
 	if result == nil {
 		return nil, fmt.Errorf("missing property %s", name)
 	}
@@ -14,7 +14,7 @@ func checkIsObject(result interface{}, name string) (map[string]interface{}, err
 	return resultMap, nil
 }
 
-func getStringField(result map[string]interface{}, name string) (string, error) {
+func GetStringField(result map[string]interface{}, name string) (string, error) {
 	field, ok := result[name].(string)
 	if !ok {
 		return "", fmt.Errorf("missing property %s", name)
@@ -22,7 +22,7 @@ func getStringField(result map[string]interface{}, name string) (string, error) 
 	return field, nil
 }
 
-func getOptionalStringField(result map[string]interface{}, name string) *string {
+func GetOptionalStringField(result map[string]interface{}, name string) *string {
 	field, ok := result[name].(string)
 	if !ok {
 		return nil
@@ -30,7 +30,7 @@ func getOptionalStringField(result map[string]interface{}, name string) *string 
 	return &field
 }
 
-func getBoolField(result map[string]interface{}, name string) (bool, error) {
+func GetBoolField(result map[string]interface{}, name string) (bool, error) {
 	field, ok := result[name].(bool)
 	if !ok {
 		return false, fmt.Errorf("missing property %s", name)
@@ -38,7 +38,7 @@ func getBoolField(result map[string]interface{}, name string) (bool, error) {
 	return field, nil
 }
 
-func getOptionalBoolField(result map[string]interface{}, name string) *bool {
+func GetOptionalBoolField(result map[string]interface{}, name string) *bool {
 	field, ok := result[name].(bool)
 	if !ok {
 		return nil
@@ -46,7 +46,7 @@ func getOptionalBoolField(result map[string]interface{}, name string) *bool {
 	return &field
 }
 
-func getObjectField(result map[string]interface{}, name string) (map[string]interface{}, error) {
+func GetObjectField(result map[string]interface{}, name string) (map[string]interface{}, error) {
 	field, ok := result[name].(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("missing property %s", name)
@@ -54,7 +54,7 @@ func getObjectField(result map[string]interface{}, name string) (map[string]inte
 	return field, nil
 }
 
-func getOptionalObjectField(result map[string]interface{}, name string) map[string]interface{} {
+func GetOptionalObjectField(result map[string]interface{}, name string) map[string]interface{} {
 	field, ok := result[name].(map[string]interface{})
 	if !ok {
 		return nil
@@ -62,7 +62,7 @@ func getOptionalObjectField(result map[string]interface{}, name string) map[stri
 	return field
 }
 
-func getArrayField(result map[string]interface{}, name string) ([]interface{}, error) {
+func GetArrayField(result map[string]interface{}, name string) ([]interface{}, error) {
 	field, ok := result[name].([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("missing property %s", name)
@@ -70,10 +70,10 @@ func getArrayField(result map[string]interface{}, name string) ([]interface{}, e
 	return field, nil
 }
 
-// func getOptionalArrayField(result map[string]interface{}, name string) []interface{} {
-// 	field, ok := result[name].([]interface{})
-// 	if !ok {
-// 		return nil
-// 	}
-// 	return field
-// }
+func GetOptionalArrayField(result map[string]interface{}, name string) []interface{} {
+	field, ok := result[name].([]interface{})
+	if !ok {
+		return nil
+	}
+	return field
+}

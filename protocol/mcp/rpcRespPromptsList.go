@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/protocol"
 )
 
 type JsonRpcResponsePromptsListResult struct {
@@ -25,52 +26,52 @@ func ParseJsonRpcResponsePromptsList(response *jsonrpc.JsonRpcResponse) (*JsonRp
 	resp := JsonRpcResponsePromptsListResult{}
 
 	// parse params
-	result, err := checkIsObject(response.Result, "result")
+	result, err := protocol.CheckIsObject(response.Result, "result")
 	if err != nil {
 		return nil, err
 	}
 
 	// read tools
-	prompts, err := getArrayField(result, "prompts")
+	prompts, err := protocol.GetArrayField(result, "prompts")
 	if err != nil {
 		return nil, err
 	}
 
 	for _, item := range prompts {
-		prompt, err := checkIsObject(item, "prompt")
+		prompt, err := protocol.CheckIsObject(item, "prompt")
 		if err != nil {
 			return nil, err
 		}
-		name, err := getStringField(prompt, "name")
-		if err != nil {
-			return nil, err
-		}
-
-		description, err := getStringField(prompt, "description")
+		name, err := protocol.GetStringField(prompt, "name")
 		if err != nil {
 			return nil, err
 		}
 
-		arguments, err := getArrayField(prompt, "arguments")
+		description, err := protocol.GetStringField(prompt, "description")
+		if err != nil {
+			return nil, err
+		}
+
+		arguments, err := protocol.GetArrayField(prompt, "arguments")
 		if err != nil {
 			return nil, err
 		}
 
 		promptArguments := make([]PromptArgumentDescription, 0)
 		for _, argument := range arguments {
-			argument, err := checkIsObject(argument, "argument")
+			argument, err := protocol.CheckIsObject(argument, "argument")
 			if err != nil {
 				return nil, err
 			}
-			name, err := getStringField(argument, "name")
+			name, err := protocol.GetStringField(argument, "name")
 			if err != nil {
 				return nil, err
 			}
-			description, err := getStringField(argument, "description")
+			description, err := protocol.GetStringField(argument, "description")
 			if err != nil {
 				return nil, err
 			}
-			required, err := getBoolField(argument, "required")
+			required, err := protocol.GetBoolField(argument, "required")
 			if err != nil {
 				return nil, err
 			}
@@ -89,7 +90,7 @@ func ParseJsonRpcResponsePromptsList(response *jsonrpc.JsonRpcResponse) (*JsonRp
 	}
 
 	// read next cursor
-	nextCursor := getOptionalStringField(result, "nextCursor")
+	nextCursor := protocol.GetOptionalStringField(result, "nextCursor")
 	resp.NextCursor = nextCursor
 
 	return &resp, nil

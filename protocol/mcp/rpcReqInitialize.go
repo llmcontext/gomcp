@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/protocol"
 )
 
 // specification
@@ -49,24 +50,24 @@ func ParseJsonRpcRequestInitialize(request *jsonrpc.JsonRpcRequest) (*JsonRpcReq
 	namedParams := request.Params.NamedParams
 
 	// read protocol version
-	protocolVersion, ok := namedParams["protocolVersion"].(string)
-	if !ok {
+	protocolVersion, err := protocol.GetStringField(namedParams, "protocolVersion")
+	if err != nil {
 		return nil, fmt.Errorf("missing protocolVersion")
 	}
 	req.ProtocolVersion = protocolVersion
 
 	// read client information
-	clientInfo, ok := namedParams["clientInfo"].(map[string]interface{})
-	if !ok {
+	clientInfo, err := protocol.GetObjectField(namedParams, "clientInfo")
+	if err != nil {
 		return nil, fmt.Errorf("missing clientInfo")
 	}
-	name, ok := clientInfo["name"].(string)
-	if !ok {
+	name, err := protocol.GetStringField(clientInfo, "name")
+	if err != nil {
 		return nil, fmt.Errorf("clientInfo.name must be a string")
 	}
 	req.ClientInfo.Name = name
-	version, ok := clientInfo["version"].(string)
-	if !ok {
+	version, err := protocol.GetStringField(clientInfo, "version")
+	if err != nil {
 		return nil, fmt.Errorf("clientInfo.version must be a string")
 	}
 	req.ClientInfo.Version = version

@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/protocol"
 )
 
 type JsonRpcResponseToolsListResult struct {
@@ -19,33 +20,33 @@ func ParseJsonRpcResponseToolsList(response *jsonrpc.JsonRpcResponse) (*JsonRpcR
 	resp := JsonRpcResponseToolsListResult{}
 
 	// parse params
-	result, err := checkIsObject(response.Result, "result")
+	result, err := protocol.CheckIsObject(response.Result, "result")
 	if err != nil {
 		return nil, err
 	}
 
 	// read tools
-	tools, err := getArrayField(result, "tools")
+	tools, err := protocol.GetArrayField(result, "tools")
 	if err != nil {
 		return nil, err
 	}
 
 	for _, item := range tools {
-		tool, err := checkIsObject(item, "tool")
+		tool, err := protocol.CheckIsObject(item, "tool")
 		if err != nil {
 			return nil, err
 		}
-		name, err := getStringField(tool, "name")
-		if err != nil {
-			return nil, err
-		}
-
-		description, err := getStringField(tool, "description")
+		name, err := protocol.GetStringField(tool, "name")
 		if err != nil {
 			return nil, err
 		}
 
-		inputSchema, err := getObjectField(tool, "inputSchema")
+		description, err := protocol.GetStringField(tool, "description")
+		if err != nil {
+			return nil, err
+		}
+
+		inputSchema, err := protocol.GetObjectField(tool, "inputSchema")
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +59,7 @@ func ParseJsonRpcResponseToolsList(response *jsonrpc.JsonRpcResponse) (*JsonRpcR
 	}
 
 	// read next cursor
-	nextCursor := getOptionalStringField(result, "nextCursor")
+	nextCursor := protocol.GetOptionalStringField(result, "nextCursor")
 	resp.NextCursor = nextCursor
 
 	return &resp, nil
