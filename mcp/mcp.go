@@ -122,7 +122,7 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			mcp.inspector.StartInspector(ctx)
+			mcp.inspector.Start(ctx)
 		}()
 	}
 
@@ -144,6 +144,21 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 			cancel()
 		}
 	}()
+
+	// Start multiplexer if it was enabled
+	if mcp.multiplexer != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := mcp.multiplexer.Start(ctx)
+			if err != nil {
+				logger.Error("error starting multiplexer", logger.Arg{
+					"error": err,
+				})
+				cancel()
+			}
+		}()
+	}
 
 	// Listen for OS signals (e.g., Ctrl+C)
 	signalChan := make(chan os.Signal, 1)

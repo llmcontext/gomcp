@@ -62,7 +62,7 @@ func (i *Inspector) EnqueueMessage(msg MessageInfo) {
 	}
 }
 
-func (inspector *Inspector) StartInspector(ctx context.Context) error {
+func (inspector *Inspector) Start(ctx context.Context) error {
 	router := http.NewServeMux()
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if err := t.ExecuteTemplate(w, "index.html", nil); err != nil {
