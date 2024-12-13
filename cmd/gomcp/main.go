@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp"
 	"github.com/spf13/cobra"
 )
 
@@ -14,15 +14,16 @@ var (
 		Use:   "gomcp",
 		Short: "A MCP multiplexer server that enables multiple MCP proxy client connections",
 		Run: func(cmd *cobra.Command, args []string) {
-			// we load the config file
-			config, err := config.LoadConfig(configFile)
+			// we create the MCP server
+			mcp, err := gomcp.NewModelContextProtocolServer(configFile)
 			if err != nil {
-				fmt.Printf("failed to load config file %s: %v", configFile, err)
+				fmt.Println("Error creating MCP server:", err)
 				os.Exit(1)
 			}
 
-			fmt.Printf("config: %+v\n", config)
-
+			// start the server
+			transport := mcp.StdioTransport()
+			mcp.Start(transport)
 		},
 	}
 )
