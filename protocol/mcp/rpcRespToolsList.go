@@ -5,11 +5,11 @@ import (
 )
 
 type JsonRpcResponseToolsListResult struct {
-	Tools      []Tool  `json:"tools"`
-	NextCursor *string `json:"nextCursor,omitempty"`
+	Tools      []ToolDescription `json:"tools"`
+	NextCursor *string           `json:"nextCursor,omitempty"`
 }
 
-type Tool struct {
+type ToolDescription struct {
 	Name        string      `json:"name"`
 	Description string      `json:"description"`
 	InputSchema interface{} `json:"inputSchema"`
@@ -50,7 +50,7 @@ func ParseJsonRpcResponseToolsList(response *jsonrpc.JsonRpcResponse) (*JsonRpcR
 			return nil, err
 		}
 
-		resp.Tools = append(resp.Tools, Tool{
+		resp.Tools = append(resp.Tools, ToolDescription{
 			Name:        name,
 			Description: description,
 			InputSchema: inputSchema,

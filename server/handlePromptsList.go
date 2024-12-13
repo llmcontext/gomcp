@@ -4,41 +4,26 @@ import (
 	"encoding/json"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/protocol/mcp"
 )
-
-type promptsListResponse struct {
-	Prompts []promptDescription `json:"prompts"`
-}
-
-type promptDescription struct {
-	Name        string                `json:"name"`
-	Description string                `json:"description"`
-	Arguments   []argumentDescription `json:"arguments"`
-}
-
-type argumentDescription struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
-}
 
 func (s *MCPServer) handlePromptsList(request *jsonrpc.JsonRpcRequest) error {
 
-	var response = promptsListResponse{
-		Prompts: make([]promptDescription, 0),
+	var response = mcp.JsonRpcResponsePromptsListResult{
+		Prompts: make([]mcp.PromptDescription, 0),
 	}
 
 	prompts := s.promptsRegistry.GetListOfPrompts()
 	for _, prompt := range prompts {
-		arguments := make([]argumentDescription, 0, len(prompt.Arguments))
+		arguments := make([]mcp.PromptArgumentDescription, 0, len(prompt.Arguments))
 		for _, argument := range prompt.Arguments {
-			arguments = append(arguments, argumentDescription{
+			arguments = append(arguments, mcp.PromptArgumentDescription{
 				Name:        argument.Name,
 				Description: argument.Description,
 				Required:    argument.Required,
 			})
 		}
-		response.Prompts = append(response.Prompts, promptDescription{
+		response.Prompts = append(response.Prompts, mcp.PromptDescription{
 			Name:        prompt.Name,
 			Description: prompt.Description,
 			Arguments:   arguments,

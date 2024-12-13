@@ -4,30 +4,21 @@ import (
 	"encoding/json"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/protocol/mcp"
 )
-
-type toolsListResponse struct {
-	Tools []toolDescription `json:"tools"`
-}
-
-type toolDescription struct {
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	InputSchema interface{} `json:"inputSchema"`
-}
 
 func (s *MCPServer) handleToolsList(request *jsonrpc.JsonRpcRequest) error {
 	// we query the tools registry
 	tools := s.toolsRegistry.GetListOfTools()
 
-	var response = toolsListResponse{
-		Tools: make([]toolDescription, 0, len(tools)),
+	var response = mcp.JsonRpcResponseToolsListResult{
+		Tools: make([]mcp.ToolDescription, 0, len(tools)),
 	}
 
 	// we build the response
 	for _, tool := range tools {
 		// schemaBytes, _ := json.Marshal(tool.InputSchema)
-		response.Tools = append(response.Tools, toolDescription{
+		response.Tools = append(response.Tools, mcp.ToolDescription{
 			Name:        tool.ToolName,
 			Description: tool.Description,
 			InputSchema: tool.InputSchema,

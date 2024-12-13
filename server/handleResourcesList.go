@@ -4,23 +4,13 @@ import (
 	"encoding/json"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/protocol/mcp"
 )
-
-type resourcesListResponse struct {
-	Resources []resourceDescription `json:"resources"`
-}
-
-type resourceDescription struct {
-	Uri         string `json:"uri"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	MimeType    string `json:"mimeType"`
-}
 
 func (s *MCPServer) handleResourcesList(request *jsonrpc.JsonRpcRequest) error {
 
-	var response = resourcesListResponse{
-		Resources: make([]resourceDescription, 0),
+	var response = mcp.JsonRpcResponseResourcesListResult{
+		Resources: make([]mcp.ResourceDescription, 0),
 	}
 
 	// marshal response

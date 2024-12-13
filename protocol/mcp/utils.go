@@ -30,13 +30,13 @@ func getOptionalStringField(result map[string]interface{}, name string) *string 
 	return &field
 }
 
-// func getBoolField(result map[string]interface{}, name string) (bool, error) {
-// 	field, ok := result[name].(bool)
-// 	if !ok {
-// 		return false, fmt.Errorf("missing property %s", name)
-// 	}
-// 	return field, nil
-// }
+func getBoolField(result map[string]interface{}, name string) (bool, error) {
+	field, ok := result[name].(bool)
+	if !ok {
+		return false, fmt.Errorf("missing property %s", name)
+	}
+	return field, nil
+}
 
 func getOptionalBoolField(result map[string]interface{}, name string) *bool {
 	field, ok := result[name].(bool)
