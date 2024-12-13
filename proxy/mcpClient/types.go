@@ -35,17 +35,6 @@ func mkRpcRequestInitialize(clientName string, clientVersion string, id int) (*j
 	return req, nil
 }
 
-func mkRpcNotification(method string) (*jsonrpc.JsonRpcRequest, error) {
-	// we create the JSON-RPC request
-	req := jsonrpc.NewJsonRpcNotification(method)
-
-	if req == nil {
-		return nil, fmt.Errorf("failed to create notification")
-	}
-
-	return req, nil
-}
-
 func mkRpcRequestToolsList(id int) (*jsonrpc.JsonRpcRequest, error) {
 	params := mcp.JsonRpcRequestToolsListParams{}
 

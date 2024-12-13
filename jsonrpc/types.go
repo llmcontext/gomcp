@@ -56,25 +56,3 @@ type JsonRpcResponse struct {
 	Error          *JsonRpcError
 	Id             *JsonRpcRequestId
 }
-
-func NewJsonRpcRequestWithNamedParams(method string, params interface{}, id int) *JsonRpcRequest {
-	// we convert the params to a map[string]interface{}
-	namedParams, err := structToMap(params)
-	if err != nil {
-		return nil
-	}
-
-	return &JsonRpcRequest{
-		JsonRpcVersion: JsonRpcVersion,
-		Method:         method,
-		Params:         &JsonRpcParams{NamedParams: namedParams},
-		Id:             &JsonRpcRequestId{Number: &id},
-	}
-}
-
-func NewJsonRpcNotification(method string) *JsonRpcRequest {
-	return &JsonRpcRequest{
-		JsonRpcVersion: JsonRpcVersion,
-		Method:         method,
-	}
-}
