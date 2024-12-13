@@ -17,5 +17,6 @@ func (c *MCPProxyClient) handleToolsListResponse(response *jsonrpc.JsonRpcRespon
 	// display all the tool names and descriptions
 	for _, tool := range toolsListResponse.Tools {
 		c.logger.Info(fmt.Sprintf("tool: %s - %s\n", tool.Name, tool.Description))
+		c.logger.Info(fmt.Sprintf("inputSchema: %+#v\n", tool.InputSchema))
 	}
 }
