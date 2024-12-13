@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/jsonrpc/mcp"
+	"github.com/llmcontext/gomcp/protocol/mcp"
 )
 
 func (c *MCPProxyClient) handleInitializeResponse(response *jsonrpc.JsonRpcResponse) {

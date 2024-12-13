@@ -4,19 +4,14 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/jsonrpc/mcp"
-)
-
-const (
-	ProtocolVersion = "2024-11-05"
-	JsonRpcVersion  = "2.0"
+	"github.com/llmcontext/gomcp/protocol/mcp"
 )
 
 func mkRpcRequestInitialize(clientName string, clientVersion string, id int) (*jsonrpc.JsonRpcRequest, error) {
 	// we create the parameters for the initialize request
 	// the proxy does not have any capabilities
 	params := mcp.JsonRpcRequestInitializeParams{
-		ProtocolVersion: ProtocolVersion,
+		ProtocolVersion: mcp.ProtocolVersion,
 		Capabilities:    mcp.ClientCapabilities{},
 		ClientInfo: mcp.ClientInfo{
 			Name:    clientName,

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/jsonrpc/mcp"
+	"github.com/llmcontext/gomcp/protocol/mcp"
 )
 
 func (s *MCPServer) handleInitialize(request *jsonrpc.JsonRpcRequest) error {

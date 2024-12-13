@@ -7,20 +7,6 @@ import (
 	"github.com/llmcontext/gomcp/jsonrpc"
 )
 
-/*
-	{
-	  "jsonrpc": "2.0",
-	  "id": 2,
-	  "method": "prompts/get",
-	  "params": {
-	    "name": "code_review",
-	    "arguments": {
-	      "code": "def hello():\n    print('world')"
-	    }
-	  }
-	}
-*/
-
 type GetPromptResult struct {
 	Description string          `json:"description"`
 	Messages    []PromptMessage `json:"messages"`
