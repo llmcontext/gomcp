@@ -16,6 +16,7 @@ type Config struct {
 	Inspector     *InspectorInfo `json:"inspector,omitempty"`
 	Tools         []ToolConfig   `json:"tools,omitempty"`
 	Prompts       *PromptConfig  `json:"prompts,omitempty"`
+	Proxy         *ProxyConfig   `json:"proxy,omitempty"`
 }
 
 type ServerInfo struct {
@@ -44,6 +45,11 @@ type InspectorInfo struct {
 
 type PromptConfig struct {
 	File string `json:"file"`
+}
+
+type ProxyConfig struct {
+	Enabled       bool   `json:"enabled"`
+	ListenAddress string `json:"listenAddress"`
 }
 
 // LoadConfig loads the configuration from a file

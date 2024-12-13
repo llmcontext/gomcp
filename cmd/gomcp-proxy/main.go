@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/llmcontext/gomcp/defaults"
 	"github.com/llmcontext/gomcp/proxy"
 	"github.com/llmcontext/gomcp/version"
 	"github.com/pterm/pterm"
@@ -39,7 +40,7 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().IntVarP(&port, "port", "p", 8080, "Port number for the WebSocket server")
+	rootCmd.Flags().IntVarP(&port, "port", "p", defaults.DefaultMultiplexerPort, "Port number for the Multiplexer server")
 }
 
 func main() {

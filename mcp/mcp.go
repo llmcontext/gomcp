@@ -12,6 +12,7 @@ import (
 	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/inspector"
 	"github.com/llmcontext/gomcp/logger"
+	"github.com/llmcontext/gomcp/mux"
 	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/server"
 	"github.com/llmcontext/gomcp/tools"
@@ -24,6 +25,7 @@ type ModelContextProtocolImpl struct {
 	toolsRegistry   *tools.ToolsRegistry
 	promptsRegistry *prompts.PromptsRegistry
 	inspector       *inspector.Inspector
+	multiplexer     *mux.Multiplexer
 }
 
 func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocolImpl, error) {
@@ -57,11 +59,18 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 		inspectorInstance = inspector.NewInspector(config.Inspector)
 	}
 
+	// Start multiplexer if enabled
+	var multiplexerInstance *mux.Multiplexer = nil
+	if config.Proxy != nil && config.Proxy.Enabled {
+		multiplexerInstance = mux.NewMultiplexer(config.Proxy)
+	}
+
 	return &ModelContextProtocolImpl{
 		config:          config,
 		toolsRegistry:   toolsRegistry,
 		promptsRegistry: promptsRegistry,
 		inspector:       inspectorInstance,
+		multiplexer:     multiplexerInstance,
 	}, nil
 }
 
