@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/jsonrpc/messages"
+	"github.com/llmcontext/gomcp/jsonrpc/mcp"
 )
 
 func (s *MCPServer) handleInitialize(request *jsonrpc.JsonRpcRequest) error {
 	// parse params
-	parsed, err := messages.ParseJsonRpcRequestInitialize(request)
+	parsed, err := mcp.ParseJsonRpcRequestInitialize(request)
 	if err != nil {
 		s.sendError(&jsonrpc.JsonRpcError{
 			Code:    jsonrpc.RpcInvalidRequest,
@@ -25,17 +25,17 @@ func (s *MCPServer) handleInitialize(request *jsonrpc.JsonRpcRequest) error {
 	}
 
 	// prepare response
-	response := messages.JsonRpcResponseInitializeResult{
+	response := mcp.JsonRpcResponseInitializeResult{
 		ProtocolVersion: s.protocolVersion,
-		Capabilities: messages.ServerCapabilities{
-			Tools: &messages.ServerCapabilitiesTools{
+		Capabilities: mcp.ServerCapabilities{
+			Tools: &mcp.ServerCapabilitiesTools{
 				ListChanged: jsonrpc.BoolPtr(false),
 			},
-			Prompts: &messages.ServerCapabilitiesPrompts{
+			Prompts: &mcp.ServerCapabilitiesPrompts{
 				ListChanged: jsonrpc.BoolPtr(false),
 			},
 		},
-		ServerInfo: messages.ServerInfo{Name: s.serverName, Version: s.serverVersion},
+		ServerInfo: mcp.ServerInfo{Name: s.serverName, Version: s.serverVersion},
 	}
 
 	// marshal response

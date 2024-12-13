@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/jsonrpc/messages"
+	"github.com/llmcontext/gomcp/jsonrpc/mcp"
 )
 
 func (c *MCPProxyClient) handleInitializeResponse(response *jsonrpc.JsonRpcResponse) {
-	initializeResponse, err := messages.ParseJsonRpcResponseInitialize(response)
+	initializeResponse, err := mcp.ParseJsonRpcResponseInitialize(response)
 	if err != nil {
 		c.logger.Error(fmt.Sprintf("error in handleInitializeResponse: %+v\n", err))
 		return
@@ -19,7 +19,7 @@ func (c *MCPProxyClient) handleInitializeResponse(response *jsonrpc.JsonRpcRespo
 	))
 
 	// we send the "notifications/initialized" notification
-	notification, err := mkRpcNotification(messages.RpcNotificationMethodInitialized)
+	notification, err := mkRpcNotification(mcp.RpcNotificationMethodInitialized)
 	if err != nil {
 		c.logger.Error(fmt.Sprintf("failed to create initialized notification: %s\n", err))
 		return

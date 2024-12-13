@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"net"
 	"sync"
+
+	"github.com/llmcontext/gomcp/types"
 )
 
-// SocketTransport implements the Transport interface using TCP sockets
-type SocketTransport struct {
+// SocketClientTransport implements the Transport interface using TCP sockets
+type SocketClientTransport struct {
 	addr string
 	conn net.Conn
 
@@ -27,15 +29,15 @@ type SocketTransport struct {
 }
 
 // NewSocketTransport creates a new socket transport instance
-func NewSocketTransport(address string) *SocketTransport {
-	return &SocketTransport{
+func NewSocketClientTransport(address string) types.Transport {
+	return &SocketClientTransport{
 		addr: address,
 		done: make(chan struct{}),
 	}
 }
 
 // Start implements Transport.Start
-func (s *SocketTransport) Start(ctx context.Context) error {
+func (s *SocketClientTransport) Start(ctx context.Context) error {
 	var err error
 	s.conn, err = net.Dial("tcp", s.addr)
 	if err != nil {
@@ -49,7 +51,7 @@ func (s *SocketTransport) Start(ctx context.Context) error {
 }
 
 // Send implements Transport.Send
-func (s *SocketTransport) Send(message json.RawMessage) error {
+func (s *SocketClientTransport) Send(message json.RawMessage) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -64,28 +66,28 @@ func (s *SocketTransport) Send(message json.RawMessage) error {
 }
 
 // OnMessage implements Transport.OnMessage
-func (s *SocketTransport) OnMessage(callback func(json.RawMessage)) {
+func (s *SocketClientTransport) OnMessage(callback func(json.RawMessage)) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.onMessage = callback
 }
 
 // OnClose implements Transport.OnClose
-func (s *SocketTransport) OnClose(callback func()) {
+func (s *SocketClientTransport) OnClose(callback func()) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.onClose = callback
 }
 
 // OnError implements Transport.OnError
-func (s *SocketTransport) OnError(callback func(error)) {
+func (s *SocketClientTransport) OnError(callback func(error)) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.onError = callback
 }
 
 // Close implements Transport.Close
-func (s *SocketTransport) Close() {
+func (s *SocketClientTransport) Close() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -103,7 +105,7 @@ func (s *SocketTransport) Close() {
 }
 
 // readLoop continuously reads messages from the socket
-func (s *SocketTransport) readLoop() {
+func (s *SocketClientTransport) readLoop() {
 	reader := bufio.NewReader(s.conn)
 
 	for {

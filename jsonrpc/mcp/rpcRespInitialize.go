@@ -1,4 +1,4 @@
-package messages
+package mcp
 
 import (
 	"github.com/llmcontext/gomcp/jsonrpc"

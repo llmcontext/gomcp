@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/jsonrpc/messages"
+	"github.com/llmcontext/gomcp/jsonrpc/mcp"
 )
 
 func (c *MCPProxyClient) handleIncomingMessage(message jsonrpc.JsonRpcRawMessage, nature jsonrpc.MessageNature) {
@@ -30,9 +30,9 @@ func (c *MCPProxyClient) handleIncomingMessage(message jsonrpc.JsonRpcRawMessage
 		// we check if the pending request is not nil
 		if pendingRequest != nil {
 			switch pendingRequest.method {
-			case messages.RpcRequestMethodInitialize:
+			case mcp.RpcRequestMethodInitialize:
 				c.handleInitializeResponse(response)
-			case messages.RpcRequestMethodToolsList:
+			case mcp.RpcRequestMethodToolsList:
 				c.handleToolsListResponse(response)
 			}
 		} else {

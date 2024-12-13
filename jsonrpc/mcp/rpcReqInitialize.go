@@ -1,4 +1,4 @@
-package messages
+package mcp
 
 import (
 	"fmt"

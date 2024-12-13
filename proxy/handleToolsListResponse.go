@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/jsonrpc/messages"
+	"github.com/llmcontext/gomcp/jsonrpc/mcp"
 )
 
 func (c *MCPProxyClient) handleToolsListResponse(response *jsonrpc.JsonRpcResponse) {
-	toolsListResponse, err := messages.ParseJsonRpcResponseToolsList(response)
+	toolsListResponse, err := mcp.ParseJsonRpcResponseToolsList(response)
 	if err != nil {
 		c.logger.Error(fmt.Sprintf("error in handleToolsListResponse: %+v\n", err))
 		return
