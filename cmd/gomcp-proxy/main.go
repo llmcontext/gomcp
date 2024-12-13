@@ -13,12 +13,15 @@ import (
 )
 
 var (
-	address string
-	rootCmd = &cobra.Command{
+	muxAddress string
+	rootCmd    = &cobra.Command{
 		Use:   "gomcp-proxy",
 		Short: "A proxy server for MCP connections",
 		Run: func(cmd *cobra.Command, args []string) {
-			pterm.Println(fmt.Sprintf("%s, version %s", version.Version, proxy.GomcpProxyClientName))
+			message := fmt.Sprintf("%s - %s", proxy.GomcpProxyClientName, version.Version)
+			pterm.DefaultHeader.WithFullWidth().Println(message)
+			pterm.Println()
+
 			if len(args) == 0 {
 				pterm.Error.Println("Please provide a program name as the first argument")
 				os.Exit(1)
@@ -28,26 +31,26 @@ var (
 			args = args[1:]
 
 			// check if address is valid
-			if _, err := net.ResolveTCPAddr("tcp", address); err != nil {
-				fmt.Printf("Invalid address for MCP Proxy: %s, err: %s\n", address, err)
+			if _, err := net.ResolveTCPAddr("tcp", muxAddress); err != nil {
+				fmt.Printf("Invalid address for MCP Proxy: %s, err: %s\n", muxAddress, err)
 				os.Exit(1)
 			}
 
 			// Print an informational message using PTerm's Info printer.
 			// This message will stay in place while the area updates.
 			pterm.Info.Println("MCP Proxy is starting")
-			pterm.Info.Println(fmt.Sprintf("- ws address is: %s\n", address))
+			pterm.Info.Println(fmt.Sprintf("- ws address is: %s\n", muxAddress))
 			pterm.Info.Println(fmt.Sprintf("- program name is: %s\n", programName))
 			pterm.Info.Println(fmt.Sprintf("- program args are: %v\n", args))
 
-			client := proxy.NewClient(programName, args)
+			client := proxy.NewProxyClient(muxAddress, programName, args)
 			client.Start()
 		},
 	}
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&address, "address", "a", fmt.Sprintf(":%d", defaults.DefaultMultiplexerPort), "TCP address for the MCP Proxy server (host:port)")
+	rootCmd.Flags().StringVarP(&muxAddress, "address", "a", fmt.Sprintf(":%d", defaults.DefaultMultiplexerPort), "TCP address for the MCP multiplexer server (host:port)")
 }
 
 func main() {

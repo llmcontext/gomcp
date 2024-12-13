@@ -1,4 +1,4 @@
-package proxy
+package mcpClient
 
 import (
 	"fmt"

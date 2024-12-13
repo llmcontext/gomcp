@@ -8,22 +8,32 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/llmcontext/gomcp/proxy/mcpClient"
+	"github.com/llmcontext/gomcp/proxy/muxClient"
 	"github.com/llmcontext/gomcp/transport"
 )
 
-type Client struct {
+type ProxyClient struct {
+	muxAddress  string
 	programName string
 	args        []string
+	muxClient   *muxClient.MuxClient
 }
 
-func NewClient(programName string, args []string) *Client {
-	return &Client{
+const (
+	GomcpProxyClientName = "gomcp-proxy"
+)
+
+func NewProxyClient(muxAddress string, programName string, args []string) *ProxyClient {
+	return &ProxyClient{
+		muxAddress:  muxAddress,
 		programName: programName,
 		args:        args,
+		muxClient:   nil,
 	}
 }
 
-func (c *Client) Start() error {
+func (c *ProxyClient) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Use a wait group to wait for goroutines to complete
@@ -33,13 +43,23 @@ func (c *Client) Start() error {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGABRT, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGCHLD)
 
-	proxyTransport := transport.NewStdioProxyClientTransport(c.programName, c.args)
+	// create a logger for proy messages
+	logger := NewProxyLogger()
+	c.muxClient = muxClient.NewMuxClient(c.muxAddress, logger)
+
+	// create a mux client
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		c.muxClient.Start(ctx)
+	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
-		proxyClient := NewMCPProxyClient(proxyTransport)
+		proxyTransport := transport.NewStdioProxyClientTransport(c.programName, c.args)
+		proxyClient := mcpClient.NewMCPProxyClient(proxyTransport, c.muxClient, GomcpProxyClientName, logger)
 		proxyClient.Start(ctx)
 	}()
 
