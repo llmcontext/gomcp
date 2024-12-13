@@ -259,9 +259,10 @@ Check the [README](https://github.com/llmcontext/mcpnotion/blob/main/README.md) 
 
 ### 0.4.0
 
-- Add support for the proxy. In the configuration file, set the `proxy.enabled` field to true to enable the proxy. The proxy is a tool that allows you to proxy messages between any MCP server and the LLM.
+- Add support for the proxy/multiplexer. In the configuration file, set the `proxy.enabled` field to true to enable the proxy. The proxy is a tool that allows you to proxy messages between any MCP server and the LLM.
 - Add pterm for the output of the proxy
 - Refactor the JSON protocol messages to handle both client and server messages
+- remove the fifo option for logging
 
 ### [0.3.0](https://github.com/llmcontext/gomcp/tree/v0.3.0) - 2024-12-08
 

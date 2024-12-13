@@ -4,22 +4,32 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/llmcontext/gomcp/config"
 	"github.com/spf13/cobra"
 )
 
 var (
-	port    int
-	rootCmd = &cobra.Command{
+	configFile string
+	rootCmd    = &cobra.Command{
 		Use:   "gomcp",
 		Short: "A MCP multiplexer server that enables multiple MCP proxy client connections",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("gomcp")
+			// we load the config file
+			config, err := config.LoadConfig(configFile)
+			if err != nil {
+				fmt.Printf("failed to load config file %s: %v", configFile, err)
+				os.Exit(1)
+			}
+
+			fmt.Printf("config: %+v\n", config)
+
 		},
 	}
 )
 
 func init() {
-	rootCmd.Flags().IntVarP(&port, "port", "p", 8080, "Port number for the WebSocket server")
+	rootCmd.Flags().StringVarP(&configFile, "configFile", "f", "", "Path to configuration file")
+	rootCmd.MarkFlagRequired("configFile")
 }
 
 func main() {
