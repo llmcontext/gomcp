@@ -24,50 +24,7 @@ type JsonRequestParseResponse struct {
 	Error     *JsonRpcError
 }
 
-// returns a list of requests,
-// a boolean indicating if the request is a batch, and an error
-func ParseRequest(data []byte) ([]JsonRequestParseResponse, bool, *JsonRpcError) {
-	// we check if data is either an array or an object
-	var rawJson interface{}
-	if err := json.Unmarshal(data, &rawJson); err != nil {
-		return nil, false, &JsonRpcError{
-			Code:    RpcParseError,
-			Message: err.Error(),
-		}
-	}
-
-	switch v := rawJson.(type) {
-	case []interface{}:
-		// we parse each element in the array as a request
-		requests := []JsonRequestParseResponse{}
-		for _, element := range v {
-			if element, ok := element.(map[string]interface{}); ok {
-				// we check if the element is a map[string]interface{}
-				request, requestId, err := ParseSimpleRequest(element)
-				requests = append(requests, JsonRequestParseResponse{Request: request, RequestId: requestId, Error: err})
-			} else {
-				return nil, false, &JsonRpcError{
-					Code:    RpcInvalidRequest,
-					Message: "request in batch must be an object",
-				}
-			}
-		}
-		return requests, true, nil
-
-	case map[string]interface{}:
-		// if it is an object, we parse it as a simple request
-		request, requestId, err := ParseSimpleRequest(v)
-		return []JsonRequestParseResponse{{Request: request, RequestId: requestId, Error: err}}, false, nil
-
-	default:
-		return nil, false, &JsonRpcError{
-			Code:    RpcInvalidRequest,
-			Message: "request must be an object or an array",
-		}
-	}
-}
-
-func ParseSimpleRequest(rawJson map[string]interface{}) (*JsonRpcRequest, *JsonRpcRequestId, *JsonRpcError) {
+func ParseJsonRpcRequest(rawJson JsonRpcRawMessage) (*JsonRpcRequest, *JsonRpcRequestId, *JsonRpcError) {
 	// we initialize the request with default values
 	requestId := extractId(rawJson)
 	jsonRpcRequest := &JsonRpcRequest{

@@ -46,27 +46,29 @@ func (s *MCPServer) Start(ctx context.Context) error {
 
 	// Set up message handler
 	transport.OnMessage(func(msg json.RawMessage) {
-		requests, isBatch, error := jsonrpc.ParseRequest(msg)
-		if error != nil {
-			logger.Debug("invalid transport received message", logger.Arg{
+		nature, jsonRpcRawMessage, err := jsonrpc.CheckJsonMessage(msg)
+
+		if err != nil || nature != jsonrpc.MessageNatureRequest {
+			logger.Debug("invalid message received message", logger.Arg{
 				"message": string(msg),
 			})
-			s.sendError(error, nil)
+			s.sendError(&jsonrpc.JsonRpcError{
+				Code:    jsonrpc.RpcParseError,
+				Message: "invalid message",
+			}, nil)
+		}
+
+		request, requestId, rpcErr := jsonrpc.ParseJsonRpcRequest(jsonRpcRawMessage)
+		if rpcErr != nil {
+			s.sendError(rpcErr, requestId)
 			return
 		}
-		if isBatch {
-			s.logError("batched requests not supported yet", nil)
-		} else {
-			request := requests[0]
-			if request.Error != nil {
-				s.sendError(request.Error, request.RequestId)
-				return
-			}
-			err := s.processRequest(ctx, request.Request)
-			if err != nil {
-				s.logError("failed to process request", err)
-			}
+
+		err = s.processRequest(ctx, request)
+		if err != nil {
+			s.logError("failed to process request", err)
 		}
+
 	})
 
 	// Set up error handler

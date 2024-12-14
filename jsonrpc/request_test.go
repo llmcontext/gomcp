@@ -103,7 +103,7 @@ func TestParseSimpleRequest(t *testing.T) {
 				// we skip the test if we expect an error
 				t.Skip()
 			}
-			gotRequest, _, gotError := ParseSimpleRequest(rawJson)
+			gotRequest, _, gotError := ParseJsonRpcRequest(rawJson)
 
 			if !reflect.DeepEqual(gotError, tt.wantError) {
 				t.Errorf("ParseRequest() error = %#v, wantError %#v", gotError, tt.wantError)

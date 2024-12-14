@@ -47,9 +47,11 @@ func (c *ProxyClient) Start() error {
 
 	// create a logger for proy messages
 	logger := NewProxyLogger()
+
+	// create a mux client to connect to the mux server
 	c.muxClient = muxClient.NewMuxClient(c.muxAddress, logger)
 
-	// create a mux client
+	// start the mux client
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
