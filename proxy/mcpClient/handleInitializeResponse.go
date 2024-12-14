@@ -18,6 +18,10 @@ func (c *MCPProxyClient) handleInitializeResponse(response *jsonrpc.JsonRpcRespo
 		initializeResponse.ServerInfo.Version,
 	))
 
+	// we update the server information
+	c.serverInfo.Name = initializeResponse.ServerInfo.Name
+	c.serverInfo.Version = initializeResponse.ServerInfo.Version
+
 	// we send the "notifications/initialized" notification
 	notification := jsonrpc.NewJsonRpcNotification(mcp.RpcNotificationMethodInitialized)
 	c.sendJsonRpcRequest(notification)

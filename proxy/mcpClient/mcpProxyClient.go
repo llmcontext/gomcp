@@ -7,10 +7,18 @@ import (
 	"time"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/proxy/muxClient"
 	"github.com/llmcontext/gomcp/types"
 	"github.com/llmcontext/gomcp/version"
 )
+
+type MCPProxyClientOptions struct {
+	ProxyName               string
+	CurrentWorkingDirectory string
+	ProgramName             string
+	ProgramArgs             []string
+}
 
 type PendingRequest struct {
 	method    string
@@ -18,23 +26,33 @@ type PendingRequest struct {
 }
 
 type MCPProxyClient struct {
-	name      string
+	options MCPProxyClientOptions
+	logger  types.TermLogger
+	// transport is the transport layer to communicate with the actual MCP server
 	transport types.Transport
+	// muxClient is the client to communicate with the mux server
 	muxClient *muxClient.MuxClient
-	clientId  int
-	logger    types.TermLogger
 	// pendingRequests is a map of message id to pending request
 	pendingRequests map[string]*PendingRequest
+	// clientId is the id of the next message to send
+	clientId int
+
+	// serverInfo is the info about the server we are connected to
+	serverInfo mcp.ServerInfo
+	// tools is the list of tools available for the proxy
+	tools []mcp.ToolDescription
 }
 
-func NewMCPProxyClient(transport types.Transport, muxClient *muxClient.MuxClient, name string, logger types.TermLogger) *MCPProxyClient {
+func NewMCPProxyClient(transport types.Transport, muxClient *muxClient.MuxClient, options MCPProxyClientOptions, logger types.TermLogger) *MCPProxyClient {
 	return &MCPProxyClient{
 		transport:       transport,
 		muxClient:       muxClient,
-		name:            name,
+		options:         options,
 		clientId:        0,
 		pendingRequests: make(map[string]*PendingRequest),
 		logger:          logger,
+		serverInfo:      mcp.ServerInfo{},
+		tools:           []mcp.ToolDescription{},
 	}
 }
 
@@ -63,8 +81,6 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 	}
 
 	c.logger.Info("connected to mux server")
-
-	// c.muxClient.SendRequest(jsonrpc.NewJsonRpcNotification(mcp.RpcNotificationMethodInitialized))
 
 	transport.OnMessage(func(msg json.RawMessage) {
 		// check the message nature
@@ -97,7 +113,7 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 	}
 
 	// First message to send is always an initialize request
-	req, err := mkRpcRequestInitialize(c.name, version.Version, c.clientId)
+	req, err := mkRpcRequestInitialize(c.options.ProxyName, version.Version, c.clientId)
 	if err != nil {
 		fmt.Printf("[proxy] failed to create initialize request: %s\n", err)
 		return err

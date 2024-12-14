@@ -15,6 +15,7 @@ type MuxClient struct {
 	logger     types.TermLogger
 	transport  types.Transport
 	isStarted  bool
+	clientId   int
 }
 
 func NewMuxClient(muxAddress string, logger types.TermLogger) *MuxClient {
@@ -23,6 +24,7 @@ func NewMuxClient(muxAddress string, logger types.TermLogger) *MuxClient {
 		logger:     logger,
 		transport:  transport.NewSocketClientTransport(muxAddress),
 		isStarted:  false,
+		clientId:   0,
 	}
 }
 
@@ -61,9 +63,11 @@ func (c *MuxClient) Start(ctx context.Context) error {
 }
 
 // SendMessage sends a JSON-encodable message through the transport
-func (c *MuxClient) SendRequest(message *jsonrpc.JsonRpcRequest) error {
+func (c *MuxClient) SendRequest(method string, params interface{}) error {
+	request := jsonrpc.NewJsonRpcRequestWithNamedParams(method, params, c.clientId)
+	c.clientId++
 	// Convert message to JSON
-	jsonData, err := json.Marshal(message)
+	jsonData, err := json.Marshal(request)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}

@@ -14,22 +14,24 @@ import (
 )
 
 type ProxyClient struct {
-	muxAddress  string
-	programName string
-	args        []string
-	muxClient   *muxClient.MuxClient
+	muxAddress              string
+	currentWorkingDirectory string
+	programName             string
+	args                    []string
+	muxClient               *muxClient.MuxClient
 }
 
 const (
 	GomcpProxyClientName = "gomcp-proxy"
 )
 
-func NewProxyClient(muxAddress string, programName string, args []string) *ProxyClient {
+func NewProxyClient(muxAddress string, currentWorkingDirectory string, programName string, args []string) *ProxyClient {
 	return &ProxyClient{
-		muxAddress:  muxAddress,
-		programName: programName,
-		args:        args,
-		muxClient:   nil,
+		muxAddress:              muxAddress,
+		currentWorkingDirectory: currentWorkingDirectory,
+		programName:             programName,
+		args:                    args,
+		muxClient:               nil,
 	}
 }
 
@@ -58,8 +60,29 @@ func (c *ProxyClient) Start() error {
 	go func() {
 		defer wg.Done()
 
-		proxyTransport := transport.NewStdioProxyClientTransport(c.programName, c.args)
-		proxyClient := mcpClient.NewMCPProxyClient(proxyTransport, c.muxClient, GomcpProxyClientName, logger)
+		// create the options for the proxy client
+		options := mcpClient.MCPProxyClientOptions{
+			ProxyName:               GomcpProxyClientName,
+			CurrentWorkingDirectory: c.currentWorkingDirectory,
+			ProgramName:             c.programName,
+			ProgramArgs:             c.args,
+		}
+
+		// create the transport for the proxy client
+		proxyTransport := transport.NewStdioProxyClientTransport(
+			options.ProgramName,
+			options.ProgramArgs,
+		)
+
+		// create the proxy client
+		proxyClient := mcpClient.NewMCPProxyClient(
+			proxyTransport,
+			c.muxClient,
+			options,
+			logger,
+		)
+
+		// start the proxy client
 		proxyClient.Start(ctx)
 	}()
 

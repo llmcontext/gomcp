@@ -43,7 +43,13 @@ var (
 			pterm.Info.Println(fmt.Sprintf("- program name is: %s\n", programName))
 			pterm.Info.Println(fmt.Sprintf("- program args are: %v\n", args))
 
-			client := proxy.NewProxyClient(muxAddress, programName, args)
+			currentWorkingDirectory, err := os.Getwd()
+			if err != nil {
+				pterm.Error.Println(fmt.Sprintf("Failed to get current working directory: %s", err))
+				os.Exit(1)
+			}
+
+			client := proxy.NewProxyClient(muxAddress, currentWorkingDirectory, programName, args)
 			client.Start()
 		},
 	}
