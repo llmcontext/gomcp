@@ -15,7 +15,7 @@ type MuxSession struct {
 }
 
 func NewMuxSession(ctx context.Context, sessionId string, tran types.Transport, logger types.Logger) *MuxSession {
-	jsonRpcTransport := transport.NewJsonRpcTransport(tran, logger)
+	jsonRpcTransport := transport.NewJsonRpcTransport(tran, "gomcp - proxy (mux)", logger)
 
 	session := &MuxSession{
 		sessionId: sessionId,
@@ -23,7 +23,7 @@ func NewMuxSession(ctx context.Context, sessionId string, tran types.Transport, 
 		logger:    logger,
 	}
 
-	jsonRpcTransport.Start(ctx, func(message transport.JsonRpcMessage) {
+	jsonRpcTransport.Start(ctx, func(message transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
 		if message.Response != nil {
 			session.onJsonRpcResponse(message.Response)
 		} else if message.Request != nil {

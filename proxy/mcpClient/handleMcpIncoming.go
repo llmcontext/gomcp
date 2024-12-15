@@ -36,7 +36,7 @@ func (c *MCPProxyClient) handleMcpIncomingMessage(message transport.JsonRpcMessa
 			case mcp.RpcRequestMethodInitialize:
 				c.handleMcpInitializeResponse(response, transport)
 			case mcp.RpcRequestMethodToolsList:
-				c.handleMcpToolsListResponse(response, transport)
+				c.handleMcpToolsListResponse(response, c.muxJsonRpcTransport)
 			}
 		} else {
 			c.logger.Debug("[proxy] no pending request found for response id", types.LogArg{

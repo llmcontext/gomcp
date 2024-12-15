@@ -38,10 +38,12 @@ func (m *Multiplexer) Start(ctx context.Context) error {
 	})
 
 	m.socketServer.Start(func(transport types.Transport) {
-		fmt.Println("[mux server] Transport:", transport)
 		// we have a new session
 		sessionId := fmt.Sprintf("s-%03d", m.sessionCount)
 		m.sessionCount++
+		m.logger.Info("new session", types.LogArg{
+			"sessionId": sessionId,
+		})
 		subLogger := types.NewSubLogger(m.logger, types.LogArg{
 			"sessionId": sessionId,
 		})

@@ -50,48 +50,58 @@ func NewMCPProxyClient(
 func (c *MCPProxyClient) Start(ctx context.Context) error {
 	var err error
 
-	err = c.proxyJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage) {
-		c.logger.Debug("received message from proxy", types.LogArg{
-			"message": msg,
+	go func() {
+		// start the proxy transport
+		err = c.proxyJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
+			c.logger.Debug("received message from proxy", msg.DebugInfo(jsonRpcTransport.Name()))
+			c.handleMcpIncomingMessage(msg, jsonRpcTransport)
 		})
-		c.handleMcpIncomingMessage(msg, c.proxyJsonRpcTransport)
-	})
-	if err != nil {
-		return err
-	}
+		if err != nil {
+			c.logger.Error("failed to start proxy transport", types.LogArg{
+				"error": err,
+			})
+			return
+		}
+	}()
 
-	err = c.muxJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage) {
-		c.logger.Debug("received message from mux", types.LogArg{
-			"message": msg,
+	go func() {
+		err = c.muxJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
+			c.logger.Debug("received message from mux", types.LogArg{
+				"message": msg,
+			})
+			// c.handleMuxIncomingMessage(msg, c.muxJsonRpcTransport)
 		})
-		// c.handleMuxIncomingMessage(msg)
-	})
-	if err != nil {
-		return err
-	}
+		if err != nil {
+			c.logger.Error("failed to start mux transport", types.LogArg{
+				"error": err,
+			})
+			return
+		}
+	}()
 
 	// First message to send is always an initialize request
 
-	// we create the parameters for the initialize request
-	// the proxy does not have any capabilities
-	params := mcp.JsonRpcRequestInitializeParams{
-		ProtocolVersion: mcp.ProtocolVersion,
-		Capabilities:    mcp.ClientCapabilities{},
-		ClientInfo: mcp.ClientInfo{
-			Name:    c.options.ProxyName,
-			Version: version.Version,
-		},
-	}
+	c.proxyJsonRpcTransport.OnStarted(func() {
+		// we create the parameters for the initialize request
+		// the proxy does not have any capabilities
+		params := mcp.JsonRpcRequestInitializeParams{
+			ProtocolVersion: mcp.ProtocolVersion,
+			Capabilities:    mcp.ClientCapabilities{},
+			ClientInfo: mcp.ClientInfo{
+				Name:    c.options.ProxyName,
+				Version: version.Version,
+			},
+		}
 
-	// we send the initialize request to the proxy
-	err = c.proxyJsonRpcTransport.SendRequestWithMethodAndParams(
-		mcp.RpcRequestMethodInitialize, params)
-	if err != nil {
-		c.logger.Error("failed to send initialize request", types.LogArg{
-			"error": err,
-		})
-		return err
-	}
+		// we send the initialize request to the proxy
+		err = c.proxyJsonRpcTransport.SendRequestWithMethodAndParams(
+			mcp.RpcRequestMethodInitialize, params)
+		if err != nil {
+			c.logger.Error("failed to send initialize request", types.LogArg{
+				"error": err,
+			})
+		}
+	})
 
 	// Keep the main thread alive
 	// will be interrupted by the context

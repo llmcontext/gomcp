@@ -10,7 +10,8 @@ import (
 
 func (c *MCPProxyClient) handleMcpToolsListResponse(
 	response *jsonrpc.JsonRpcResponse,
-	transport *transport.JsonRpcTransport) {
+	muxTransport *transport.JsonRpcTransport,
+) {
 	toolsListResponse, err := mcp.ParseJsonRpcResponseToolsList(response)
 	if err != nil {
 		c.logger.Error("error in handleMcpToolsListResponse", types.LogArg{
@@ -30,7 +31,7 @@ func (c *MCPProxyClient) handleMcpToolsListResponse(
 	}
 
 	// we can now report the tools list to the mux server
-	c.sendProxyRegistrationRequest(transport)
+	c.sendProxyRegistrationRequest(muxTransport)
 }
 
 func (c *MCPProxyClient) sendProxyRegistrationRequest(transport *transport.JsonRpcTransport) {
@@ -56,12 +57,14 @@ func (c *MCPProxyClient) sendProxyRegistrationRequest(transport *transport.JsonR
 	// }
 
 	c.logger.Info("sending proxy registration request", types.LogArg{
-		"params": params,
+		"params":        params,
+		"transportName": transport.Name(),
 	})
 	err := transport.SendRequestWithMethodAndParams(mux.RpcRequestMethodMuxInitialize, params)
 	if err != nil {
 		c.logger.Error("error sending proxy registration request", types.LogArg{
-			"error": err,
+			"error":         err,
+			"transportName": transport.Name(),
 		})
 	}
 }

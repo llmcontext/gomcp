@@ -80,7 +80,8 @@ func (s *SocketConn) Close() {
 	}
 
 	// Signal shutdown to readLoop
-	close(s.done)
+	// TODO: check if this is needed
+	// close(s.done)
 
 	if s.onClose != nil {
 		s.onClose()

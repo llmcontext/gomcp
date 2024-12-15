@@ -18,8 +18,10 @@ type JsonRpcTransport struct {
 	transport     types.Transport
 	logger        types.Logger
 	lastRequestId int
+	onStarted     func()
 	// pendingRequests is a map of message id to pending request
 	pendingRequests map[string]*pendingRequest
+	name            string
 }
 
 type JsonRpcMessage struct {
@@ -27,76 +29,145 @@ type JsonRpcMessage struct {
 	Response *jsonrpc.JsonRpcResponse
 }
 
-func NewJsonRpcTransport(transport types.Transport, logger types.Logger) *JsonRpcTransport {
+func (m *JsonRpcMessage) IsRequest() bool {
+	return m.Request != nil
+}
+
+func (m *JsonRpcMessage) IsResponse() bool {
+	return m.Response != nil
+}
+
+func (m *JsonRpcMessage) DebugInfo(transportName string) map[string]interface{} {
+	info := make(map[string]interface{})
+	info["transportName"] = transportName
+	if m.IsRequest() {
+		info["nature"] = "request"
+		info["method"] = m.Request.Method
+		info["id"] = jsonrpc.RequestIdToString(m.Request.Id)
+		info["params"] = m.Request.Params.String()
+	}
+	if m.IsResponse() {
+		info["nature"] = "response"
+		if m.Response.Error != nil {
+			info["error"] = fmt.Sprintf("%d: %s", m.Response.Error.Code, m.Response.Error.Message)
+		}
+		info["result"] = fmt.Sprintf("%v", m.Response.Result)
+		info["id"] = jsonrpc.RequestIdToString(m.Response.Id)
+	}
+	return info
+}
+
+func NewJsonRpcTransport(transport types.Transport, name string, logger types.Logger) *JsonRpcTransport {
 	return &JsonRpcTransport{
 		transport:       transport,
 		logger:          logger,
 		lastRequestId:   0,
 		pendingRequests: make(map[string]*pendingRequest),
+		name:            name,
 	}
 }
 
-func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message JsonRpcMessage)) error {
+func (m *JsonRpcTransport) Name() string {
+	return m.name
+}
+
+func (m *JsonRpcTransport) OnStarted(callback func()) {
+	m.onStarted = callback
+}
+
+func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message JsonRpcMessage, jsonRpcTransport *JsonRpcTransport)) error {
+	// Create a new context that we can cancel
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel() // Ensure all resources are cleaned up
+
+	t.logger.Info("starting JsonRpcTransport", types.LogArg{
+		"name": t.name,
+	})
+
 	t.transport.OnMessage(func(message json.RawMessage) {
-		t.logger.Debug("message received", types.LogArg{
-			"message": message,
-		})
-		// check the message nature
-		nature, jsonRpcRawMessage, err := jsonrpc.CheckJsonMessage(message)
-		if err != nil {
-			t.logger.Error("error checking message", types.LogArg{
-				"error": err,
-			})
+		// Check context before processing message
+		select {
+		case <-ctx.Done():
 			return
-		}
-
-		// the MCP protocol does not support batch requests
-		switch nature {
-		case jsonrpc.MessageNatureBatchRequest:
-			t.logger.Error("batch requests not supported in protocol", types.LogArg{})
-			return
-		case jsonrpc.MessageNatureRequest:
-			request, _, rpcErr := jsonrpc.ParseJsonRpcRequest(jsonRpcRawMessage)
-			if rpcErr != nil {
-				t.logger.Error("error parsing request", types.LogArg{
-					"error": rpcErr,
-				})
-				return
-			}
-			onMessage(JsonRpcMessage{Request: request})
-
-		case jsonrpc.MessageNatureResponse:
-			response, _, rpcErr := jsonrpc.ParseJsonRpcResponse(jsonRpcRawMessage)
-			if rpcErr != nil {
-				t.logger.Error("error parsing response", types.LogArg{
-					"error": rpcErr,
-				})
-				return
-			}
-			onMessage(JsonRpcMessage{Response: response})
 		default:
-			t.logger.Error("invalid message nature", types.LogArg{
-				"nature": nature,
+			t.logger.Debug("message received", types.LogArg{
+				"name":    t.name,
+				"message": string(message),
 			})
-			return
+			// check the message nature
+			nature, jsonRpcRawMessage, err := jsonrpc.CheckJsonMessage(message)
+			if err != nil {
+				t.logger.Error("error checking message", types.LogArg{
+					"error": err,
+					"name":  t.name,
+				})
+				return
+			}
+
+			// the MCP protocol does not support batch requests
+			switch nature {
+			case jsonrpc.MessageNatureBatchRequest:
+				t.logger.Error("batch requests not supported in protocol", types.LogArg{})
+				return
+			case jsonrpc.MessageNatureRequest:
+				request, _, rpcErr := jsonrpc.ParseJsonRpcRequest(jsonRpcRawMessage)
+				if rpcErr != nil {
+					t.logger.Error("error parsing request", types.LogArg{
+						"error": rpcErr,
+						"name":  t.name,
+					})
+					return
+				}
+				onMessage(JsonRpcMessage{Request: request}, t)
+
+			case jsonrpc.MessageNatureResponse:
+				response, _, rpcErr := jsonrpc.ParseJsonRpcResponse(jsonRpcRawMessage)
+				if rpcErr != nil {
+					t.logger.Error("error parsing response", types.LogArg{
+						"error": rpcErr,
+						"name":  t.name,
+					})
+					return
+				}
+				onMessage(JsonRpcMessage{Response: response}, t)
+			default:
+				t.logger.Error("invalid message nature", types.LogArg{
+					"nature": nature,
+					"name":   t.name,
+				})
+				return
+			}
 		}
 	})
 
 	t.transport.OnClose(func() {
-		t.logger.Info("transport closed", types.LogArg{})
+		t.logger.Info("transport closed", types.LogArg{
+			"name": t.name,
+		})
+		cancel() // Signal that we're done
 	})
 
 	t.transport.OnError(func(err error) {
 		t.logger.Error("transport error", types.LogArg{
 			"error": err,
+			"name":  t.name,
 		})
+		cancel() // Signal that we've encountered an error
 	})
 
-	err := t.transport.Start(ctx)
-	if err != nil {
+	// Start the transport
+	if err := t.transport.Start(ctx); err != nil {
 		return err
 	}
-	return nil
+
+	// call the onStarted callback
+	if t.onStarted != nil {
+		t.onStarted()
+	}
+
+	// Wait for context cancellation
+	<-ctx.Done()
+	return ctx.Err()
 }
 
 func (t *JsonRpcTransport) SendRequestWithMethodAndParams(method string, params interface{}) error {

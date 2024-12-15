@@ -72,7 +72,7 @@ func (c *ProxyClient) Start() error {
 			return
 		}
 
-		muxJsonRpcTransport := transport.NewJsonRpcTransport(muxClientTransport, c.logger)
+		muxJsonRpcTransport := transport.NewJsonRpcTransport(muxClientTransport, "proxy client - gomcp (mux)", c.logger)
 
 		// create the options for the proxy client
 		options := mcpClient.MCPProxyClientOptions{
@@ -88,7 +88,7 @@ func (c *ProxyClient) Start() error {
 			options.ProgramArgs,
 		)
 
-		proxyJsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, c.logger)
+		proxyJsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, "proxy - client (mcp)", c.logger)
 
 		// create the proxy client
 		proxyClient := mcpClient.NewMCPProxyClient(

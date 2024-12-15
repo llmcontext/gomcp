@@ -1,6 +1,9 @@
 package jsonrpc
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 const (
 	JsonRpcVersion = "2.0"
@@ -41,6 +44,13 @@ func (p *JsonRpcParams) IsPositional() bool {
 
 func (p *JsonRpcParams) IsNamed() bool {
 	return p.NamedParams != nil
+}
+
+func (p *JsonRpcParams) String() string {
+	if p.IsPositional() {
+		return fmt.Sprintf("%v", p.PositionalParams)
+	}
+	return fmt.Sprintf("%v", p.NamedParams)
 }
 
 type JsonRpcRequest struct {
