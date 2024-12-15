@@ -43,6 +43,9 @@ func (c *ProxyClient) Start() error {
 	// Use a wait group to wait for goroutines to complete
 	var wg sync.WaitGroup
 
+	// Channel to signal unexpected goroutine termination
+	errorChan := make(chan error, 1)
+
 	// Listen for OS signals (e.g., Ctrl+C)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGABRT, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGCHLD)
@@ -59,11 +62,13 @@ func (c *ProxyClient) Start() error {
 		muxClientTransport, err := muxClientSocket.Start()
 		if err != nil {
 			c.logger.Error("error starting mux client socket", types.LogArg{"error": err})
+			errorChan <- err
 			return
 		}
 
 		if muxClientTransport == nil {
 			c.logger.Error("error starting mux client socket", types.LogArg{"error": err})
+			errorChan <- err
 			return
 		}
 
@@ -94,12 +99,21 @@ func (c *ProxyClient) Start() error {
 		)
 
 		// start the proxy client and the queues
-		proxyClient.Start(ctx)
+		err = proxyClient.Start(ctx)
+		if err != nil {
+			c.logger.Error("error starting proxy client", types.LogArg{"error": err})
+			errorChan <- err
+			return
+		}
 	}()
 
-	// Wait for a signal to stop the server
-	sig := <-signalChan
-	c.logger.Info("Received an interrupt, shutting down...", types.LogArg{"signal": sig})
+	// Wait for either a signal, error, or context cancellation
+	select {
+	case sig := <-signalChan:
+		c.logger.Info("Received an interrupt, shutting down...", types.LogArg{"signal": sig})
+	case err := <-errorChan:
+		c.logger.Error("Goroutine stopped with error", types.LogArg{"error": err})
+	}
 
 	// Cancel the context to signal the goroutines to stop
 	cancel()
