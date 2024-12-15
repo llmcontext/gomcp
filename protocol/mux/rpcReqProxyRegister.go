@@ -12,10 +12,11 @@ const (
 )
 
 type JsonRpcRequestProxyRegisterParams struct {
-	ProtocolVersion string            `json:"protocolVersion"`
-	Proxy           ProxyDescription  `json:"proxy"`
-	ServerInfo      ServerInfo        `json:"serverInfo"`
-	Tools           []ToolDescription `json:"tools"`
+	ProtocolVersion string           `json:"protocolVersion"`
+	ProxyId         string           `json:"proxyId"`
+	Persistent      bool             `json:"persistent"`
+	Proxy           ProxyDescription `json:"proxy"`
+	ServerInfo      ServerInfo       `json:"serverInfo"`
 }
 
 type ProxyDescription struct {
@@ -29,12 +30,6 @@ type ServerInfo struct {
 	Version string `json:"version"`
 }
 
-type ToolDescription struct {
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	InputSchema interface{} `json:"inputSchema"`
-}
-
 func ParseJsonRpcRequestProxyRegisterParams(request *jsonrpc.JsonRpcRequest) (*JsonRpcRequestProxyRegisterParams, error) {
 	// parse params
 	if request.Params == nil {
@@ -45,16 +40,28 @@ func ParseJsonRpcRequestProxyRegisterParams(request *jsonrpc.JsonRpcRequest) (*J
 	}
 	namedParams := request.Params.NamedParams
 
-	req := JsonRpcRequestProxyRegisterParams{
-		Tools: []ToolDescription{},
-	}
+	req := JsonRpcRequestProxyRegisterParams{}
 
 	// read protocol version
-	protocolVersion, ok := namedParams["protocolVersion"].(string)
-	if !ok {
+	protocolVersion, err := protocol.GetStringField(namedParams, "protocolVersion")
+	if err != nil {
 		return nil, fmt.Errorf("missing protocolVersion")
 	}
 	req.ProtocolVersion = protocolVersion
+
+	// read proxy id
+	proxyId, err := protocol.GetStringField(namedParams, "proxyId")
+	if err != nil {
+		return nil, fmt.Errorf("missing proxyId")
+	}
+	req.ProxyId = proxyId
+
+	// read persistent
+	persistent, err := protocol.GetBoolField(namedParams, "persistent")
+	if err != nil {
+		return nil, fmt.Errorf("missing persistent")
+	}
+	req.Persistent = persistent
 
 	// read proxy
 	proxy, err := protocol.GetObjectField(namedParams, "proxy")
@@ -82,32 +89,6 @@ func ParseJsonRpcRequestProxyRegisterParams(request *jsonrpc.JsonRpcRequest) (*J
 	req.ServerInfo.Version, err = protocol.GetStringField(serverInfo, "version")
 	if err != nil {
 		return nil, fmt.Errorf("serverInfo.version must be a string")
-	}
-
-	// read tools
-	tools, err := protocol.GetArrayField(namedParams, "tools")
-	if err != nil {
-		return nil, fmt.Errorf("missing tools")
-	}
-	for _, tool := range tools {
-		toolMap, ok := tool.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("tool must be an object")
-		}
-		toolDescription := ToolDescription{}
-		toolDescription.Name, err = protocol.GetStringField(toolMap, "name")
-		if err != nil {
-			return nil, fmt.Errorf("tool.name must be a string")
-		}
-		toolDescription.Description, err = protocol.GetStringField(toolMap, "description")
-		if err != nil {
-			return nil, fmt.Errorf("tool.description must be a string")
-		}
-		toolDescription.InputSchema, err = protocol.GetObjectField(toolMap, "inputSchema")
-		if err != nil {
-			return nil, fmt.Errorf("tool.inputSchema must be an object")
-		}
-		req.Tools = append(req.Tools, toolDescription)
 	}
 
 	return &req, nil

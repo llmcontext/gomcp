@@ -92,7 +92,11 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 		})
 	})
 
-	return t.transport.Start(ctx)
+	err := t.transport.Start(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (t *JsonRpcTransport) SendRequestWithMethodAndParams(method string, params interface{}) error {
@@ -139,7 +143,7 @@ func (t *JsonRpcTransport) SendResponse(response *jsonrpc.JsonRpcResponse) error
 	return t.transport.Send(jsonMessage)
 }
 
-func (t *JsonRpcTransport) sendError(code int, message string, id *jsonrpc.JsonRpcRequestId) error {
+func (t *JsonRpcTransport) SendError(code int, message string, id *jsonrpc.JsonRpcRequestId) error {
 	response := &jsonrpc.JsonRpcResponse{
 		Error: &jsonrpc.JsonRpcError{
 			Code:    code,
