@@ -5,15 +5,16 @@ import (
 	"os"
 
 	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/types"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-var zapLog *zap.Logger
+type LoggerImpl struct {
+	zapLog *zap.Logger
+}
 
-type Arg map[string]interface{}
-
-func InitLogger(config config.LoggingInfo, debug bool) error {
+func NewLogger(config config.LoggingInfo, debug bool) (types.Logger, error) {
 	cfg := zap.NewProductionConfig()
 
 	// Configure encoder to use ISO 8601 timestamp format
@@ -33,7 +34,7 @@ func InitLogger(config config.LoggingInfo, debug bool) error {
 	} else if config.Level != "" {
 		level, err := zapcore.ParseLevel(config.Level)
 		if err != nil {
-			return fmt.Errorf("failed to parse logging level: %v", err)
+			return nil, fmt.Errorf("failed to parse logging level: %v", err)
 		}
 		cfg.Level = zap.NewAtomicLevelAt(level)
 	}
@@ -49,40 +50,42 @@ func InitLogger(config config.LoggingInfo, debug bool) error {
 		cfg.OutputPaths = append(cfg.OutputPaths, "stderr")
 	}
 
-	zapLog = zap.Must(cfg.Build())
+	zapLog := zap.Must(cfg.Build())
 	defer zapLog.Sync()
 
-	return nil
+	return &LoggerImpl{
+		zapLog: zapLog,
+	}, nil
 }
 
-func Info(message string, fields Arg) {
+func (l *LoggerImpl) Info(message string, fields types.LogArg) {
 	zapFields := []zap.Field{}
 	for key, value := range fields {
 		zapFields = append(zapFields, zap.Any(key, value))
 	}
-	zapLog.Info(message, zapFields...)
+	l.zapLog.Info(message, zapFields...)
 }
 
-func Debug(message string, fields Arg) {
+func (l *LoggerImpl) Debug(message string, fields types.LogArg) {
 	zapFields := []zap.Field{}
 	for key, value := range fields {
 		zapFields = append(zapFields, zap.Any(key, value))
 	}
-	zapLog.Debug(message, zapFields...)
+	l.zapLog.Debug(message, zapFields...)
 }
 
-func Error(message string, fields Arg) {
+func (l *LoggerImpl) Error(message string, fields types.LogArg) {
 	zapFields := []zap.Field{}
 	for key, value := range fields {
 		zapFields = append(zapFields, zap.Any(key, value))
 	}
-	zapLog.Error(message, zapFields...)
+	l.zapLog.Error(message, zapFields...)
 }
 
-func Fatal(message string, fields Arg) {
+func (l *LoggerImpl) Fatal(message string, fields types.LogArg) {
 	zapFields := []zap.Field{}
 	for key, value := range fields {
 		zapFields = append(zapFields, zap.Any(key, value))
 	}
-	zapLog.Fatal(message, zapFields...)
+	l.zapLog.Fatal(message, zapFields...)
 }

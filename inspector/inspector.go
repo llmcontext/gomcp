@@ -9,7 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/llmcontext/gomcp/config"
-	"github.com/llmcontext/gomcp/logger"
+	"github.com/llmcontext/gomcp/types"
 )
 
 //go:embed html
@@ -41,13 +41,15 @@ type Inspector struct {
 	messageChan   chan MessageInfo
 	clients       map[*websocket.Conn]bool
 	mutex         sync.RWMutex
+	logger        types.Logger
 }
 
-func NewInspector(config *config.InspectorInfo) *Inspector {
+func NewInspector(config *config.InspectorInfo, logger types.Logger) *Inspector {
 	return &Inspector{
 		listenAddress: config.ListenAddress,
 		messageChan:   make(chan MessageInfo, 100), // Buffer of 100 messages
 		clients:       make(map[*websocket.Conn]bool),
+		logger:        logger,
 	}
 }
 
@@ -62,17 +64,17 @@ func (i *Inspector) EnqueueMessage(msg MessageInfo) {
 	}
 }
 
-func (inspector *Inspector) Start(ctx context.Context) error {
+func (i *Inspector) Start(ctx context.Context) error {
 	router := http.NewServeMux()
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if err := t.ExecuteTemplate(w, "index.html", nil); err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		}
 	})
-	router.HandleFunc("/ws", inspector.serveWs)
+	router.HandleFunc("/ws", i.serveWs)
 
 	server := &http.Server{
-		Addr:    inspector.listenAddress,
+		Addr:    i.listenAddress,
 		Handler: router,
 	}
 
@@ -83,25 +85,25 @@ func (inspector *Inspector) Start(ctx context.Context) error {
 
 	// Start the message broadcaster in a goroutine
 	go func() {
-		inspector.broadcastMessages()
+		i.broadcastMessages()
 	}()
 
 	// wait for the context to be done
 	<-ctx.Done()
 
-	logger.Info("Shutting down inspector", logger.Arg{
-		"listenAddress": inspector.listenAddress,
+	i.logger.Info("Shutting down inspector", types.LogArg{
+		"listenAddress": i.listenAddress,
 	})
 
 	// shutdown the server
 	if err := server.Shutdown(ctx); err != nil {
-		logger.Error("error shutting down inspector", logger.Arg{
+		i.logger.Error("error shutting down inspector", types.LogArg{
 			"error": err,
 		})
 	}
 
 	// shutdown the inspector
-	inspector.shutdown()
+	i.shutdown()
 
 	return nil
 }
@@ -125,7 +127,7 @@ func (i *Inspector) broadcastMessages() {
 func (i *Inspector) serveWs(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		logger.Error("upgrade:", logger.Arg{
+		i.logger.Error("upgrade:", types.LogArg{
 			"error": err,
 		})
 		return
@@ -145,7 +147,7 @@ func (i *Inspector) serveWs(w http.ResponseWriter, r *http.Request) {
 	for {
 		_, _, err := c.ReadMessage()
 		if err != nil {
-			logger.Error("read:", logger.Arg{
+			i.logger.Error("read:", types.LogArg{
 				"error": err,
 			})
 			break
@@ -154,18 +156,18 @@ func (i *Inspector) serveWs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (i *Inspector) shutdown() {
-	logger.Info("shutdown()", logger.Arg{
+	i.logger.Info("shutdown()", types.LogArg{
 		"step": 1,
 	})
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
-	logger.Info("shutdown()", logger.Arg{
+	i.logger.Info("shutdown()", types.LogArg{
 		"step": 2,
 	})
 	for client := range i.clients {
 		client.Close()
 	}
-	logger.Info("shutdown()", logger.Arg{
+	i.logger.Info("shutdown()", types.LogArg{
 		"step": 3,
 	})
 	close(i.messageChan)

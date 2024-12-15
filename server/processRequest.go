@@ -6,12 +6,12 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/logger"
+	"github.com/llmcontext/gomcp/types"
 )
 
 // processing a valid request
 func (s *MCPServer) processRequest(ctx context.Context, request *jsonrpc.JsonRpcRequest) error {
-	logger.Debug("JsonRpcRequest", logger.Arg{
+	s.logger.Debug("JsonRpcRequest", types.LogArg{
 		"request": request,
 	})
 	switch request.Method {
@@ -51,7 +51,7 @@ func (s *MCPServer) processRequest(ctx context.Context, request *jsonrpc.JsonRpc
 }
 
 func (s *MCPServer) sendResponse(response *jsonrpc.JsonRpcResponse) error {
-	logger.Debug("JsonRpcResponse", logger.Arg{
+	s.logger.Debug("JsonRpcResponse", types.LogArg{
 		"response": response,
 	})
 	jsonResponse, err := jsonrpc.MarshalJsonRpcResponse(response)

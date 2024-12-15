@@ -1,7 +1,6 @@
 package jsonrpc
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
@@ -52,19 +51,3 @@ func BoolPtr(b bool) *bool {
 // 	rm := json.RawMessage(s)
 // 	return &rm
 // }
-
-func structToMap(obj interface{}) (map[string]interface{}, error) {
-	// First marshal the struct to JSON
-	jsonBytes, err := json.Marshal(obj)
-	if err != nil {
-		return nil, err
-	}
-
-	// Then unmarshal into a map
-	var result map[string]interface{}
-	if err := json.Unmarshal(jsonBytes, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/llmcontext/gomcp/inspector"
-	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -18,17 +17,19 @@ type StdioTransport struct {
 	debug             bool
 	protocolDebugFile string
 	inspector         *inspector.Inspector
+	logger            types.Logger
 	onMessage         func(json.RawMessage)
 	onClose           func()
 	onError           func(error)
 	done              chan struct{}
 }
 
-func NewStdioTransport(protocolDebugFile string, inspector *inspector.Inspector) types.Transport {
+func NewStdioTransport(protocolDebugFile string, inspector *inspector.Inspector, logger types.Logger) types.Transport {
 	return &StdioTransport{
 		debug:             protocolDebugFile != "",
 		protocolDebugFile: protocolDebugFile,
 		inspector:         inspector,
+		logger:            logger,
 	}
 }
 
@@ -126,14 +127,14 @@ func (t *StdioTransport) logProtocolMessages(rawMessage string, direction string
 	// open log file and append
 	file, err := os.OpenFile(t.protocolDebugFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		logger.Error("error opening protocol debug file", logger.Arg{"error": err})
+		t.logger.Error("error opening protocol debug file", types.LogArg{"error": err})
 	}
 	defer file.Close()
 
 	// write to file
 	_, err = file.WriteString(fmt.Sprintf(":%s: %s\n", direction, rawMessage))
 	if err != nil {
-		logger.Error("error writing to protocol debug file", logger.Arg{"error": err})
+		t.logger.Error("error writing to protocol debug file", types.LogArg{"error": err})
 	}
 
 	// try to parse the message as JSON

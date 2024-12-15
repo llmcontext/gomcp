@@ -26,6 +26,7 @@ type ModelContextProtocolImpl struct {
 	promptsRegistry *prompts.PromptsRegistry
 	inspector       *inspector.Inspector
 	multiplexer     *mux.Multiplexer
+	logger          types.Logger
 }
 
 func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocolImpl, error) {
@@ -36,13 +37,13 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	}
 
 	// we initialize the logger
-	err = logger.InitLogger(config.Logging, false)
+	logger, err := logger.NewLogger(config.Logging, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize logger: %v", err)
 	}
 
 	// Initialize tools registry
-	toolsRegistry := tools.NewToolsRegistry()
+	toolsRegistry := tools.NewToolsRegistry(logger)
 
 	// Initialize prompts registry
 	promptsRegistry := prompts.NewEmptyPromptsRegistry()
@@ -56,13 +57,13 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	// Start inspector if enabled
 	var inspectorInstance *inspector.Inspector = nil
 	if config.Inspector != nil && config.Inspector.Enabled {
-		inspectorInstance = inspector.NewInspector(config.Inspector)
+		inspectorInstance = inspector.NewInspector(config.Inspector, logger)
 	}
 
 	// Start multiplexer if enabled
 	var multiplexerInstance *mux.Multiplexer = nil
 	if config.Proxy != nil && config.Proxy.Enabled {
-		multiplexerInstance = mux.NewMultiplexer(config.Proxy)
+		multiplexerInstance = mux.NewMultiplexer(config.Proxy, logger)
 	}
 
 	return &ModelContextProtocolImpl{
@@ -71,6 +72,7 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 		promptsRegistry: promptsRegistry,
 		inspector:       inspectorInstance,
 		multiplexer:     multiplexerInstance,
+		logger:          logger,
 	}, nil
 }
 
@@ -85,7 +87,8 @@ func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
 	// we create the transport
 	transport := transport.NewStdioTransport(
 		mcp.config.Logging.ProtocolDebugFile,
-		mcp.inspector)
+		mcp.inspector,
+		mcp.logger)
 
 	// we return the transport
 	return transport
@@ -133,12 +136,13 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 		// Initialize server
 		server := server.NewMCPServer(transport, mcp.toolsRegistry, mcp.promptsRegistry,
 			mcp.config.ServerInfo.Name,
-			mcp.config.ServerInfo.Version)
+			mcp.config.ServerInfo.Version,
+			mcp.logger)
 
 		// Start server
 		err = server.Start(ctx)
 		if err != nil {
-			logger.Error("error starting server", logger.Arg{
+			mcp.logger.Error("error starting server", types.LogArg{
 				"error": err,
 			})
 			cancel()
@@ -152,7 +156,7 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 			defer wg.Done()
 			err := mcp.multiplexer.Start(ctx)
 			if err != nil {
-				logger.Error("error starting multiplexer", logger.Arg{
+				mcp.logger.Error("error starting multiplexer", types.LogArg{
 					"error": err,
 				})
 				cancel()
@@ -167,11 +171,11 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 	go func() {
 		for {
 			parentPID := syscall.Getppid()
-			logger.Info("Monitoring parent process", logger.Arg{
+			mcp.logger.Info("Monitoring parent process", types.LogArg{
 				"pid": parentPID,
 			})
 			if parentPID == 1 {
-				logger.Info("Parent process is init. Shutting down...", logger.Arg{
+				mcp.logger.Info("Parent process is init. Shutting down...", types.LogArg{
 					"pid": parentPID,
 				})
 				signalChan <- os.Interrupt

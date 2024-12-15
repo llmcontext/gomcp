@@ -1,33 +1,39 @@
 package mcpClient
 
 import (
-	"fmt"
-
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/protocol/mux"
+	"github.com/llmcontext/gomcp/transport"
+	"github.com/llmcontext/gomcp/types"
 )
 
-func (c *MCPProxyClient) handleToolsListResponse(response *jsonrpc.JsonRpcResponse) {
+func (c *MCPProxyClient) handleMcpToolsListResponse(
+	response *jsonrpc.JsonRpcResponse,
+	transport *transport.JsonRpcTransport) {
 	toolsListResponse, err := mcp.ParseJsonRpcResponseToolsList(response)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("error in handleToolsListResponse: %+v\n", err))
+		c.logger.Error("error in handleMcpToolsListResponse", types.LogArg{
+			"error": err,
+		})
 		return
 	}
 
 	// display all the tool names and descriptions
 	for _, tool := range toolsListResponse.Tools {
-		c.logger.Info(fmt.Sprintf("tool: %s - %s\n", tool.Name, tool.Description))
-		c.logger.Info(fmt.Sprintf("inputSchema: %+#v\n", tool.InputSchema))
+		c.logger.Info("tool", types.LogArg{
+			"name":        tool.Name,
+			"description": tool.Description,
+		})
 		// we store the tools description
 		c.tools = append(c.tools, tool)
 	}
 
 	// we can now report the tools list to the mux server
-	c.sendProxyRegistrationRequest()
+	c.sendProxyRegistrationRequest(transport)
 }
 
-func (c *MCPProxyClient) sendProxyRegistrationRequest() {
+func (c *MCPProxyClient) sendProxyRegistrationRequest(transport *transport.JsonRpcTransport) {
 	params := mux.JsonRpcRequestProxyRegisterParams{
 		ProtocolVersion: mux.MuxProtocolVersion,
 		Proxy: mux.ProxyDescription{
@@ -50,6 +56,13 @@ func (c *MCPProxyClient) sendProxyRegistrationRequest() {
 		})
 	}
 
-	c.logger.Info(fmt.Sprintf("sending proxy registration request: %+#v\n", params))
-	c.muxClient.SendRequest(mux.RpcRequestMethodProxyRegister, params)
+	c.logger.Info("sending proxy registration request", types.LogArg{
+		"params": params,
+	})
+	err := transport.SendRequestWithMethodAndParams(mux.RpcRequestMethodMuxInitialize, params)
+	if err != nil {
+		c.logger.Error("error sending proxy registration request", types.LogArg{
+			"error": err,
+		})
+	}
 }

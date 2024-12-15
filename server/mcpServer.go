@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/types"
@@ -29,15 +28,24 @@ type MCPServer struct {
 	isClientInitialized bool
 	protocolVersion     string
 	clientInfo          *ClientInfo
+	logger              types.Logger
 }
 
-func NewMCPServer(transport types.Transport, toolsRegistry *tools.ToolsRegistry, promptsRegistry *prompts.PromptsRegistry, serverName string, serverVersion string) *MCPServer {
+func NewMCPServer(
+	transport types.Transport,
+	toolsRegistry *tools.ToolsRegistry,
+	promptsRegistry *prompts.PromptsRegistry,
+	serverName string,
+	serverVersion string,
+	logger types.Logger,
+) *MCPServer {
 	return &MCPServer{
 		transport:       transport,
 		toolsRegistry:   toolsRegistry,
 		promptsRegistry: promptsRegistry,
 		serverName:      serverName,
 		serverVersion:   serverVersion,
+		logger:          logger,
 	}
 }
 
@@ -49,7 +57,7 @@ func (s *MCPServer) Start(ctx context.Context) error {
 		nature, jsonRpcRawMessage, err := jsonrpc.CheckJsonMessage(msg)
 
 		if err != nil || nature != jsonrpc.MessageNatureRequest {
-			logger.Debug("invalid message received message", logger.Arg{
+			s.logger.Debug("invalid message received message", types.LogArg{
 				"message": string(msg),
 			})
 			s.sendError(&jsonrpc.JsonRpcError{
@@ -93,7 +101,7 @@ func (s *MCPServer) Start(ctx context.Context) error {
 }
 
 func (s *MCPServer) logError(message string, err error) {
-	logger.Error(message, logger.Arg{
+	s.logger.Error(message, types.LogArg{
 		"message": message,
 		"error":   err,
 	})
@@ -105,7 +113,7 @@ func (s *MCPServer) logError(message string, err error) {
 }
 
 func (s *MCPServer) sendError(error *jsonrpc.JsonRpcError, id *jsonrpc.JsonRpcRequestId) {
-	logger.Debug("JsonRpcError", logger.Arg{
+	s.logger.Debug("JsonRpcError", types.LogArg{
 		"error": error,
 		"id":    id,
 	})

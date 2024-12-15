@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/config"
-	"github.com/llmcontext/gomcp/logger"
+	"github.com/llmcontext/gomcp/types"
 	"github.com/llmcontext/gomcp/utils"
 )
 
@@ -20,18 +20,20 @@ type toolProviderPrepared struct {
 type ToolsRegistry struct {
 	ToolProviders []*ToolProvider
 	Tools         map[string]*toolProviderPrepared
+	logger        types.Logger
 }
 
-func NewToolsRegistry() *ToolsRegistry {
+func NewToolsRegistry(logger types.Logger) *ToolsRegistry {
 	return &ToolsRegistry{
 		ToolProviders: []*ToolProvider{},
 		Tools:         make(map[string]*toolProviderPrepared),
+		logger:        logger,
 	}
 }
 
 func (r *ToolsRegistry) RegisterToolProvider(toolProvider *ToolProvider) error {
 	r.ToolProviders = append(r.ToolProviders, toolProvider)
-	logger.Info("registered tool provider", logger.Arg{
+	r.logger.Info("registered tool provider", types.LogArg{
 		"tool":            toolProvider.toolName,
 		"configTypeName":  toolProvider.configTypeName,
 		"contextTypeName": toolProvider.contextTypeName,
@@ -43,7 +45,7 @@ func (r *ToolsRegistry) checkConfiguration(toolConfigs []config.ToolConfig) erro
 	// we go through all the tool providers and check if the configuration is valid
 	for _, toolProvider := range r.ToolProviders {
 		if toolProvider.configSchema != nil {
-			logger.Info("checking config schema for tool provider", logger.Arg{
+			r.logger.Info("checking config schema for tool provider", types.LogArg{
 				"tool": toolProvider.toolName,
 			})
 
@@ -54,7 +56,7 @@ func (r *ToolsRegistry) checkConfiguration(toolConfigs []config.ToolConfig) erro
 					toolConfigFound = true
 					if toolConfig.IsDisabled {
 						// the tool is configured to be disabled
-						logger.Info("tool is configured to be disabled", logger.Arg{
+						r.logger.Info("tool is configured to be disabled", types.LogArg{
 							"tool": toolProvider.toolName,
 						})
 						toolProvider.isDisabled = true
@@ -73,7 +75,7 @@ func (r *ToolsRegistry) checkConfiguration(toolConfigs []config.ToolConfig) erro
 				return fmt.Errorf("tool config %s not found for tool provider %s", toolProvider.toolName, toolProvider.toolName)
 			}
 		} else {
-			logger.Info("no config schema for tool provider", logger.Arg{
+			r.logger.Info("no config schema for tool provider", types.LogArg{
 				"tool": toolProvider.toolName,
 			})
 		}
@@ -93,7 +95,10 @@ func (r *ToolsRegistry) initializeProviders(ctx context.Context, toolConfigs []c
 				if toolConfig.Name == toolProvider.toolName {
 					// we found the tool configuration
 					// let's initialize the tool provider
-					ctx := makeContextWithLogger(ctx, toolProvider.toolName)
+					logger := types.NewSubLogger(r.logger, types.LogArg{
+						"tool": toolProvider.toolName,
+					})
+					ctx := makeContextWithLogger(ctx, logger)
 					result, callErr, err := utils.CallFunction(toolProvider.toolInitFunction, ctx, toolConfig.Configuration)
 					if err != nil {
 						return err
@@ -101,8 +106,7 @@ func (r *ToolsRegistry) initializeProviders(ctx context.Context, toolConfigs []c
 					if callErr != nil {
 						return callErr
 					}
-					logger.Info("tool provider initialized", logger.Arg{
-						"tool":   toolProvider.toolName,
+					logger.Info("tool provider initialized", types.LogArg{
 						"result": result,
 					})
 					// we store the tool context
@@ -177,7 +181,10 @@ func (r *ToolsRegistry) CallTool(ctx context.Context, toolName string, toolArgs 
 	}
 
 	// let's call the tool
-	goCtx := makeContextWithLogger(ctx, toolProvider.toolName)
+	logger := types.NewSubLogger(r.logger, types.LogArg{
+		"tool": toolProvider.toolName,
+	})
+	goCtx := makeContextWithLogger(ctx, logger)
 
 	// let's create the output
 	output := NewToolCallResult()
