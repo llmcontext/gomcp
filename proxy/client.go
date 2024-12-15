@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -15,22 +14,25 @@ import (
 )
 
 type ProxyClient struct {
-	muxAddress              string
-	currentWorkingDirectory string
-	programName             string
-	args                    []string
+	proxyInformation ProxyInformation
+	logger           types.Logger
+}
+
+type ProxyInformation struct {
+	MuxAddress              string
+	CurrentWorkingDirectory string
+	ProgramName             string
+	Args                    []string
 }
 
 const (
 	GomcpProxyClientName = "gomcp-proxy"
 )
 
-func NewProxyClient(muxAddress string, currentWorkingDirectory string, programName string, args []string) *ProxyClient {
+func NewProxyClient(proxyInformation ProxyInformation, logger types.Logger) *ProxyClient {
 	return &ProxyClient{
-		muxAddress:              muxAddress,
-		currentWorkingDirectory: currentWorkingDirectory,
-		programName:             programName,
-		args:                    args,
+		proxyInformation: proxyInformation,
+		logger:           logger,
 	}
 }
 
@@ -45,37 +47,34 @@ func (c *ProxyClient) Start() error {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGABRT, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGCHLD)
 
-	// create a logger for proxy messages
-	logger := NewProxyLogger()
-
 	// start the mux client
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		// create a transport for the mux client
-		muxClientSocket := socket.NewSocketClient(c.muxAddress)
+		muxClientSocket := socket.NewSocketClient(c.proxyInformation.MuxAddress)
 
 		// we try to start the mux client socket
 		// let's get a transport for the mux client
 		muxClientTransport, err := muxClientSocket.Start()
 		if err != nil {
-			logger.Error("error starting mux client socket", types.LogArg{"error": err})
+			c.logger.Error("error starting mux client socket", types.LogArg{"error": err})
 			return
 		}
 
 		if muxClientTransport == nil {
-			logger.Error("error starting mux client socket", types.LogArg{"error": err})
+			c.logger.Error("error starting mux client socket", types.LogArg{"error": err})
 			return
 		}
 
-		muxJsonRpcTransport := transport.NewJsonRpcTransport(muxClientTransport, logger)
+		muxJsonRpcTransport := transport.NewJsonRpcTransport(muxClientTransport, c.logger)
 
 		// create the options for the proxy client
 		options := mcpClient.MCPProxyClientOptions{
 			ProxyName:               GomcpProxyClientName,
-			CurrentWorkingDirectory: c.currentWorkingDirectory,
-			ProgramName:             c.programName,
-			ProgramArgs:             c.args,
+			CurrentWorkingDirectory: c.proxyInformation.CurrentWorkingDirectory,
+			ProgramName:             c.proxyInformation.ProgramName,
+			ProgramArgs:             c.proxyInformation.Args,
 		}
 
 		// create the transport for the proxy client
@@ -84,14 +83,14 @@ func (c *ProxyClient) Start() error {
 			options.ProgramArgs,
 		)
 
-		proxyJsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, logger)
+		proxyJsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, c.logger)
 
 		// create the proxy client
 		proxyClient := mcpClient.NewMCPProxyClient(
 			proxyJsonRpcTransport,
 			muxJsonRpcTransport,
 			options,
-			logger,
+			c.logger,
 		)
 
 		// start the proxy client and the queues
@@ -100,14 +99,14 @@ func (c *ProxyClient) Start() error {
 
 	// Wait for a signal to stop the server
 	sig := <-signalChan
-	fmt.Fprintf(os.Stderr, "[proxy] Received an interrupt, shutting down... %s\n", sig)
+	c.logger.Info("Received an interrupt, shutting down...", types.LogArg{"signal": sig})
 
 	// Cancel the context to signal the goroutines to stop
 	cancel()
 
 	// Wait for all goroutines to finish
 	wg.Wait()
-	fmt.Fprintf(os.Stderr, "[proxy] All goroutines have stopped. Exiting.\n")
+	c.logger.Info("All goroutines have stopped. Exiting.", types.LogArg{})
 
 	return nil
 }

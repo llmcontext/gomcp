@@ -6,9 +6,10 @@ import (
 	"os"
 
 	"github.com/llmcontext/gomcp/defaults"
+	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/proxy"
+	"github.com/llmcontext/gomcp/types"
 	"github.com/llmcontext/gomcp/version"
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
@@ -18,38 +19,45 @@ var (
 		Use:   "gomcp-proxy",
 		Short: "A proxy server for MCP connections",
 		Run: func(cmd *cobra.Command, args []string) {
-			message := fmt.Sprintf("%s - %s", proxy.GomcpProxyClientName, version.Version)
-			pterm.DefaultHeader.WithFullWidth().Println(message)
-			pterm.Println()
+			logger := logger.NewTermLogger()
+
+			// banner
+			logger.Header(fmt.Sprintf("%s - %s", proxy.GomcpProxyClientName, version.Version))
 
 			if len(args) == 0 {
-				pterm.Error.Println("Please provide a program name as the first argument")
+				logger.Error("Please provide a program name as the first argument", types.LogArg{"args": args})
 				os.Exit(1)
 			}
 
 			programName := args[0]
 			args = args[1:]
 
+			logger.Info("MCP Proxy is starting", types.LogArg{
+				"address":     muxAddress,
+				"programName": programName,
+				"args":        args,
+			})
+
 			// check if address is valid
 			if _, err := net.ResolveTCPAddr("tcp", muxAddress); err != nil {
-				fmt.Printf("Invalid address for MCP Proxy: %s, err: %s\n", muxAddress, err)
+				logger.Error("Invalid address for MCP Proxy", types.LogArg{"address": muxAddress, "error": err})
 				os.Exit(1)
 			}
-
-			// Print an informational message using PTerm's Info printer.
-			// This message will stay in place while the area updates.
-			pterm.Info.Println("MCP Proxy is starting")
-			pterm.Info.Println(fmt.Sprintf("- ws address is: %s\n", muxAddress))
-			pterm.Info.Println(fmt.Sprintf("- program name is: %s\n", programName))
-			pterm.Info.Println(fmt.Sprintf("- program args are: %v\n", args))
 
 			currentWorkingDirectory, err := os.Getwd()
 			if err != nil {
-				pterm.Error.Println(fmt.Sprintf("Failed to get current working directory: %s", err))
+				logger.Error("Failed to get current working directory", types.LogArg{"error": err})
 				os.Exit(1)
 			}
 
-			client := proxy.NewProxyClient(muxAddress, currentWorkingDirectory, programName, args)
+			proxyInformation := proxy.ProxyInformation{
+				MuxAddress:              muxAddress,
+				CurrentWorkingDirectory: currentWorkingDirectory,
+				ProgramName:             programName,
+				Args:                    args,
+			}
+
+			client := proxy.NewProxyClient(proxyInformation, logger)
 			client.Start()
 		},
 	}

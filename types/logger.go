@@ -9,6 +9,12 @@ type Logger interface {
 	Fatal(message string, fields LogArg)
 }
 
+// special logger for the terminal
+type TermLogger interface {
+	Logger
+	Header(message string)
+}
+
 type SubLogger struct {
 	logger Logger
 	fields LogArg
