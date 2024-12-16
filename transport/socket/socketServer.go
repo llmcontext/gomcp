@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"context"
 	"net"
 
 	"github.com/llmcontext/gomcp/transport"
@@ -24,7 +25,7 @@ func (s *SocketServer) OnError(callback func(error)) {
 	s.onError = callback
 }
 
-func (s *SocketServer) Start(callback func(types.Transport)) error {
+func (s *SocketServer) Start(ctx context.Context, callback func(types.Transport)) error {
 	go func() {
 		listener, err := net.Listen("tcp", s.address)
 		if err != nil {
@@ -35,16 +36,21 @@ func (s *SocketServer) Start(callback func(types.Transport)) error {
 		}
 		s.listener = listener
 		for {
-			conn, err := s.listener.Accept()
-			if err != nil {
-				if s.onError != nil {
-					s.onError(err)
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				conn, err := s.listener.Accept()
+				if err != nil {
+					if s.onError != nil {
+						s.onError(err)
+					}
+					continue
 				}
-				continue
-			}
 
-			transport := transport.NewSocketConn(conn)
-			callback(transport)
+				transport := transport.NewSocketConn(conn)
+				callback(transport)
+			}
 		}
 	}()
 

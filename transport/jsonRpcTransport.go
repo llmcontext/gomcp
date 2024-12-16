@@ -75,11 +75,7 @@ func (m *JsonRpcTransport) OnStarted(callback func()) {
 	m.onStarted = callback
 }
 
-func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message JsonRpcMessage, jsonRpcTransport *JsonRpcTransport)) error {
-	// Create a new context that we can cancel
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel() // Ensure all resources are cleaned up
-
+func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message JsonRpcMessage, jsonRpcTransport *JsonRpcTransport)) (chan error, error) {
 	t.logger.Info("starting JsonRpcTransport", types.LogArg{
 		"name": t.name,
 	})
@@ -98,8 +94,9 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 			nature, jsonRpcRawMessage, err := jsonrpc.CheckJsonMessage(message)
 			if err != nil {
 				t.logger.Error("error checking message", types.LogArg{
-					"error": err,
-					"name":  t.name,
+					"message": string(message),
+					"error":   err,
+					"name":    t.name,
 				})
 				return
 			}
@@ -144,7 +141,6 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 		t.logger.Info("transport closed", types.LogArg{
 			"name": t.name,
 		})
-		cancel() // Signal that we're done
 	})
 
 	t.transport.OnError(func(err error) {
@@ -152,12 +148,12 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 			"error": err,
 			"name":  t.name,
 		})
-		cancel() // Signal that we've encountered an error
 	})
 
 	// Start the transport
-	if err := t.transport.Start(ctx); err != nil {
-		return err
+	errChan, err := t.transport.Start(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// call the onStarted callback
@@ -165,9 +161,7 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 		t.onStarted()
 	}
 
-	// Wait for context cancellation
-	<-ctx.Done()
-	return ctx.Err()
+	return errChan, nil
 }
 
 func (t *JsonRpcTransport) SendRequestWithMethodAndParams(method string, params interface{}) error {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -106,11 +105,9 @@ func (mcp *ModelContextProtocolImpl) DeclareToolProvider(toolName string, toolIn
 
 // Start starts the server and the inspector
 func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
+	mcp.logger.Info("Starting MCP server", types.LogArg{})
 	// we create a context that will be used to cancel the server and the inspector
 	ctx, cancel := context.WithCancel(context.Background())
-
-	// Use a wait group to wait for goroutines to complete
-	var wg sync.WaitGroup
 
 	// All the tools are initialized, we can prepare the tools registry
 	// so that it can be used by the server
@@ -120,49 +117,48 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 		return fmt.Errorf("error preparing tools registry: %s", err)
 	}
 
+	mcp.logger.Info("Starting inspector", types.LogArg{})
+
 	// Start inspector if it was enabled
 	if mcp.inspector != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			mcp.inspector.Start(ctx)
-		}()
+		err := mcp.inspector.Start(ctx)
+		if err != nil {
+			mcp.logger.Error("error starting inspector", types.LogArg{
+				"error": err,
+			})
+		}
 	}
 
-	// Start MCP server
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		// Initialize server
-		server := server.NewMCPServer(transport, mcp.toolsRegistry, mcp.promptsRegistry,
-			mcp.config.ServerInfo.Name,
-			mcp.config.ServerInfo.Version,
-			mcp.logger)
+	mcp.logger.Info("Starting MCP server", types.LogArg{})
 
-		// Start server
-		err = server.Start(ctx)
+	// Initialize server
+	server := server.NewMCPServer(transport, mcp.toolsRegistry, mcp.promptsRegistry,
+		mcp.config.ServerInfo.Name,
+		mcp.config.ServerInfo.Version,
+		mcp.logger)
+
+	// Start server
+	chanErrMcpServer, err := server.Start(ctx)
+	if err != nil {
+		mcp.logger.Error("error starting server", types.LogArg{
+			"error": err,
+		})
+		cancel()
+	}
+
+	// Start multiplexer if it was enabled
+	if mcp.multiplexer != nil {
+		mcp.logger.Info("Starting multiplexer", types.LogArg{})
+		err := mcp.multiplexer.Start(ctx)
 		if err != nil {
-			mcp.logger.Error("error starting server", types.LogArg{
+			mcp.logger.Error("error starting multiplexer", types.LogArg{
 				"error": err,
 			})
 			cancel()
 		}
-	}()
-
-	// Start multiplexer if it was enabled
-	if mcp.multiplexer != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			err := mcp.multiplexer.Start(ctx)
-			if err != nil {
-				mcp.logger.Error("error starting multiplexer", types.LogArg{
-					"error": err,
-				})
-				cancel()
-			}
-		}()
 	}
+
+	mcp.logger.Info("Waiting for MCP server to stop", types.LogArg{})
 
 	// Listen for OS signals (e.g., Ctrl+C)
 	signalChan := make(chan os.Signal, 1)
@@ -186,16 +182,20 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 		}
 	}()
 
-	// Wait for a signal to stop the server
-	sig := <-signalChan
-	fmt.Fprintf(os.Stderr, "[mcp] Received an interrupt, shutting down... %s\n", sig)
+	select {
+	case err := <-chanErrMcpServer:
+		mcp.logger.Error("error starting server", types.LogArg{
+			"error": err,
+		})
+	case <-signalChan:
+		mcp.logger.Info("Received an interrupt, shutting down...", types.LogArg{})
+	}
+
+	// we close the inspector
+	mcp.inspector.Close(ctx)
 
 	// Cancel the context to signal the goroutines to stop
 	cancel()
-
-	// Wait for all goroutines to finish
-	wg.Wait()
-	fmt.Fprintf(os.Stderr, "[mcp] All goroutines have stopped. Exiting.\n")
 
 	return nil
 }

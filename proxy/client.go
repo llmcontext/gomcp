@@ -37,81 +37,71 @@ func NewProxyClient(proxyInformation ProxyInformation, logger types.Logger) *Pro
 }
 
 func (c *ProxyClient) Start() error {
-	// prepare a cancelable context
-	ctx, cancel := context.WithCancel(context.Background())
-
 	// Use a wait group to wait for goroutines to complete
 	var wg sync.WaitGroup
-
-	// Channel to signal unexpected goroutine termination
-	errorChan := make(chan error, 1)
 
 	// Listen for OS signals (e.g., Ctrl+C)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGABRT, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGCHLD)
 
 	// start the mux client
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		// create a transport for the mux client
-		muxClientSocket := socket.NewSocketClient(c.proxyInformation.MuxAddress)
+	// create a transport for the mux client
+	muxClientSocket := socket.NewSocketClient(c.proxyInformation.MuxAddress)
 
-		// we try to start the mux client socket
-		// let's get a transport for the mux client
-		muxClientTransport, err := muxClientSocket.Start()
-		if err != nil {
-			c.logger.Error("error starting mux client socket", types.LogArg{"error": err})
-			errorChan <- err
-			return
-		}
+	// we try to start the mux client socket
+	// let's get a transport for the mux client
+	muxClientTransport, err := muxClientSocket.Start()
+	if err != nil {
+		c.logger.Error("error starting mux client socket", types.LogArg{"error": err})
+		return err
+	}
 
-		if muxClientTransport == nil {
-			c.logger.Error("error starting mux client socket", types.LogArg{"error": err})
-			errorChan <- err
-			return
-		}
+	if muxClientTransport == nil {
+		c.logger.Error("error starting mux client socket", types.LogArg{"error": err})
+		return err
+	}
 
-		muxJsonRpcTransport := transport.NewJsonRpcTransport(muxClientTransport, "proxy client - gomcp (mux)", c.logger)
+	muxJsonRpcTransport := transport.NewJsonRpcTransport(muxClientTransport, "proxy client - gomcp (mux)", c.logger)
 
-		// create the options for the proxy client
-		options := mcpClient.MCPProxyClientOptions{
-			ProxyName:               GomcpProxyClientName,
-			CurrentWorkingDirectory: c.proxyInformation.CurrentWorkingDirectory,
-			ProgramName:             c.proxyInformation.ProgramName,
-			ProgramArgs:             c.proxyInformation.Args,
-		}
+	// create the options for the proxy client
+	options := mcpClient.MCPProxyClientOptions{
+		ProxyName:               GomcpProxyClientName,
+		CurrentWorkingDirectory: c.proxyInformation.CurrentWorkingDirectory,
+		ProgramName:             c.proxyInformation.ProgramName,
+		ProgramArgs:             c.proxyInformation.Args,
+	}
 
-		// create the transport for the proxy client
-		proxyTransport := transport.NewStdioProxyClientTransport(
-			options.ProgramName,
-			options.ProgramArgs,
-		)
+	// create the transport for the proxy client
+	proxyTransport := transport.NewStdioProxyClientTransport(
+		options.ProgramName,
+		options.ProgramArgs,
+	)
 
-		proxyJsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, "proxy - client (mcp)", c.logger)
+	proxyJsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, "proxy - client (mcp)", c.logger)
 
-		// create the proxy client
-		proxyClient := mcpClient.NewMCPProxyClient(
-			proxyJsonRpcTransport,
-			muxJsonRpcTransport,
-			options,
-			c.logger,
-		)
+	// create the proxy client
+	proxyClient := mcpClient.NewMCPProxyClient(
+		proxyJsonRpcTransport,
+		muxJsonRpcTransport,
+		options,
+		c.logger,
+	)
 
-		// start the proxy client and the queues
-		err = proxyClient.Start(ctx)
-		if err != nil {
-			c.logger.Error("error starting proxy client", types.LogArg{"error": err})
-			errorChan <- err
-			return
-		}
-	}()
+	// prepare a cancelable context
+	ctx, cancel := context.WithCancel(context.Background())
 
+	// start the proxy client and the queues
+	errProxyChan, err := proxyClient.Start(ctx)
+	if err != nil {
+		c.logger.Error("error starting proxy client", types.LogArg{"error": err})
+		cancel()
+		return err
+	}
 	// Wait for either a signal, error, or context cancellation
 	select {
 	case sig := <-signalChan:
 		c.logger.Info("Received an interrupt, shutting down...", types.LogArg{"signal": sig})
-	case err := <-errorChan:
+	case err := <-errProxyChan:
 		c.logger.Error("Goroutine stopped with error", types.LogArg{"error": err})
 	}
 

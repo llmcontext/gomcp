@@ -13,9 +13,9 @@ type Transport interface {
 	// This method should only be called after callbacks are installed, or else
 	// messages may be lost.
 	//
-	// NOTE: This method should not be called explicitly when using Client,
-	// Server, or Protocol classes, as they will implicitly call start().
-	Start(ctx context.Context) error
+	// Returns a channel that will receive an error if
+	// if something goes wrong during the processing of the transport.
+	Start(ctx context.Context) (chan error, error)
 
 	// Sends a JSON-RPC message (request or response).
 	Send(message json.RawMessage) error

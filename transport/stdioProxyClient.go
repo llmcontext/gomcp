@@ -20,44 +20,62 @@ type StdioProxyClientTransport struct {
 	onMessage   func(json.RawMessage)
 	onClose     func()
 	onError     func(error)
-	done        chan struct{}
+	// we need to keep track of the pipe reader
+	pipeReader *io.PipeReader
 }
 
 func NewStdioProxyClientTransport(programName string, args []string) types.Transport {
 	return &StdioProxyClientTransport{
 		programName: programName,
 		args:        args,
+		pipeReader:  nil,
 	}
 }
 
-func (t *StdioProxyClientTransport) Start(ctx context.Context) error {
+func (t *StdioProxyClientTransport) Start(ctx context.Context) (chan error, error) {
 	t.cmd = exec.Command(t.programName, t.args...)
 
 	stdin, err := t.cmd.StdinPipe()
 	if err != nil {
-		return fmt.Errorf("failed to create stdin pipe: %v", err)
+		return nil, fmt.Errorf("failed to create stdin pipe: %v", err)
 	}
 	t.stdin = stdin
 
 	stdout, err := t.cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("failed to create stdout pipe: %v", err)
+		return nil, fmt.Errorf("failed to create stdout pipe: %v", err)
 	}
 	t.stdout = stdout
 
-	t.done = make(chan struct{})
 	if err := t.cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start command: %v", err)
+		return nil, fmt.Errorf("failed to start command: %v", err)
 	}
-	go t.readLoop(ctx)
-	return nil
+
+	errChan := make(chan error, 1)
+	go t.readLoop(ctx, errChan)
+	return errChan, nil
 }
 
-func (t *StdioProxyClientTransport) readLoop(ctx context.Context) {
+func (t *StdioProxyClientTransport) readLoop(ctx context.Context, errChan chan error) {
+	// we create a pipe to read from stdin
+	// and push the data to the pipe
+	// we need to do this because we need to read from stdin in a non-blocking way
+	// if we don't do this, we will block the readLoop
+	// if we close the pipe, we will stop the readLoop
 	r, w := io.Pipe()
+	// we keep track of the pipe reader (to close it later)
+	t.pipeReader = r
+
 	go func() {
 		defer w.Close()
-		io.Copy(w, t.stdout)
+		_, err := io.Copy(w, t.stdout)
+		if err != nil && err != io.EOF {
+			if t.onError != nil {
+				t.onError(fmt.Errorf("error reading from process stdout: %w", err))
+			}
+			// send the error to the errChan
+			errChan <- fmt.Errorf("error reading from process stdout: %w", err)
+		}
 	}()
 
 	scanner := bufio.NewScanner(r)
@@ -104,8 +122,11 @@ func (t *StdioProxyClientTransport) Close() {
 	if t.cmd != nil && t.cmd.Process != nil {
 		t.cmd.Process.Kill()
 	}
+	if t.pipeReader != nil {
+		t.pipeReader.Close()
+		t.pipeReader = nil
+	}
 
-	close(t.done)
 	if t.onClose != nil {
 		t.onClose()
 	}

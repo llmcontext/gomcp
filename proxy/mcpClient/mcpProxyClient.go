@@ -22,8 +22,10 @@ type MCPProxyClient struct {
 
 	// context for mux transport
 	muxJsonRpcTransport *transport.JsonRpcTransport
+	muxErrChan          chan error
 	// context for proxy transport
 	proxyJsonRpcTransport *transport.JsonRpcTransport
+	proxyErrChan          chan error
 
 	// serverInfo is the info about the server we are connected to
 	serverInfo mcp.ServerInfo
@@ -47,37 +49,38 @@ func NewMCPProxyClient(
 	}
 }
 
-func (c *MCPProxyClient) Start(ctx context.Context) error {
+func (c *MCPProxyClient) Start(ctx context.Context) (chan error, error) {
 	var err error
+	errProxyChan := make(chan error, 1)
 
-	go func() {
-		// start the proxy transport
-		err = c.proxyJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
-			c.logger.Debug("received message from proxy", msg.DebugInfo(jsonRpcTransport.Name()))
-			c.handleMcpIncomingMessage(msg, jsonRpcTransport)
+	// start the proxy transport
+	errChan, err := c.proxyJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
+		c.logger.Debug("received message from proxy", msg.DebugInfo(jsonRpcTransport.Name()))
+		c.handleMcpIncomingMessage(msg, jsonRpcTransport)
+	})
+	if err != nil {
+		c.logger.Error("failed to start proxy transport", types.LogArg{
+			"error": err,
 		})
-		if err != nil {
-			c.logger.Error("failed to start proxy transport", types.LogArg{
-				"error": err,
-			})
-			return
-		}
-	}()
+		return errProxyChan, err
+	}
+	// we keep track of the error channel
+	c.proxyErrChan = errChan
 
-	go func() {
-		err = c.muxJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
-			c.logger.Debug("received message from mux", types.LogArg{
-				"message": msg,
-			})
-			// c.handleMuxIncomingMessage(msg, c.muxJsonRpcTransport)
+	errChan, err = c.muxJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
+		c.logger.Debug("received message from mux", types.LogArg{
+			"message": msg,
 		})
-		if err != nil {
-			c.logger.Error("failed to start mux transport", types.LogArg{
-				"error": err,
-			})
-			return
-		}
-	}()
+		// c.handleMuxIncomingMessage(msg, c.muxJsonRpcTransport)
+	})
+	if err != nil {
+		c.logger.Error("failed to start mux transport", types.LogArg{
+			"error": err,
+		})
+		return errProxyChan, err
+	}
+	// we keep track of the error channel
+	c.muxErrChan = errChan
 
 	// First message to send is always an initialize request
 
@@ -103,15 +106,32 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 		}
 	})
 
-	// Keep the main thread alive
-	// will be interrupted by the context
-	<-ctx.Done()
+	// consolidate the error channels in a separate goroutine
+	go func() {
+		select {
+		case err := <-c.proxyErrChan:
+			if err != nil {
+				c.logger.Error("proxy transport error", types.LogArg{
+					"error": err,
+				})
+				errProxyChan <- err
+			}
+		case err := <-c.muxErrChan:
+			if err != nil {
+				c.logger.Error("mux transport error", types.LogArg{
+					"error": err,
+				})
+				errProxyChan <- err
+			}
+		}
+	}()
 
-	// we close the transports
+	return errProxyChan, nil
+}
+
+func (c *MCPProxyClient) Close() {
 	c.proxyJsonRpcTransport.Close()
+	c.proxyErrChan <- nil
 	c.muxJsonRpcTransport.Close()
-
-	c.logger.Info("shutdown\n", types.LogArg{})
-
-	return nil
+	c.muxErrChan <- nil
 }

@@ -12,6 +12,7 @@ type MuxSession struct {
 	sessionId string
 	transport *transport.JsonRpcTransport
 	logger    types.Logger
+	errChan   chan error
 }
 
 func NewMuxSession(ctx context.Context, sessionId string, tran types.Transport, logger types.Logger) *MuxSession {
@@ -21,15 +22,22 @@ func NewMuxSession(ctx context.Context, sessionId string, tran types.Transport, 
 		sessionId: sessionId,
 		transport: jsonRpcTransport,
 		logger:    logger,
+		errChan:   nil,
 	}
 
-	jsonRpcTransport.Start(ctx, func(message transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
+	errChan, err := jsonRpcTransport.Start(ctx, func(message transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
 		if message.Response != nil {
 			session.onJsonRpcResponse(message.Response)
 		} else if message.Request != nil {
 			session.onJsonRpcRequest(message.Request)
 		}
 	})
+	if err != nil {
+		session.logger.Error("Failed to start JSON-RPC transport", types.LogArg{
+			"error": err,
+		})
+	}
+	session.errChan = errChan
 
 	return session
 }
@@ -52,4 +60,8 @@ func (s *MuxSession) onJsonRpcRequest(request *jsonrpc.JsonRpcRequest) {
 	s.logger.Info("Request", types.LogArg{
 		"request": request,
 	})
+}
+
+func (s *MuxSession) Close() {
+	s.transport.Close()
 }

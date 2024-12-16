@@ -21,22 +21,20 @@ type SocketConn struct {
 	onMessage func(json.RawMessage)
 	onClose   func()
 	onError   func(error)
-
-	// Channel to signal shutdown
-	done chan struct{}
 }
 
 func NewSocketConn(conn net.Conn) types.Transport {
 	return &SocketConn{
 		conn: conn,
 		mu:   sync.Mutex{},
-		done: make(chan struct{}),
 	}
 }
 
-func (s *SocketConn) Start(ctx context.Context) error {
-	go s.readLoop()
-	return nil
+func (s *SocketConn) Start(ctx context.Context) (chan error, error) {
+	errChan := make(chan error, 1)
+
+	go s.readLoop(ctx, errChan)
+	return errChan, nil
 }
 
 // Send implements Transport.Send
@@ -79,22 +77,22 @@ func (s *SocketConn) Close() {
 		s.conn = nil
 	}
 
-	// Signal shutdown to readLoop
-	// TODO: check if this is needed
-	// close(s.done)
-
+	// report the close
 	if s.onClose != nil {
 		s.onClose()
 	}
 }
 
 // readLoop continuously reads messages from the socket
-func (s *SocketConn) readLoop() {
+func (s *SocketConn) readLoop(ctx context.Context, errChan chan error) {
 	reader := bufio.NewReader(s.conn)
 
 	for {
 		select {
-		case <-s.done:
+		case <-ctx.Done():
+			// the context is done, we should exit
+			// we close the connection
+			s.Close()
 			return
 		default:
 			// Read until newline
@@ -104,6 +102,8 @@ func (s *SocketConn) readLoop() {
 					s.onError(err)
 				}
 				s.Close()
+				// send the error to the errChan
+				errChan <- err
 				return
 			}
 

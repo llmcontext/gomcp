@@ -42,6 +42,7 @@ type Inspector struct {
 	clients       map[*websocket.Conn]bool
 	mutex         sync.RWMutex
 	logger        types.Logger
+	server        *http.Server
 }
 
 func NewInspector(config *config.InspectorInfo, logger types.Logger) *Inspector {
@@ -50,6 +51,7 @@ func NewInspector(config *config.InspectorInfo, logger types.Logger) *Inspector 
 		messageChan:   make(chan MessageInfo, 100), // Buffer of 100 messages
 		clients:       make(map[*websocket.Conn]bool),
 		logger:        logger,
+		server:        nil,
 	}
 }
 
@@ -77,33 +79,22 @@ func (i *Inspector) Start(ctx context.Context) error {
 		Addr:    i.listenAddress,
 		Handler: router,
 	}
+	i.server = server
 
 	// Start the server in a goroutine
 	go func() {
-		server.ListenAndServe()
+		err := server.ListenAndServe()
+		if err != nil {
+			i.logger.Error("error starting inspector", types.LogArg{
+				"error": err,
+			})
+		}
 	}()
 
 	// Start the message broadcaster in a goroutine
 	go func() {
 		i.broadcastMessages()
 	}()
-
-	// wait for the context to be done
-	<-ctx.Done()
-
-	i.logger.Info("Shutting down inspector", types.LogArg{
-		"listenAddress": i.listenAddress,
-	})
-
-	// shutdown the server
-	if err := server.Shutdown(ctx); err != nil {
-		i.logger.Error("error shutting down inspector", types.LogArg{
-			"error": err,
-		})
-	}
-
-	// shutdown the inspector
-	i.shutdown()
 
 	return nil
 }
@@ -171,4 +162,23 @@ func (i *Inspector) shutdown() {
 		"step": 3,
 	})
 	close(i.messageChan)
+}
+
+func (i *Inspector) Close(ctx context.Context) {
+	i.logger.Info("Shutting down inspector", types.LogArg{
+		"listenAddress": i.listenAddress,
+	})
+
+	if i.server != nil {
+		// shutdown the server
+		if err := i.server.Shutdown(ctx); err != nil {
+			i.logger.Error("error shutting down inspector", types.LogArg{
+				"error": err,
+			})
+		}
+	}
+
+	// shutdown the inspector
+	i.shutdown()
+
 }

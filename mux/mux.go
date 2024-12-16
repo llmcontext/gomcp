@@ -37,7 +37,7 @@ func (m *Multiplexer) Start(ctx context.Context) error {
 		})
 	})
 
-	m.socketServer.Start(func(transport types.Transport) {
+	m.socketServer.Start(ctx, func(transport types.Transport) {
 		// we have a new session
 		sessionId := fmt.Sprintf("s-%03d", m.sessionCount)
 		m.sessionCount++
@@ -51,4 +51,11 @@ func (m *Multiplexer) Start(ctx context.Context) error {
 	})
 
 	return nil
+}
+
+func (m *Multiplexer) Close() {
+	m.socketServer.Close()
+	for _, session := range m.sessions {
+		session.Close()
+	}
 }

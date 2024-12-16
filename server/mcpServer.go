@@ -3,8 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"os"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/prompts"
@@ -49,7 +47,7 @@ func NewMCPServer(
 	}
 }
 
-func (s *MCPServer) Start(ctx context.Context) error {
+func (s *MCPServer) Start(ctx context.Context) (chan error, error) {
 	transport := s.transport
 
 	// Set up message handler
@@ -85,19 +83,17 @@ func (s *MCPServer) Start(ctx context.Context) error {
 	})
 
 	// Start the transport
-	if err := transport.Start(ctx); err != nil {
+	errTransport, err := transport.Start(ctx)
+	if err != nil {
 		s.logError("failed to start transport", err)
-		return err
+		return errTransport, err
 	}
 
-	// Keep the main thread alive
-	// will be interrupted by the context
-	<-ctx.Done()
+	return errTransport, nil
+}
 
-	fmt.Printf("# [mcpServer] shutdown\n")
-
-	transport.Close()
-	return nil
+func (s *MCPServer) Close() {
+	s.transport.Close()
 }
 
 func (s *MCPServer) logError(message string, err error) {
@@ -105,11 +101,6 @@ func (s *MCPServer) logError(message string, err error) {
 		"message": message,
 		"error":   err,
 	})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s: %v\n", message, err)
-	} else {
-		fmt.Fprintf(os.Stderr, "%s\n", message)
-	}
 }
 
 func (s *MCPServer) sendError(error *jsonrpc.JsonRpcError, id *jsonrpc.JsonRpcRequestId) {

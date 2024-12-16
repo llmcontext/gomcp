@@ -21,7 +21,9 @@ type StdioTransport struct {
 	onMessage         func(json.RawMessage)
 	onClose           func()
 	onError           func(error)
-	done              chan struct{}
+
+	// we need to keep track of the pipe reader
+	pipeReader *io.PipeReader
 }
 
 func NewStdioTransport(protocolDebugFile string, inspector *inspector.Inspector, logger types.Logger) types.Transport {
@@ -30,15 +32,17 @@ func NewStdioTransport(protocolDebugFile string, inspector *inspector.Inspector,
 		protocolDebugFile: protocolDebugFile,
 		inspector:         inspector,
 		logger:            logger,
+		pipeReader:        nil,
 	}
 }
 
-func (t *StdioTransport) Start(ctx context.Context) error {
-	t.done = make(chan struct{})
+func (t *StdioTransport) Start(ctx context.Context) (chan error, error) {
+	// we create a channel to report errors
+	errChan := make(chan error, 1)
 
 	// Start goroutine to read from stdin
-	go t.readLoop(ctx)
-	return nil
+	go t.readLoop(ctx, errChan)
+	return errChan, nil
 }
 
 func (t *StdioTransport) Send(message json.RawMessage) error {
@@ -72,19 +76,42 @@ func (t *StdioTransport) OnError(callback func(error)) {
 }
 
 func (t *StdioTransport) Close() {
-	close(t.done)
+	// close the pipe reader
+	if t.pipeReader != nil {
+		t.pipeReader.Close()
+		t.pipeReader = nil
+	}
+
+	// report the close
 	if t.onClose != nil {
 		t.onClose()
 	}
+
 }
 
-func (t *StdioTransport) readLoop(ctx context.Context) {
+func (t *StdioTransport) readLoop(ctx context.Context, errChan chan error) {
+	// we create a pipe to read from stdin
+	// and push the data to the pipe
+	// we need to do this because we need to read from stdin in a non-blocking way
+	// if we don't do this, we will block the readLoop
+	// if we close the pipe, we will stop the readLoop
 	r, w := io.Pipe()
+	// we keep track of the pipe reader (to close it later)
+	t.pipeReader = r
+
 	go func() {
 		defer w.Close()
-		io.Copy(w, os.Stdin)
+		_, err := io.Copy(w, os.Stdin)
+		if err != nil && err != io.EOF {
+			if t.onError != nil {
+				t.onError(fmt.Errorf("error reading from stdin: %w", err))
+			}
+			// send the error to the errChan
+			errChan <- fmt.Errorf("error reading from stdin: %w", err)
+		}
 	}()
 
+	// we create a scanner to read from the pipe
 	scanner := bufio.NewScanner(r)
 	readCh := make(chan struct{})
 	for {
@@ -113,10 +140,10 @@ func (t *StdioTransport) readLoop(ctx context.Context) {
 		// check if we need to stop
 		case <-ctx.Done():
 			// close the pipe
-			r.Close()
+			t.Close()
 			return
-		// we'veread a message, let's read another one
 		case <-readCh:
+			// we've read a message, let's read another one
 			readCh = make(chan struct{})
 			continue
 		}
