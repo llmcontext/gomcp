@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/endpoints/mcpserver"
+	"github.com/llmcontext/gomcp/endpoints/muxserver"
 	"github.com/llmcontext/gomcp/eventbus"
 	"github.com/llmcontext/gomcp/inspector"
 	"github.com/llmcontext/gomcp/logger"
-	"github.com/llmcontext/gomcp/mux"
 	"github.com/llmcontext/gomcp/prompts"
-	"github.com/llmcontext/gomcp/server"
 	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
@@ -27,7 +27,7 @@ type ModelContextProtocolImpl struct {
 	toolsRegistry   *tools.ToolsRegistry
 	promptsRegistry *prompts.PromptsRegistry
 	inspector       *inspector.Inspector
-	multiplexer     *mux.Multiplexer
+	multiplexer     *muxserver.Multiplexer
 	logger          types.Logger
 }
 
@@ -67,9 +67,9 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	}
 
 	// Start multiplexer if enabled
-	var multiplexerInstance *mux.Multiplexer = nil
+	var multiplexerInstance *muxserver.Multiplexer = nil
 	if config.Proxy != nil && config.Proxy.Enabled {
-		multiplexerInstance = mux.NewMultiplexer(config.Proxy, eventBus, logger)
+		multiplexerInstance = muxserver.NewMultiplexer(config.Proxy, eventBus, logger)
 	}
 
 	return &ModelContextProtocolImpl{
@@ -147,7 +147,7 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 		mcp.logger.Info("Starting MCP server", types.LogArg{})
 
 		// Initialize server
-		server := server.NewMCPServer(transport, mcp.toolsRegistry, mcp.promptsRegistry,
+		server := mcpserver.NewMCPServer(transport, mcp.toolsRegistry, mcp.promptsRegistry,
 			mcp.config.ServerInfo.Name,
 			mcp.config.ServerInfo.Version,
 			mcp.logger)
