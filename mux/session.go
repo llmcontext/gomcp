@@ -3,7 +3,9 @@ package mux
 import (
 	"context"
 
+	"github.com/llmcontext/gomcp/eventbus"
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/protocol/mux"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 )
@@ -12,15 +14,17 @@ type MuxSession struct {
 	sessionId string
 	transport *transport.JsonRpcTransport
 	logger    types.Logger
+	eventBus  *eventbus.EventBus
 }
 
-func NewMuxSession(sessionId string, tran types.Transport, logger types.Logger) *MuxSession {
+func NewMuxSession(sessionId string, tran types.Transport, logger types.Logger, eventBus *eventbus.EventBus) *MuxSession {
 	jsonRpcTransport := transport.NewJsonRpcTransport(tran, "gomcp - proxy (mux)", logger)
 
 	session := &MuxSession{
 		sessionId: sessionId,
 		transport: jsonRpcTransport,
 		logger:    logger,
+		eventBus:  eventBus,
 	}
 
 	return session
@@ -71,8 +75,34 @@ func (s *MuxSession) onJsonRpcRequest(request *jsonrpc.JsonRpcRequest) {
 	s.logger.Info("Request", types.LogArg{
 		"request": request,
 	})
+	switch request.Method {
+	case mux.RpcRequestMethodProxyRegister:
+		params, err := mux.ParseJsonRpcRequestProxyRegisterParams(request)
+		if err != nil {
+			s.logger.Error("Failed to parse request params", types.LogArg{
+				"request": request,
+				"method":  request.Method,
+				"error":   err,
+			})
+			return
+		}
+		s.logger.Info("Proxy registration", types.LogArg{
+			"protocolVersion": params.ProtocolVersion,
+			"proxyId":         params.ProxyId,
+			"persistent":      params.Persistent,
+			"proxy":           params.Proxy,
+			"serverInfo":      params.ServerInfo,
+		})
+	}
 }
 
 func (s *MuxSession) Close() {
-	s.transport.Close()
+	if s.transport != nil {
+		s.transport.Close()
+		s.transport = nil
+	}
+}
+
+func (s *MuxSession) SessionId() string {
+	return s.sessionId
 }

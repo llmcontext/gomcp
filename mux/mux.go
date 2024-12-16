@@ -3,8 +3,10 @@ package mux
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/eventbus"
 	"github.com/llmcontext/gomcp/transport/socket"
 	"github.com/llmcontext/gomcp/types"
 )
@@ -15,20 +17,23 @@ type Multiplexer struct {
 	sessions      []*MuxSession
 	sessionCount  int
 	logger        types.Logger
+	eventBus      *eventbus.EventBus
 }
 
-func NewMultiplexer(config *config.ProxyConfig, logger types.Logger) *Multiplexer {
+// server inside the mcp server in charge of multiplexing multiple proxy clients
+func NewMultiplexer(config *config.ProxyConfig, eventBus *eventbus.EventBus, logger types.Logger) *Multiplexer {
 	return &Multiplexer{
 		listenAddress: config.ListenAddress,
 		socketServer:  nil,
 		sessions:      []*MuxSession{},
 		sessionCount:  0,
 		logger:        logger,
+		eventBus:      eventBus,
 	}
 }
 
 func (m *Multiplexer) Start(ctx context.Context) error {
-	// create transport
+	// create socket server to listen for new proxy client connections
 	m.socketServer = socket.NewSocketServer(m.listenAddress)
 
 	m.socketServer.OnError(func(err error) {
@@ -37,23 +42,33 @@ func (m *Multiplexer) Start(ctx context.Context) error {
 		})
 	})
 
+	// the parameter is a function that will be called when
+	// a new connection is established with a proxy client
 	m.socketServer.Start(ctx, func(transport types.Transport) {
 		// we have a new session
-		sessionId := fmt.Sprintf("s-%03d", m.sessionCount)
 		m.sessionCount++
+		sessionId := fmt.Sprintf("s-%03d", m.sessionCount)
 		m.logger.Info("new session", types.LogArg{
 			"sessionId": sessionId,
 		})
 		subLogger := types.NewSubLogger(m.logger, types.LogArg{
 			"sessionId": sessionId,
 		})
-		session := NewMuxSession(sessionId, transport, subLogger)
+
+		// create a new session
+		session := NewMuxSession(sessionId, transport, subLogger, m.eventBus)
 		m.sessions = append(m.sessions, session)
-		// TODO: error group here?
+		// start the session processing
 		err := session.Start(ctx)
 		if err != nil {
-			m.logger.Error("Failed to start session", types.LogArg{
-				"error": err,
+			m.logger.Error("mux session error - removing it", types.LogArg{
+				"sessionId": sessionId,
+				"error":     err,
+			})
+			session.Close()
+			// if the session fails to start, we remove it from the list of sessions
+			m.sessions = slices.DeleteFunc(m.sessions, func(s *MuxSession) bool {
+				return s.SessionId() == sessionId
 			})
 		}
 	})

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/eventbus"
 	"github.com/llmcontext/gomcp/inspector"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/mux"
@@ -22,6 +23,7 @@ import (
 
 type ModelContextProtocolImpl struct {
 	config          *config.Config
+	eventBus        *eventbus.EventBus
 	toolsRegistry   *tools.ToolsRegistry
 	promptsRegistry *prompts.PromptsRegistry
 	inspector       *inspector.Inspector
@@ -42,8 +44,12 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 		return nil, fmt.Errorf("failed to initialize logger: %v", err)
 	}
 
+	// Initialize the event bus used to communicate between the
+	// different components of the server
+	eventBus := eventbus.NewEventBus()
+
 	// Initialize tools registry
-	toolsRegistry := tools.NewToolsRegistry(logger)
+	toolsRegistry := tools.NewToolsRegistry(eventBus, logger)
 
 	// Initialize prompts registry
 	promptsRegistry := prompts.NewEmptyPromptsRegistry()
@@ -63,11 +69,12 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	// Start multiplexer if enabled
 	var multiplexerInstance *mux.Multiplexer = nil
 	if config.Proxy != nil && config.Proxy.Enabled {
-		multiplexerInstance = mux.NewMultiplexer(config.Proxy, logger)
+		multiplexerInstance = mux.NewMultiplexer(config.Proxy, eventBus, logger)
 	}
 
 	return &ModelContextProtocolImpl{
 		config:          config,
+		eventBus:        eventBus,
 		toolsRegistry:   toolsRegistry,
 		promptsRegistry: promptsRegistry,
 		inspector:       inspectorInstance,
@@ -195,9 +202,9 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 
 		for {
 			parentPID := syscall.Getppid()
-			mcp.logger.Info("Monitoring parent process", types.LogArg{
-				"pid": parentPID,
-			})
+			// mcp.logger.Info("Monitoring parent process", types.LogArg{
+			// 	"pid": parentPID,
+			// })
 			if parentPID == 1 {
 				mcp.logger.Info("Parent process is init. Shutting down...", types.LogArg{
 					"pid": parentPID,

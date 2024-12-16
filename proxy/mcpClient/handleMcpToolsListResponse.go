@@ -47,20 +47,12 @@ func (c *MCPProxyClient) sendProxyRegistrationRequest(transport *transport.JsonR
 			Version: c.serverInfo.Version,
 		},
 	}
-	// we add the tools to the request
-	// for _, tool := range c.tools {
-	// 	params.Tools = append(params.Tools, mux.ToolDescription{
-	// 		Name:        tool.Name,
-	// 		Description: tool.Description,
-	// 		InputSchema: tool.InputSchema,
-	// 	})
-	// }
 
 	c.logger.Info("sending proxy registration request", types.LogArg{
 		"params":        params,
 		"transportName": transport.Name(),
 	})
-	err := transport.SendRequestWithMethodAndParams(mux.RpcRequestMethodMuxInitialize, params)
+	err := transport.SendRequestWithMethodAndParams(mux.RpcRequestMethodProxyRegister, params)
 	if err != nil {
 		c.logger.Error("error sending proxy registration request", types.LogArg{
 			"error":         err,
