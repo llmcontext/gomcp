@@ -81,6 +81,8 @@ func (i *Inspector) Start(ctx context.Context) error {
 	}
 	i.server = server
 
+	errChan := make(chan error, 1)
+
 	// Start the server in a goroutine
 	go func() {
 		err := server.ListenAndServe()
@@ -88,15 +90,22 @@ func (i *Inspector) Start(ctx context.Context) error {
 			i.logger.Error("error starting inspector", types.LogArg{
 				"error": err,
 			})
+			errChan <- err
 		}
 	}()
 
 	// Start the message broadcaster in a goroutine
 	go func() {
 		i.broadcastMessages()
+		errChan <- nil
 	}()
 
-	return nil
+	select {
+	case err := <-errChan:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // broadcastMessages continuously reads from messageChan

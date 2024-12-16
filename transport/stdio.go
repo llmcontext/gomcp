@@ -18,6 +18,7 @@ type StdioTransport struct {
 	protocolDebugFile string
 	inspector         *inspector.Inspector
 	logger            types.Logger
+	onStarted         func()
 	onMessage         func(json.RawMessage)
 	onClose           func()
 	onError           func(error)
@@ -36,13 +37,21 @@ func NewStdioTransport(protocolDebugFile string, inspector *inspector.Inspector,
 	}
 }
 
-func (t *StdioTransport) Start(ctx context.Context) (chan error, error) {
+func (t *StdioTransport) Start(ctx context.Context) error {
 	// we create a channel to report errors
 	errChan := make(chan error, 1)
 
 	// Start goroutine to read from stdin
 	go t.readLoop(ctx, errChan)
-	return errChan, nil
+
+	select {
+	case err := <-errChan:
+		t.Close()
+		return err
+	case <-ctx.Done():
+		t.Close()
+		return ctx.Err()
+	}
 }
 
 func (t *StdioTransport) Send(message json.RawMessage) error {
@@ -61,6 +70,10 @@ func (t *StdioTransport) Send(message json.RawMessage) error {
 
 	_, err := fmt.Fprintf(os.Stdout, "%s\n", message)
 	return err
+}
+
+func (t *StdioTransport) OnStarted(callback func()) {
+	t.onStarted = callback
 }
 
 func (t *StdioTransport) OnMessage(callback func(json.RawMessage)) {
@@ -110,6 +123,11 @@ func (t *StdioTransport) readLoop(ctx context.Context, errChan chan error) {
 			errChan <- fmt.Errorf("error reading from stdin: %w", err)
 		}
 	}()
+
+	// call the onStarted callback
+	if t.onStarted != nil {
+		t.onStarted()
+	}
 
 	// we create a scanner to read from the pipe
 	scanner := bufio.NewScanner(r)

@@ -20,6 +20,7 @@ type StdioProxyClientTransport struct {
 	onMessage   func(json.RawMessage)
 	onClose     func()
 	onError     func(error)
+	onStarted   func()
 	// we need to keep track of the pipe reader
 	pipeReader *io.PipeReader
 }
@@ -32,28 +33,36 @@ func NewStdioProxyClientTransport(programName string, args []string) types.Trans
 	}
 }
 
-func (t *StdioProxyClientTransport) Start(ctx context.Context) (chan error, error) {
+func (t *StdioProxyClientTransport) Start(ctx context.Context) error {
 	t.cmd = exec.Command(t.programName, t.args...)
 
 	stdin, err := t.cmd.StdinPipe()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create stdin pipe: %v", err)
+		return fmt.Errorf("failed to create stdin pipe: %v", err)
 	}
 	t.stdin = stdin
 
 	stdout, err := t.cmd.StdoutPipe()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create stdout pipe: %v", err)
+		return fmt.Errorf("failed to create stdout pipe: %v", err)
 	}
 	t.stdout = stdout
 
 	if err := t.cmd.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start command: %v", err)
+		return fmt.Errorf("failed to start command: %v", err)
 	}
 
 	errChan := make(chan error, 1)
 	go t.readLoop(ctx, errChan)
-	return errChan, nil
+
+	select {
+	case err := <-errChan:
+		t.Close()
+		return err
+	case <-ctx.Done():
+		t.Close()
+		return ctx.Err()
+	}
 }
 
 func (t *StdioProxyClientTransport) readLoop(ctx context.Context, errChan chan error) {
@@ -80,6 +89,10 @@ func (t *StdioProxyClientTransport) readLoop(ctx context.Context, errChan chan e
 
 	scanner := bufio.NewScanner(r)
 	readCh := make(chan struct{})
+
+	if t.onStarted != nil {
+		t.onStarted()
+	}
 
 	for {
 		go func() {
@@ -116,6 +129,10 @@ func (t *StdioProxyClientTransport) OnClose(callback func()) {
 
 func (t *StdioProxyClientTransport) OnError(callback func(error)) {
 	t.onError = callback
+}
+
+func (t *StdioProxyClientTransport) OnStarted(callback func()) {
+	t.onStarted = callback
 }
 
 func (t *StdioProxyClientTransport) Close() {

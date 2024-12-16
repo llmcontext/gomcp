@@ -47,7 +47,15 @@ func (m *Multiplexer) Start(ctx context.Context) error {
 		subLogger := types.NewSubLogger(m.logger, types.LogArg{
 			"sessionId": sessionId,
 		})
-		m.sessions = append(m.sessions, NewMuxSession(ctx, sessionId, transport, subLogger))
+		session := NewMuxSession(sessionId, transport, subLogger)
+		m.sessions = append(m.sessions, session)
+		// TODO: error group here?
+		err := session.Start(ctx)
+		if err != nil {
+			m.logger.Error("Failed to start session", types.LogArg{
+				"error": err,
+			})
+		}
 	})
 
 	return nil

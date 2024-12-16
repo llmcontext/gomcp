@@ -13,9 +13,7 @@ type Transport interface {
 	// This method should only be called after callbacks are installed, or else
 	// messages may be lost.
 	//
-	// Returns a channel that will receive an error if
-	// if something goes wrong during the processing of the transport.
-	Start(ctx context.Context) (chan error, error)
+	Start(ctx context.Context) error
 
 	// Sends a JSON-RPC message (request or response).
 	Send(message json.RawMessage) error
@@ -26,6 +24,9 @@ type Transport interface {
 
 	// Closes the connection.
 	Close()
+
+	// Callback for when the connection is started.
+	OnStarted(callback func())
 
 	// Callback for when the connection is closed for any reason.
 	//

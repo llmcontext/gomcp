@@ -12,34 +12,45 @@ type MuxSession struct {
 	sessionId string
 	transport *transport.JsonRpcTransport
 	logger    types.Logger
-	errChan   chan error
 }
 
-func NewMuxSession(ctx context.Context, sessionId string, tran types.Transport, logger types.Logger) *MuxSession {
+func NewMuxSession(sessionId string, tran types.Transport, logger types.Logger) *MuxSession {
 	jsonRpcTransport := transport.NewJsonRpcTransport(tran, "gomcp - proxy (mux)", logger)
 
 	session := &MuxSession{
 		sessionId: sessionId,
 		transport: jsonRpcTransport,
 		logger:    logger,
-		errChan:   nil,
 	}
-
-	errChan, err := jsonRpcTransport.Start(ctx, func(message transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
-		if message.Response != nil {
-			session.onJsonRpcResponse(message.Response)
-		} else if message.Request != nil {
-			session.onJsonRpcRequest(message.Request)
-		}
-	})
-	if err != nil {
-		session.logger.Error("Failed to start JSON-RPC transport", types.LogArg{
-			"error": err,
-		})
-	}
-	session.errChan = errChan
 
 	return session
+}
+
+func (s *MuxSession) Start(ctx context.Context) error {
+	errChan := make(chan error, 1)
+
+	go func() {
+		err := s.transport.Start(ctx, func(message transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
+			if message.Response != nil {
+				s.onJsonRpcResponse(message.Response)
+			} else if message.Request != nil {
+				s.onJsonRpcRequest(message.Request)
+			}
+		})
+		if err != nil {
+			s.logger.Error("Failed to start JSON-RPC transport", types.LogArg{
+				"error": err,
+			})
+		}
+		errChan <- err
+	}()
+
+	select {
+	case err := <-errChan:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (s *MuxSession) SendRequest(request *jsonrpc.JsonRpcRequest) error {

@@ -75,7 +75,7 @@ func (m *JsonRpcTransport) OnStarted(callback func()) {
 	m.onStarted = callback
 }
 
-func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message JsonRpcMessage, jsonRpcTransport *JsonRpcTransport)) (chan error, error) {
+func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message JsonRpcMessage, jsonRpcTransport *JsonRpcTransport)) error {
 	t.logger.Info("starting JsonRpcTransport", types.LogArg{
 		"name": t.name,
 	})
@@ -150,18 +150,31 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 		})
 	})
 
-	// Start the transport
-	errChan, err := t.transport.Start(ctx)
-	if err != nil {
-		return nil, err
-	}
+	t.transport.OnStarted(func() {
+		if t.onStarted != nil {
+			t.onStarted()
+		}
+	})
 
-	// call the onStarted callback
-	if t.onStarted != nil {
-		t.onStarted()
-	}
+	errChan := make(chan error, 1)
+	go func() {
+		// Start the transport
+		err := t.transport.Start(ctx)
+		if err != nil {
+			t.logger.Error("error starting transport", types.LogArg{
+				"error": err,
+				"name":  t.name,
+			})
+		}
+		errChan <- err
+	}()
 
-	return errChan, nil
+	select {
+	case err := <-errChan:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (t *JsonRpcTransport) SendRequestWithMethodAndParams(method string, params interface{}) error {

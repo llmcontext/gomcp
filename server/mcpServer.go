@@ -47,7 +47,7 @@ func NewMCPServer(
 	}
 }
 
-func (s *MCPServer) Start(ctx context.Context) (chan error, error) {
+func (s *MCPServer) Start(ctx context.Context) error {
 	transport := s.transport
 
 	// Set up message handler
@@ -82,14 +82,23 @@ func (s *MCPServer) Start(ctx context.Context) (chan error, error) {
 		s.logError("transport error", err)
 	})
 
-	// Start the transport
-	errTransport, err := transport.Start(ctx)
-	if err != nil {
-		s.logError("failed to start transport", err)
-		return errTransport, err
-	}
+	errChan := make(chan error, 1)
 
-	return errTransport, nil
+	go func() {
+		// Start the transport
+		err := transport.Start(ctx)
+		if err != nil {
+			s.logError("failed to start transport", err)
+		}
+		errChan <- err
+	}()
+
+	select {
+	case err := <-errChan:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (s *MCPServer) Close() {

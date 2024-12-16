@@ -21,6 +21,7 @@ type SocketConn struct {
 	onMessage func(json.RawMessage)
 	onClose   func()
 	onError   func(error)
+	onStarted func()
 }
 
 func NewSocketConn(conn net.Conn) types.Transport {
@@ -30,11 +31,18 @@ func NewSocketConn(conn net.Conn) types.Transport {
 	}
 }
 
-func (s *SocketConn) Start(ctx context.Context) (chan error, error) {
+func (s *SocketConn) Start(ctx context.Context) error {
 	errChan := make(chan error, 1)
 
 	go s.readLoop(ctx, errChan)
-	return errChan, nil
+
+	select {
+	case err := <-errChan:
+		return err
+	case <-ctx.Done():
+		s.Close()
+		return ctx.Err()
+	}
 }
 
 // Send implements Transport.Send
@@ -55,6 +63,11 @@ func (s *SocketConn) Send(message json.RawMessage) error {
 // OnMessage implements Transport.OnMessage
 func (s *SocketConn) OnMessage(callback func(json.RawMessage)) {
 	s.onMessage = callback
+}
+
+// OnStarted implements Transport.OnStarted
+func (s *SocketConn) OnStarted(callback func()) {
+	s.onStarted = callback
 }
 
 // OnClose implements Transport.OnClose

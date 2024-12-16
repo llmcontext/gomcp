@@ -17,6 +17,7 @@ import (
 	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
+	"golang.org/x/sync/errgroup"
 )
 
 type ModelContextProtocolImpl struct {
@@ -106,65 +107,92 @@ func (mcp *ModelContextProtocolImpl) DeclareToolProvider(toolName string, toolIn
 // Start starts the server and the inspector
 func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 	mcp.logger.Info("Starting MCP server", types.LogArg{})
-	// we create a context that will be used to cancel the server and the inspector
-	ctx, cancel := context.WithCancel(context.Background())
+
+	// create a context that will be used to cancel the server and the inspector
+	ctx := context.Background()
 
 	// All the tools are initialized, we can prepare the tools registry
 	// so that it can be used by the server
 	err := mcp.toolsRegistry.Prepare(ctx, mcp.config.Tools)
 	if err != nil {
-		cancel()
 		return fmt.Errorf("error preparing tools registry: %s", err)
 	}
 
 	mcp.logger.Info("Starting inspector", types.LogArg{})
 
+	// we create an errgroup that will be used to cancel the server and the inspector
+	eg, egCtx := errgroup.WithContext(ctx)
+
 	// Start inspector if it was enabled
 	if mcp.inspector != nil {
-		err := mcp.inspector.Start(ctx)
+		eg.Go(func() error {
+			err := mcp.inspector.Start(egCtx)
+			if err != nil {
+				mcp.logger.Error("error starting inspector", types.LogArg{
+					"error": err,
+				})
+			}
+			return nil
+		})
+	}
+
+	eg.Go(func() error {
+		mcp.logger.Info("Starting MCP server", types.LogArg{})
+
+		// Initialize server
+		server := server.NewMCPServer(transport, mcp.toolsRegistry, mcp.promptsRegistry,
+			mcp.config.ServerInfo.Name,
+			mcp.config.ServerInfo.Version,
+			mcp.logger)
+
+		// Start server
+		err := server.Start(egCtx)
 		if err != nil {
-			mcp.logger.Error("error starting inspector", types.LogArg{
+			mcp.logger.Error("error starting server", types.LogArg{
 				"error": err,
 			})
+			return err
 		}
-	}
-
-	mcp.logger.Info("Starting MCP server", types.LogArg{})
-
-	// Initialize server
-	server := server.NewMCPServer(transport, mcp.toolsRegistry, mcp.promptsRegistry,
-		mcp.config.ServerInfo.Name,
-		mcp.config.ServerInfo.Version,
-		mcp.logger)
-
-	// Start server
-	chanErrMcpServer, err := server.Start(ctx)
-	if err != nil {
-		mcp.logger.Error("error starting server", types.LogArg{
-			"error": err,
-		})
-		cancel()
-	}
+		return nil
+	})
 
 	// Start multiplexer if it was enabled
 	if mcp.multiplexer != nil {
-		mcp.logger.Info("Starting multiplexer", types.LogArg{})
-		err := mcp.multiplexer.Start(ctx)
-		if err != nil {
-			mcp.logger.Error("error starting multiplexer", types.LogArg{
-				"error": err,
-			})
-			cancel()
-		}
+		eg.Go(func() error {
+			mcp.logger.Info("Starting multiplexer", types.LogArg{})
+			err := mcp.multiplexer.Start(egCtx)
+			if err != nil {
+				mcp.logger.Error("error starting multiplexer", types.LogArg{
+					"error": err,
+				})
+				return err
+			}
+			return nil
+		})
 	}
 
-	mcp.logger.Info("Waiting for MCP server to stop", types.LogArg{})
+	eg.Go(func() error {
+		mcp.logger.Info("Waiting for MCP server to stop", types.LogArg{})
 
-	// Listen for OS signals (e.g., Ctrl+C)
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGABRT, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGCHLD)
+		// Listen for OS signals (e.g., Ctrl+C)
+		signalChan := make(chan os.Signal, 1)
+		signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGABRT, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGCHLD)
 
-	go func() {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case signal := <-signalChan:
+			mcp.logger.Info("Received an interrupt, shutting down...", types.LogArg{
+				"signal": signal.String(),
+			})
+			return fmt.Errorf("received an interrupt (%s)", signal.String())
+		}
+	})
+
+	eg.Go(func() error {
+		timer := time.NewTimer(10 * time.Second)
+		defer timer.Stop()
+
 		for {
 			parentPID := syscall.Getppid()
 			mcp.logger.Info("Monitoring parent process", types.LogArg{
@@ -174,29 +202,26 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 				mcp.logger.Info("Parent process is init. Shutting down...", types.LogArg{
 					"pid": parentPID,
 				})
-				signalChan <- os.Interrupt
-				return
+				return fmt.Errorf("parent process is init")
 			}
-			// we wait 10 seconds before checking again
-			time.Sleep(10 * time.Second)
-		}
-	}()
 
-	select {
-	case err := <-chanErrMcpServer:
-		mcp.logger.Error("error starting server", types.LogArg{
+			timer.Reset(10 * time.Second)
+			select {
+			case <-ctx.Done():
+				mcp.logger.Info("Context cancelled, stopping parent process monitor", types.LogArg{})
+				return ctx.Err()
+			case <-timer.C:
+				continue
+			}
+		}
+	})
+
+	err = eg.Wait()
+	if err != nil {
+		mcp.logger.Error("stopping server", types.LogArg{
 			"error": err,
 		})
-	case <-signalChan:
-		mcp.logger.Info("Received an interrupt, shutting down...", types.LogArg{})
 	}
-
-	// we close the inspector
-	mcp.inspector.Close(ctx)
-
-	// Cancel the context to signal the goroutines to stop
-	cancel()
-
 	return nil
 }
 
