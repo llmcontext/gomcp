@@ -27,7 +27,7 @@ type ModelContextProtocolImpl struct {
 	toolsRegistry   *tools.ToolsRegistry
 	promptsRegistry *prompts.PromptsRegistry
 	inspector       *inspector.Inspector
-	multiplexer     *muxserver.Multiplexer
+	muxServer       *muxserver.MuxServer
 	logger          types.Logger
 }
 
@@ -67,9 +67,9 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	}
 
 	// Start multiplexer if enabled
-	var multiplexerInstance *muxserver.Multiplexer = nil
+	var muxServerInstance *muxserver.MuxServer = nil
 	if config.Proxy != nil && config.Proxy.Enabled {
-		multiplexerInstance = muxserver.NewMultiplexer(config.Proxy, eventBus, logger)
+		muxServerInstance = muxserver.NewMuxServer(config.Proxy, eventBus, logger)
 	}
 
 	return &ModelContextProtocolImpl{
@@ -78,7 +78,7 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 		toolsRegistry:   toolsRegistry,
 		promptsRegistry: promptsRegistry,
 		inspector:       inspectorInstance,
-		multiplexer:     multiplexerInstance,
+		muxServer:       muxServerInstance,
 		logger:          logger,
 	}, nil
 }
@@ -164,10 +164,10 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 	})
 
 	// Start multiplexer if it was enabled
-	if mcp.multiplexer != nil {
+	if mcp.muxServer != nil {
 		eg.Go(func() error {
 			mcp.logger.Info("Starting multiplexer", types.LogArg{})
-			err := mcp.multiplexer.Start(egCtx)
+			err := mcp.muxServer.Start(egCtx)
 			if err != nil {
 				mcp.logger.Error("error starting multiplexer", types.LogArg{
 					"error": err,

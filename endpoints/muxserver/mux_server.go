@@ -11,7 +11,7 @@ import (
 	"github.com/llmcontext/gomcp/types"
 )
 
-type Multiplexer struct {
+type MuxServer struct {
 	listenAddress string
 	socketServer  *socket.SocketServer
 	sessions      []*MuxSession
@@ -21,8 +21,8 @@ type Multiplexer struct {
 }
 
 // server inside the mcp server in charge of multiplexing multiple proxy clients
-func NewMultiplexer(config *config.ProxyConfig, eventBus *eventbus.EventBus, logger types.Logger) *Multiplexer {
-	return &Multiplexer{
+func NewMuxServer(config *config.ProxyConfig, eventBus *eventbus.EventBus, logger types.Logger) *MuxServer {
+	return &MuxServer{
 		listenAddress: config.ListenAddress,
 		socketServer:  nil,
 		sessions:      []*MuxSession{},
@@ -32,7 +32,7 @@ func NewMultiplexer(config *config.ProxyConfig, eventBus *eventbus.EventBus, log
 	}
 }
 
-func (m *Multiplexer) Start(ctx context.Context) error {
+func (m *MuxServer) Start(ctx context.Context) error {
 	// create socket server to listen for new proxy client connections
 	m.socketServer = socket.NewSocketServer(m.listenAddress)
 
@@ -76,7 +76,7 @@ func (m *Multiplexer) Start(ctx context.Context) error {
 	return nil
 }
 
-func (m *Multiplexer) Close() {
+func (m *MuxServer) Close() {
 	m.socketServer.Close()
 	for _, session := range m.sessions {
 		session.Close()
