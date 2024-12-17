@@ -7,7 +7,7 @@ import (
 	"github.com/llmcontext/gomcp/types"
 )
 
-func (c *MCPProxyClient) handleMcpInitializeResponse(
+func (c *ProxyMcpClient) handleMcpInitializeResponse(
 	response *jsonrpc.JsonRpcResponse,
 	transport *transport.JsonRpcTransport,
 ) {

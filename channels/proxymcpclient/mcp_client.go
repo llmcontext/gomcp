@@ -3,25 +3,19 @@ package proxymcpclient
 import (
 	"context"
 
+	"github.com/llmcontext/gomcp/channels"
+	"github.com/llmcontext/gomcp/channels/proxymuxclient"
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 	"github.com/llmcontext/gomcp/version"
 )
 
-type MCPProxyClientOptions struct {
-	ProxyName               string
-	CurrentWorkingDirectory string
-	ProgramName             string
-	ProgramArgs             []string
-}
+type ProxyMcpClient struct {
+	options   *channels.ProxiedMcpServerDescription
+	muxClient *proxymuxclient.ProxyMuxClient
+	logger    types.Logger
 
-type MCPProxyClient struct {
-	options MCPProxyClientOptions
-	logger  types.Logger
-
-	// context for mux transport
-	muxJsonRpcTransport *transport.JsonRpcTransport
 	// context for proxy transport
 	proxyJsonRpcTransport *transport.JsonRpcTransport
 
@@ -31,15 +25,15 @@ type MCPProxyClient struct {
 	tools []mcp.ToolDescription
 }
 
-func NewMCPProxyClient(
+func NewProxyMcpClient(
 	proxyJsonRpcTransport *transport.JsonRpcTransport,
-	muxJsonRpcTransport *transport.JsonRpcTransport,
-	options MCPProxyClientOptions,
+	muxClient *proxymuxclient.ProxyMuxClient,
+	options *channels.ProxiedMcpServerDescription,
 	logger types.Logger,
-) *MCPProxyClient {
-	return &MCPProxyClient{
+) *ProxyMcpClient {
+	return &ProxyMcpClient{
 		proxyJsonRpcTransport: proxyJsonRpcTransport,
-		muxJsonRpcTransport:   muxJsonRpcTransport,
+		muxClient:             muxClient,
 		options:               options,
 		logger:                logger,
 		serverInfo:            mcp.ServerInfo{},
@@ -47,10 +41,9 @@ func NewMCPProxyClient(
 	}
 }
 
-func (c *MCPProxyClient) Start(ctx context.Context) error {
+func (c *ProxyMcpClient) Start(ctx context.Context) error {
 	var err error
 	errProxyChan := make(chan error, 1)
-	errMuxChan := make(chan error, 1)
 
 	// First message to send is always an initialize request
 	c.proxyJsonRpcTransport.OnStarted(func() {
@@ -89,26 +82,8 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 		}
 	}()
 
-	go func() {
-		err = c.muxJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
-			c.logger.Debug("received message from mux", types.LogArg{
-				"message": msg,
-			})
-			// c.handleMuxIncomingMessage(msg, c.muxJsonRpcTransport)
-		})
-		if err != nil {
-			c.logger.Error("failed to start mux transport", types.LogArg{
-				"error": err,
-			})
-			errMuxChan <- err
-		}
-	}()
-
 	select {
 	case err := <-errProxyChan:
-		c.Close()
-		return err
-	case err := <-errMuxChan:
 		c.Close()
 		return err
 	case <-ctx.Done():
@@ -117,7 +92,6 @@ func (c *MCPProxyClient) Start(ctx context.Context) error {
 	}
 }
 
-func (c *MCPProxyClient) Close() {
+func (c *ProxyMcpClient) Close() {
 	c.proxyJsonRpcTransport.Close()
-	c.muxJsonRpcTransport.Close()
 }

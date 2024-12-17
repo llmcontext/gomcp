@@ -3,15 +3,13 @@ package proxymcpclient
 import (
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mcp"
-	"github.com/llmcontext/gomcp/protocol/mux"
-	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 )
 
-func (c *MCPProxyClient) handleMcpToolsListResponse(
+func (c *ProxyMcpClient) handleMcpToolsListResponse(
 	response *jsonrpc.JsonRpcResponse,
-	muxTransport *transport.JsonRpcTransport,
 ) {
+	// the MCP server sent its tools list
 	toolsListResponse, err := mcp.ParseJsonRpcResponseToolsList(response)
 	if err != nil {
 		c.logger.Error("error in handleMcpToolsListResponse", types.LogArg{
@@ -31,32 +29,5 @@ func (c *MCPProxyClient) handleMcpToolsListResponse(
 	}
 
 	// we can now report the tools list to the mux server
-	c.sendProxyRegistrationRequest(muxTransport)
-}
-
-func (c *MCPProxyClient) sendProxyRegistrationRequest(transport *transport.JsonRpcTransport) {
-	params := mux.JsonRpcRequestProxyRegisterParams{
-		ProtocolVersion: mux.MuxProtocolVersion,
-		Proxy: mux.ProxyDescription{
-			WorkingDirectory: c.options.CurrentWorkingDirectory,
-			Command:          c.options.ProgramName,
-			Args:             c.options.ProgramArgs,
-		},
-		ServerInfo: mux.ServerInfo{
-			Name:    c.serverInfo.Name,
-			Version: c.serverInfo.Version,
-		},
-	}
-
-	c.logger.Info("sending proxy registration request", types.LogArg{
-		"params":        params,
-		"transportName": transport.Name(),
-	})
-	err := transport.SendRequestWithMethodAndParams(mux.RpcRequestMethodProxyRegister, params)
-	if err != nil {
-		c.logger.Error("error sending proxy registration request", types.LogArg{
-			"error":         err,
-			"transportName": transport.Name(),
-		})
-	}
+	c.muxClient.SendProxyRegistrationRequest(c.options, c.serverInfo, c.tools)
 }

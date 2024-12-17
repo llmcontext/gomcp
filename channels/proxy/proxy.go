@@ -7,7 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/llmcontext/gomcp/channels"
 	"github.com/llmcontext/gomcp/channels/proxymcpclient"
+	"github.com/llmcontext/gomcp/channels/proxymuxclient"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/transport/socket"
 	"github.com/llmcontext/gomcp/types"
@@ -78,8 +80,16 @@ func (c *ProxyClient) Start() error {
 		// create the json rpc transport for the mux client
 		muxJsonRpcTransport := transport.NewJsonRpcTransport(muxClientTransport, "proxy client - gomcp (mux)", c.logger)
 
+		muxClient := proxymuxclient.NewProxyMuxClient(muxJsonRpcTransport, c.logger)
+
+		err = muxClient.Start(egctx)
+		if err != nil {
+			c.logger.Error("error starting mux client", types.LogArg{"error": err})
+			return err
+		}
+
 		// create the options for the proxy client
-		options := proxymcpclient.MCPProxyClientOptions{
+		options := channels.ProxiedMcpServerDescription{
 			ProxyName:               GomcpProxyClientName,
 			CurrentWorkingDirectory: c.proxyInformation.CurrentWorkingDirectory,
 			ProgramName:             c.proxyInformation.ProgramName,
@@ -95,10 +105,10 @@ func (c *ProxyClient) Start() error {
 		proxyJsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, "proxy - client (mcp)", c.logger)
 
 		// create the proxy client
-		proxyClient := proxymcpclient.NewMCPProxyClient(
+		proxyClient := proxymcpclient.NewProxyMcpClient(
 			proxyJsonRpcTransport,
-			muxJsonRpcTransport,
-			options,
+			muxClient,
+			&options,
 			c.logger,
 		)
 
