@@ -8,10 +8,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/llmcontext/gomcp/channels/hubinspector"
+	"github.com/llmcontext/gomcp/channels/hubmcpserver"
+	"github.com/llmcontext/gomcp/channels/hubmuxserver"
 	"github.com/llmcontext/gomcp/config"
-	"github.com/llmcontext/gomcp/endpoints/hubinspector"
-	"github.com/llmcontext/gomcp/endpoints/hubmcpserver"
-	"github.com/llmcontext/gomcp/endpoints/hubmuxserver"
 	"github.com/llmcontext/gomcp/eventbus"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/prompts"

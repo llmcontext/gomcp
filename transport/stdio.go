@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/llmcontext/gomcp/endpoints/hubinspector"
+	"github.com/llmcontext/gomcp/channels/hubinspector"
 	"github.com/llmcontext/gomcp/types"
 )
 
