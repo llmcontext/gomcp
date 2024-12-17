@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/endpoints/hubinspector"
 	"github.com/llmcontext/gomcp/endpoints/hubmcpserver"
 	"github.com/llmcontext/gomcp/endpoints/hubmuxserver"
-	"github.com/llmcontext/gomcp/endpoints/inspector"
 	"github.com/llmcontext/gomcp/eventbus"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/prompts"
@@ -26,7 +26,7 @@ type ModelContextProtocolImpl struct {
 	eventBus        *eventbus.EventBus
 	toolsRegistry   *tools.ToolsRegistry
 	promptsRegistry *prompts.PromptsRegistry
-	inspector       *inspector.Inspector
+	inspector       *hubinspector.Inspector
 	muxServer       *hubmuxserver.MuxServer
 	logger          types.Logger
 }
@@ -61,9 +61,9 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	}
 
 	// Start inspector if enabled
-	var inspectorInstance *inspector.Inspector = nil
+	var inspectorInstance *hubinspector.Inspector = nil
 	if config.Inspector != nil && config.Inspector.Enabled {
-		inspectorInstance = inspector.NewInspector(config.Inspector, logger)
+		inspectorInstance = hubinspector.NewInspector(config.Inspector, logger)
 	}
 
 	// Start multiplexer if enabled

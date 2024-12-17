@@ -9,14 +9,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/llmcontext/gomcp/endpoints/inspector"
+	"github.com/llmcontext/gomcp/endpoints/hubinspector"
 	"github.com/llmcontext/gomcp/types"
 )
 
 type StdioTransport struct {
 	debug             bool
 	protocolDebugFile string
-	inspector         *inspector.Inspector
+	inspector         *hubinspector.Inspector
 	logger            types.Logger
 	onStarted         func()
 	onMessage         func(json.RawMessage)
@@ -27,7 +27,7 @@ type StdioTransport struct {
 	pipeReader *io.PipeReader
 }
 
-func NewStdioTransport(protocolDebugFile string, inspector *inspector.Inspector, logger types.Logger) types.Transport {
+func NewStdioTransport(protocolDebugFile string, inspector *hubinspector.Inspector, logger types.Logger) types.Transport {
 	return &StdioTransport{
 		debug:             protocolDebugFile != "",
 		protocolDebugFile: protocolDebugFile,
@@ -61,9 +61,9 @@ func (t *StdioTransport) Send(message json.RawMessage) error {
 	}
 
 	if t.inspector != nil {
-		t.inspector.EnqueueMessage(inspector.MessageInfo{
+		t.inspector.EnqueueMessage(hubinspector.MessageInfo{
 			Timestamp: time.Now().Format(time.RFC3339),
-			Direction: inspector.MessageDirectionResponse,
+			Direction: hubinspector.MessageDirectionResponse,
 			Content:   string(message),
 		})
 	}
@@ -142,9 +142,9 @@ func (t *StdioTransport) readLoop(ctx context.Context, errChan chan error) {
 					}
 
 					if t.inspector != nil {
-						t.inspector.EnqueueMessage(inspector.MessageInfo{
+						t.inspector.EnqueueMessage(hubinspector.MessageInfo{
 							Timestamp: time.Now().Format(time.RFC3339),
-							Direction: inspector.MessageDirectionRequest,
+							Direction: hubinspector.MessageDirectionRequest,
 							Content:   line,
 						})
 					}
