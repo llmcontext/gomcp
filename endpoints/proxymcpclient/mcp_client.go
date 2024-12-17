@@ -1,4 +1,4 @@
-package mcpclient
+package proxymcpclient
 
 import (
 	"context"

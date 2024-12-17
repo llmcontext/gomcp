@@ -1,4 +1,4 @@
-package muxserver
+package hubmuxserver
 
 import (
 	"context"
