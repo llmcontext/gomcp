@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/llmcontext/gomcp/inspector"
+	"github.com/llmcontext/gomcp/endpoints/inspector"
 	"github.com/llmcontext/gomcp/types"
 )
 
