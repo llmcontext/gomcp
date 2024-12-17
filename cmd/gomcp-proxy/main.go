@@ -5,9 +5,9 @@ import (
 	"net"
 	"os"
 
+	"github.com/llmcontext/gomcp/channels/proxy"
 	"github.com/llmcontext/gomcp/defaults"
 	"github.com/llmcontext/gomcp/logger"
-	"github.com/llmcontext/gomcp/proxy"
 	"github.com/llmcontext/gomcp/types"
 	"github.com/llmcontext/gomcp/version"
 	"github.com/spf13/cobra"

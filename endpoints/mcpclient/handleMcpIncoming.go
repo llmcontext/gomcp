@@ -1,4 +1,4 @@
-package mcpClient
+package mcpclient
 
 import (
 	"github.com/llmcontext/gomcp/protocol/mcp"
