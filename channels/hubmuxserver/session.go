@@ -77,22 +77,15 @@ func (s *MuxSession) onJsonRpcRequest(request *jsonrpc.JsonRpcRequest) {
 	})
 	switch request.Method {
 	case mux.RpcRequestMethodProxyRegister:
-		params, err := mux.ParseJsonRpcRequestProxyRegisterParams(request)
+		err := handleProxyRegister(s, request)
 		if err != nil {
-			s.logger.Error("Failed to parse request params", types.LogArg{
+			s.logger.Error("Failed to handle proxy register", types.LogArg{
 				"request": request,
 				"method":  request.Method,
 				"error":   err,
 			})
 			return
 		}
-		s.logger.Info("Proxy registration", types.LogArg{
-			"protocolVersion": params.ProtocolVersion,
-			"proxyId":         params.ProxyId,
-			"persistent":      params.Persistent,
-			"proxy":           params.Proxy,
-			"serverInfo":      params.ServerInfo,
-		})
 	}
 }
 

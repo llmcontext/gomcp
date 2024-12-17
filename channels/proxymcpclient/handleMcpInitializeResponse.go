@@ -3,13 +3,11 @@ package proxymcpclient
 import (
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mcp"
-	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 )
 
 func (c *ProxyMcpClient) handleMcpInitializeResponse(
 	response *jsonrpc.JsonRpcResponse,
-	transport *transport.JsonRpcTransport,
 ) {
 	initializeResponse, err := mcp.ParseJsonRpcResponseInitialize(response)
 	if err != nil {
@@ -29,11 +27,11 @@ func (c *ProxyMcpClient) handleMcpInitializeResponse(
 
 	// we send the "notifications/initialized" notification
 	notification := jsonrpc.NewJsonRpcNotification(mcp.RpcNotificationMethodInitialized)
-	transport.SendRequest(notification)
+	c.proxyJsonRpcTransport.SendRequest(notification)
 
 	// we send the "tools/list" request
 	params := mcp.JsonRpcRequestToolsListParams{}
 
-	transport.SendRequestWithMethodAndParams(
+	c.proxyJsonRpcTransport.SendRequestWithMethodAndParams(
 		mcp.RpcRequestMethodToolsList, params)
 }

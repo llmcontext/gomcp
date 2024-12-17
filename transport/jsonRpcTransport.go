@@ -25,6 +25,7 @@ type JsonRpcTransport struct {
 }
 
 type JsonRpcMessage struct {
+	Method   string
 	Request  *jsonrpc.JsonRpcRequest
 	Response *jsonrpc.JsonRpcResponse
 }
@@ -115,10 +116,15 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 					})
 					return
 				}
-				onMessage(JsonRpcMessage{Request: request}, t)
+				onMessage(JsonRpcMessage{
+					Request:  request,
+					Method:   request.Method,
+					Response: nil,
+				}, t)
 
 			case jsonrpc.MessageNatureResponse:
 				response, _, rpcErr := jsonrpc.ParseJsonRpcResponse(jsonRpcRawMessage)
+
 				if rpcErr != nil {
 					t.logger.Error("error parsing response", types.LogArg{
 						"error": rpcErr,
@@ -126,7 +132,24 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 					})
 					return
 				}
-				onMessage(JsonRpcMessage{Response: response}, t)
+				pendingRequestMethod, reqId := t.GetPendingRequest(response.Id)
+				if pendingRequestMethod == "" {
+					t.logger.Error("pending request method not found", types.LogArg{
+						"requestId": jsonrpc.RequestIdToString(response.Id),
+						"name":      t.name,
+						"response":  response,
+					})
+					return
+				}
+				t.logger.Info("pending request method found", types.LogArg{
+					"method": pendingRequestMethod,
+					"name":   t.name,
+					"id":     jsonrpc.RequestIdToString(reqId),
+				})
+				onMessage(JsonRpcMessage{
+					Response: response,
+					Method:   pendingRequestMethod,
+				}, t)
 			default:
 				t.logger.Error("invalid message nature", types.LogArg{
 					"nature": nature,
@@ -189,6 +212,16 @@ func (t *JsonRpcTransport) SendRequestWithMethodAndParams(method string, params 
 	return t.SendRequest(request)
 }
 
+func (t *JsonRpcTransport) SendResponseWithResults(reqId *jsonrpc.JsonRpcRequestId, result interface{}) error {
+	response := &jsonrpc.JsonRpcResponse{
+		JsonRpcVersion: jsonrpc.JsonRpcVersion,
+		Id:             reqId,
+		Result:         result,
+		Error:          nil,
+	}
+	return t.SendResponse(response)
+}
+
 func (t *JsonRpcTransport) SendRequest(request *jsonrpc.JsonRpcRequest) error {
 	jsonMessage, err := jsonrpc.MarshalJsonRpcRequest(request)
 	if err != nil {
@@ -206,6 +239,13 @@ func (t *JsonRpcTransport) SendRequest(request *jsonrpc.JsonRpcRequest) error {
 			requestId: request.Id,
 		}
 	}
+
+	t.logger.Info("sending request", types.LogArg{
+		"method":  request.Method,
+		"id":      jsonrpc.RequestIdToString(request.Id),
+		"name":    t.name,
+		"request": request,
+	})
 
 	return t.transport.Send(jsonMessage)
 }
@@ -263,6 +303,9 @@ func (t *JsonRpcTransport) GetPendingRequest(reqId *jsonrpc.JsonRpcRequestId) (s
 	reqIdStr := jsonrpc.RequestIdToString(reqId)
 	pendingRequest := t.pendingRequests[reqIdStr]
 	if pendingRequest == nil {
+		t.logger.Error("pending request not found", types.LogArg{
+			"requestId": reqIdStr,
+		})
 		return "", nil
 	}
 	// we delete the pending request from the map

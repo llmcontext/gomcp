@@ -71,8 +71,12 @@ func (c *ProxyMcpClient) Start(ctx context.Context) error {
 	go func() {
 		// start the proxy transport
 		err = c.proxyJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
-			c.logger.Debug("received message from proxy", msg.DebugInfo(jsonRpcTransport.Name()))
-			c.handleMcpIncomingMessage(msg, jsonRpcTransport)
+			c.logger.Debug("received message from proxy", types.LogArg{
+				"message": msg,
+				"method":  msg.Method,
+				"name":    jsonRpcTransport.Name(),
+			})
+			c.handleMcpIncomingMessage(msg)
 		})
 		if err != nil {
 			c.logger.Error("failed to start proxy transport", types.LogArg{

@@ -32,9 +32,19 @@ func (c *ProxyMuxClient) Start(ctx context.Context) error {
 	go func() {
 		err = c.muxJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
 			c.logger.Debug("received message from mux", types.LogArg{
-				"message": msg,
+				"message":  msg,
+				"method":   msg.Method,
+				"request":  msg.Request,
+				"response": msg.Response,
+				"name":     jsonRpcTransport.Name(),
 			})
-			// c.handleMuxIncomingMessage(msg, c.muxJsonRpcTransport)
+			err = c.handleIncomingMessage(msg)
+			if err != nil {
+				c.logger.Error("error handling incoming message", types.LogArg{
+					"error": err,
+				})
+				errMuxChan <- err
+			}
 		})
 		if err != nil {
 			c.logger.Error("failed to start mux transport", types.LogArg{

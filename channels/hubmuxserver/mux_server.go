@@ -58,19 +58,24 @@ func (m *MuxServer) Start(ctx context.Context) error {
 		// create a new session
 		session := NewMuxSession(sessionId, transport, subLogger, m.eventBus)
 		m.sessions = append(m.sessions, session)
-		// start the session processing
-		err := session.Start(ctx)
-		if err != nil {
-			m.logger.Error("mux session error - removing it", types.LogArg{
-				"sessionId": sessionId,
-				"error":     err,
-			})
-			session.Close()
-			// if the session fails to start, we remove it from the list of sessions
-			m.sessions = slices.DeleteFunc(m.sessions, func(s *MuxSession) bool {
-				return s.SessionId() == sessionId
-			})
-		}
+
+		// start the session processing in a goroutine
+		// this is to avoid blocking the main thread
+		go func() {
+			// start the session processing
+			err := session.Start(ctx)
+			if err != nil {
+				m.logger.Error("mux session error - removing it", types.LogArg{
+					"sessionId": sessionId,
+					"error":     err,
+				})
+				session.Close()
+				// if the session fails to start, we remove it from the list of sessions
+				m.sessions = slices.DeleteFunc(m.sessions, func(s *MuxSession) bool {
+					return s.SessionId() == sessionId
+				})
+			}
+		}()
 	})
 
 	return nil
