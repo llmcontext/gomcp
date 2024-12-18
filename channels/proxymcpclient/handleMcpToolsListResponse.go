@@ -18,16 +18,6 @@ func (c *ProxyMcpClient) handleMcpToolsListResponse(
 		return
 	}
 
-	// display all the tool names and descriptions
-	for _, tool := range toolsListResponse.Tools {
-		c.logger.Info("tool", types.LogArg{
-			"name":        tool.Name,
-			"description": tool.Description,
-		})
-		// we store the tools description
-		c.tools = append(c.tools, tool)
-	}
+	c.events.EventMcpToolsListResponse(toolsListResponse)
 
-	// we can now report the tools list to the mux server
-	c.muxClient.SendProxyRegistrationRequest(c.options, c.serverInfo, c.tools)
 }

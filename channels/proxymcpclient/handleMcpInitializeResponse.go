@@ -20,18 +20,6 @@ func (c *ProxyMcpClient) handleMcpInitializeResponse(
 		"name":    initializeResponse.ServerInfo.Name,
 		"version": initializeResponse.ServerInfo.Version,
 	})
+	c.events.EventMcpInitializeResponse(initializeResponse)
 
-	// we update the server information
-	c.serverInfo.Name = initializeResponse.ServerInfo.Name
-	c.serverInfo.Version = initializeResponse.ServerInfo.Version
-
-	// we send the "notifications/initialized" notification
-	notification := jsonrpc.NewJsonRpcNotification(mcp.RpcNotificationMethodInitialized)
-	c.proxyJsonRpcTransport.SendRequest(notification)
-
-	// we send the "tools/list" request
-	params := mcp.JsonRpcRequestToolsListParams{}
-
-	c.proxyJsonRpcTransport.SendRequestWithMethodAndParams(
-		mcp.RpcRequestMethodToolsList, params)
 }

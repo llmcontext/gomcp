@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/llmcontext/gomcp/channels"
+	"github.com/llmcontext/gomcp/channels/proxy/events"
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/protocol/mux"
 	"github.com/llmcontext/gomcp/transport"
@@ -13,15 +14,18 @@ import (
 type ProxyMuxClient struct {
 	muxJsonRpcTransport *transport.JsonRpcTransport
 	logger              types.Logger
+	events              *events.Events
 }
 
 func NewProxyMuxClient(
 	muxJsonRpcTransport *transport.JsonRpcTransport,
+	events *events.Events,
 	logger types.Logger,
 ) *ProxyMuxClient {
 	return &ProxyMuxClient{
 		muxJsonRpcTransport: muxJsonRpcTransport,
 		logger:              logger,
+		events:              events,
 	}
 }
 

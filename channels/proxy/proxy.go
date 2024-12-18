@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/llmcontext/gomcp/channels"
+	"github.com/llmcontext/gomcp/channels/proxy/events"
 	"github.com/llmcontext/gomcp/channels/proxymcpclient"
 	"github.com/llmcontext/gomcp/channels/proxymuxclient"
 	"github.com/llmcontext/gomcp/transport"
@@ -19,6 +20,9 @@ import (
 type ProxyClient struct {
 	proxyInformation ProxyInformation
 	logger           types.Logger
+	stateManager     *StateManager
+	events           *events.Events
+	options          *channels.ProxiedMcpServerDescription
 }
 
 type ProxyInformation struct {
@@ -33,9 +37,21 @@ const (
 )
 
 func NewProxyClient(proxyInformation ProxyInformation, logger types.Logger) *ProxyClient {
+	options := channels.ProxiedMcpServerDescription{
+		ProxyName:               GomcpProxyClientName,
+		CurrentWorkingDirectory: proxyInformation.CurrentWorkingDirectory,
+		ProgramName:             proxyInformation.ProgramName,
+		ProgramArgs:             proxyInformation.Args,
+	}
+	stateManager := NewStateManager(&options, logger)
+	events := events.NewEvents(stateManager)
+
 	return &ProxyClient{
 		proxyInformation: proxyInformation,
 		logger:           logger,
+		options:          &options,
+		stateManager:     stateManager,
+		events:           events,
 	}
 }
 
@@ -82,7 +98,9 @@ func (c *ProxyClient) Start() error {
 	// create the json rpc transport for the mux client
 	muxJsonRpcTransport := transport.NewJsonRpcTransport(muxClientTransport, "proxy client - gomcp (mux)", c.logger)
 
-	muxClient := proxymuxclient.NewProxyMuxClient(muxJsonRpcTransport, c.logger)
+	muxClient := proxymuxclient.NewProxyMuxClient(muxJsonRpcTransport, c.events, c.logger)
+
+	c.stateManager.SetMuxClient(muxClient)
 
 	eg.Go(func() error {
 		err = muxClient.Start(egctx)
@@ -96,17 +114,11 @@ func (c *ProxyClient) Start() error {
 	// go routine for proxy mcp client
 	eg.Go(func() error {
 		// create the options for the proxy client
-		options := channels.ProxiedMcpServerDescription{
-			ProxyName:               GomcpProxyClientName,
-			CurrentWorkingDirectory: c.proxyInformation.CurrentWorkingDirectory,
-			ProgramName:             c.proxyInformation.ProgramName,
-			ProgramArgs:             c.proxyInformation.Args,
-		}
 
 		// create the transport for the proxy client
 		proxyTransport := transport.NewStdioProxyClientTransport(
-			options.ProgramName,
-			options.ProgramArgs,
+			c.options.ProgramName,
+			c.options.ProgramArgs,
 		)
 
 		proxyJsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, "proxy - client (mcp)", c.logger)
@@ -114,10 +126,12 @@ func (c *ProxyClient) Start() error {
 		// create the proxy client
 		proxyClient := proxymcpclient.NewProxyMcpClient(
 			proxyJsonRpcTransport,
-			muxClient,
-			&options,
+			c.events,
+			c.options,
 			c.logger,
 		)
+
+		c.stateManager.SetProxyClient(proxyClient)
 
 		err := proxyClient.Start(egctx)
 		if err != nil {
@@ -127,6 +141,7 @@ func (c *ProxyClient) Start() error {
 	})
 
 	err = eg.Wait()
+	c.stateManager.Stop(err)
 	if err != nil {
 		c.logger.Error("error starting proxy client", types.LogArg{"error": err})
 	}

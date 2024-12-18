@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/llmcontext/gomcp/channels"
-	"github.com/llmcontext/gomcp/channels/proxymuxclient"
+	"github.com/llmcontext/gomcp/channels/proxy/events"
+	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
@@ -12,32 +13,30 @@ import (
 )
 
 type ProxyMcpClient struct {
-	options   *channels.ProxiedMcpServerDescription
-	muxClient *proxymuxclient.ProxyMuxClient
-	logger    types.Logger
+	options *channels.ProxiedMcpServerDescription
+	events  *events.Events
+	logger  types.Logger
 
 	// context for proxy transport
 	proxyJsonRpcTransport *transport.JsonRpcTransport
 
-	// serverInfo is the info about the server we are connected to
-	serverInfo mcp.ServerInfo
 	// tools is the list of tools available for the proxy
 	tools []mcp.ToolDescription
 }
 
 func NewProxyMcpClient(
 	proxyJsonRpcTransport *transport.JsonRpcTransport,
-	muxClient *proxymuxclient.ProxyMuxClient,
+	events *events.Events,
 	options *channels.ProxiedMcpServerDescription,
 	logger types.Logger,
 ) *ProxyMcpClient {
 	return &ProxyMcpClient{
 		proxyJsonRpcTransport: proxyJsonRpcTransport,
-		muxClient:             muxClient,
+		events:                events,
 		options:               options,
 		logger:                logger,
-		serverInfo:            mcp.ServerInfo{},
-		tools:                 []mcp.ToolDescription{},
+		//serverInfo:            mcp.ServerInfo{},
+		tools: []mcp.ToolDescription{},
 	}
 }
 
@@ -98,4 +97,15 @@ func (c *ProxyMcpClient) Start(ctx context.Context) error {
 
 func (c *ProxyMcpClient) Close() {
 	c.proxyJsonRpcTransport.Close()
+}
+
+func (c *ProxyMcpClient) SendInitializedNotification() {
+	notification := jsonrpc.NewJsonRpcNotification(mcp.RpcNotificationMethodInitialized)
+	c.proxyJsonRpcTransport.SendRequest(notification)
+}
+
+func (c *ProxyMcpClient) SendToolsListRequest() {
+	params := mcp.JsonRpcRequestToolsListParams{}
+	c.proxyJsonRpcTransport.SendRequestWithMethodAndParams(
+		mcp.RpcRequestMethodToolsList, params)
 }
