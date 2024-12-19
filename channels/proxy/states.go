@@ -18,6 +18,7 @@ type StateManager struct {
 
 	// serverInfo is the info about the MCP server we are connected to
 	serverInfo mcp.ServerInfo
+	proxyId    string
 }
 
 func NewStateManager(options *channels.ProxiedMcpServerDescription, logger types.Logger) *StateManager {
@@ -25,6 +26,7 @@ func NewStateManager(options *channels.ProxiedMcpServerDescription, logger types
 		options:    options,
 		logger:     logger,
 		serverInfo: mcp.ServerInfo{},
+		proxyId:    "",
 	}
 }
 
@@ -67,6 +69,9 @@ func (s *StateManager) EventMcpToolsListResponse(resp *mcp.JsonRpcResponseToolsL
 	s.logger.Info("event mcp tools list response", types.LogArg{
 		"tools": resp.Tools,
 	})
+
+	// we send the "tools/register" request
+	s.muxClient.SendToolsRegisterRequest(resp.Tools)
 }
 
 func (s *StateManager) EventMuxProxyRegistered(registerResponse *mux.JsonRpcResponseProxyRegisterResult) {
@@ -76,6 +81,9 @@ func (s *StateManager) EventMuxProxyRegistered(registerResponse *mux.JsonRpcResp
 		"persistent": registerResponse.Persistent,
 		"denied":     registerResponse.Denied,
 	})
+
+	// we store the proxy id
+	s.proxyId = registerResponse.ProxyId
 
 	// we send the "notifications/initialized" notification
 	s.mcpClient.SendInitializedNotification()

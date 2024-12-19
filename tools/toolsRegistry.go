@@ -40,7 +40,27 @@ func (r *ToolsRegistry) RegisterToolProvider(toolProvider *ToolProvider) error {
 		"tool":            toolProvider.toolName,
 		"configTypeName":  toolProvider.configTypeName,
 		"contextTypeName": toolProvider.contextTypeName,
+		"proxyId":         toolProvider.proxyId,
 	})
+	return nil
+}
+
+func (r *ToolsRegistry) RegisterProxyToolProvider(proxyId string, proxyName string) (*ToolProvider, error) {
+	provider, err := newProxyToolProvider(proxyId, proxyName)
+	if err != nil {
+		return nil, err
+	}
+	r.ToolProviders = append(r.ToolProviders, provider)
+	return provider, nil
+}
+
+func (r *ToolsRegistry) PrepareProxyToolProvider(toolProvider *ToolProvider) error {
+	for _, toolDefinition := range toolProvider.toolDefinitions {
+		r.Tools[toolDefinition.ToolName] = &toolProviderPrepared{
+			ToolProvider:   toolProvider,
+			ToolDefinition: &toolDefinition,
+		}
+	}
 	return nil
 }
 

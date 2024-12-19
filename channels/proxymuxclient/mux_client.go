@@ -102,3 +102,18 @@ func (c *ProxyMuxClient) SendProxyRegistrationRequest(
 		})
 	}
 }
+
+func (c *ProxyMuxClient) SendToolsRegisterRequest(tools []mcp.ToolDescription) {
+	toolsMux := make([]mux.ToolDescription, len(tools))
+	for i, tool := range tools {
+		toolsMux[i] = mux.ToolDescription{
+			Name:        tool.Name,
+			Description: tool.Description,
+			InputSchema: tool.InputSchema,
+		}
+	}
+	params := mux.JsonRpcRequestToolsRegisterParams{
+		Tools: toolsMux,
+	}
+	c.muxJsonRpcTransport.SendRequestWithMethodAndParams(mux.RpcRequestMethodToolsRegister, params)
+}

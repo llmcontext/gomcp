@@ -69,7 +69,7 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	// Start multiplexer if enabled
 	var muxServerInstance *hubmuxserver.MuxServer = nil
 	if config.Proxy != nil && config.Proxy.Enabled {
-		muxServerInstance = hubmuxserver.NewMuxServer(config.Proxy, eventBus, logger)
+		muxServerInstance = hubmuxserver.NewMuxServer(config.Proxy, eventBus, toolsRegistry, logger)
 	}
 
 	return &ModelContextProtocolImpl{

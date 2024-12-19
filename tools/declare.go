@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -16,6 +17,8 @@ type ToolDefinition struct {
 	Description         string
 	InputSchema         *jsonschema.Schema
 	InputTypeName       string
+	// for a tool to be available from a proxy, we need to set the ToolProxyId
+	ToolProxyId string
 }
 
 type ToolProvider struct {
@@ -30,6 +33,8 @@ type ToolProvider struct {
 	toolDefinitions  []ToolDefinition
 	// the tool context retrieve from the tool init function
 	toolContext interface{}
+	// proxy id for proxy tool provider
+	proxyId string
 }
 
 func DeclareToolProvider(toolName string, toolInitFunction interface{}) (*ToolProvider, error) {
@@ -44,6 +49,7 @@ func DeclareToolProvider(toolName string, toolInitFunction interface{}) (*ToolPr
 		contextType:      nil,
 		contextTypeName:  "",
 		toolDefinitions:  []ToolDefinition{},
+		proxyId:          "",
 	}
 
 	// Validate that toolHandler is a function
@@ -108,6 +114,22 @@ func DeclareToolProvider(toolName string, toolInitFunction interface{}) (*ToolPr
 	return toolProvider, nil
 }
 
+func newProxyToolProvider(proxyId string, proxyName string) (*ToolProvider, error) {
+	toolProvider := &ToolProvider{
+		toolName:         proxyName,
+		isDisabled:       false,
+		configSchema:     nil,
+		configTypeName:   "",
+		configType:       nil,
+		toolInitFunction: nil,
+		contextType:      nil,
+		contextTypeName:  "",
+		toolDefinitions:  []ToolDefinition{},
+		proxyId:          proxyId,
+	}
+	return toolProvider, nil
+}
+
 func (tp *ToolProvider) AddTool(toolName string, description string, toolHandler interface{}) error {
 	// Validate that toolHandler is a function
 	fnType := reflect.TypeOf(toolHandler)
@@ -163,6 +185,40 @@ func (tp *ToolProvider) AddTool(toolName string, description string, toolHandler
 		ToolHandlerFunction: toolHandler,
 		InputSchema:         inputSchema,
 		InputTypeName:       inputTypeName,
+		ToolProxyId:         "",
 	})
 	return nil
+}
+
+func (tp *ToolProvider) AddProxyTool(toolName string, description string, inputSchema interface{}) error {
+	// Convert the interface{} to *jsonschema.Schema
+	var schema *jsonschema.Schema
+	switch s := inputSchema.(type) {
+	case *jsonschema.Schema:
+		schema = s
+	case map[string]interface{}:
+		schema = &jsonschema.Schema{}
+		// Unmarshal the map into the schema
+		if err := mapToStruct(s, schema); err != nil {
+			return fmt.Errorf("invalid schema format: %v", err)
+		}
+	default:
+		return fmt.Errorf("inputSchema must be either *jsonschema.Schema or map[string]interface{}")
+	}
+
+	tp.toolDefinitions = append(tp.toolDefinitions, ToolDefinition{
+		ToolName:    toolName,
+		Description: description,
+		ToolProxyId: tp.proxyId,
+		InputSchema: schema,
+	})
+	return nil
+}
+
+func mapToStruct(input map[string]interface{}, output interface{}) error {
+	jsonBytes, err := json.Marshal(input)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(jsonBytes, output)
 }

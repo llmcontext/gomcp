@@ -1,6 +1,7 @@
 package hubmuxserver
 
 import (
+	"github.com/google/uuid"
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mux"
 	"github.com/llmcontext/gomcp/types"
@@ -24,11 +25,19 @@ func handleProxyRegister(s *MuxSession, request *jsonrpc.JsonRpcRequest) error {
 		"serverInfo":      params.ServerInfo,
 	})
 	// TODO: store in database
+	proxyId := params.ProxyId
+	if proxyId == "" {
+		// we need to generate a new proxy id
+		proxyId = uuid.New().String()
+	}
+	// we need to store the proxy id in the session
+	s.proxyId = proxyId
+	s.proxyName = params.ServerInfo.Name
 
 	// for now we accept all requests
 	result := mux.JsonRpcResponseProxyRegisterResult{
 		SessionId:  s.sessionId,
-		ProxyId:    params.ProxyId,
+		ProxyId:    proxyId,
 		Persistent: params.Persistent,
 		Denied:     false,
 	}
