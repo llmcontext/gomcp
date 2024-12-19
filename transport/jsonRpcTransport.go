@@ -77,10 +77,6 @@ func (m *JsonRpcTransport) OnStarted(callback func()) {
 }
 
 func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message JsonRpcMessage, jsonRpcTransport *JsonRpcTransport)) error {
-	t.logger.Info("starting JsonRpcTransport", types.LogArg{
-		"name": t.name,
-	})
-
 	t.transport.OnMessage(func(message json.RawMessage) {
 		// Check context before processing message
 		select {

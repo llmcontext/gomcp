@@ -76,7 +76,6 @@ func (c *ProxyMuxClient) Close() {
 func (c *ProxyMuxClient) SendProxyRegistrationRequest(
 	serverDescription *channels.ProxiedMcpServerDescription,
 	serverInfo mcp.ServerInfo,
-	tools []mcp.ToolDescription,
 ) {
 	params := mux.JsonRpcRequestProxyRegisterParams{
 		ProtocolVersion: mux.MuxProtocolVersion,
@@ -102,5 +101,4 @@ func (c *ProxyMuxClient) SendProxyRegistrationRequest(
 			"transportName": c.muxJsonRpcTransport.Name(),
 		})
 	}
-
 }

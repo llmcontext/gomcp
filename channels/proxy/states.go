@@ -6,6 +6,7 @@ import (
 	"github.com/llmcontext/gomcp/channels/proxymcpclient"
 	"github.com/llmcontext/gomcp/channels/proxymuxclient"
 	"github.com/llmcontext/gomcp/protocol/mcp"
+	"github.com/llmcontext/gomcp/protocol/mux"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -57,19 +58,29 @@ func (s *StateManager) EventMcpInitializeResponse(resp *mcp.JsonRpcResponseIniti
 	s.serverInfo.Name = resp.ServerInfo.Name
 	s.serverInfo.Version = resp.ServerInfo.Version
 
-	// we send the "notifications/initialized" notification
-	s.mcpClient.SendInitializedNotification()
+	// we can now report the tools list to the mux server
+	s.muxClient.SendProxyRegistrationRequest(s.options, s.serverInfo)
 
-	// we send the "tools/list" request
-	s.mcpClient.SendToolsListRequest()
 }
 
 func (s *StateManager) EventMcpToolsListResponse(resp *mcp.JsonRpcResponseToolsListResult) {
 	s.logger.Info("event mcp tools list response", types.LogArg{
 		"tools": resp.Tools,
 	})
+}
 
-	// we can now report the tools list to the mux server
-	s.muxClient.SendProxyRegistrationRequest(s.options, s.serverInfo, resp.Tools)
+func (s *StateManager) EventMuxProxyRegistered(registerResponse *mux.JsonRpcResponseProxyRegisterResult) {
+	s.logger.Info("event mux proxy registered", types.LogArg{
+		"sessionId":  registerResponse.SessionId,
+		"proxyId":    registerResponse.ProxyId,
+		"persistent": registerResponse.Persistent,
+		"denied":     registerResponse.Denied,
+	})
+
+	// we send the "notifications/initialized" notification
+	s.mcpClient.SendInitializedNotification()
+
+	// we send the "tools/list" request
+	s.mcpClient.SendToolsListRequest()
 
 }

@@ -9,10 +9,6 @@ import (
 
 func (c *ProxyMuxClient) handleIncomingMessage(message transport.JsonRpcMessage) error {
 	if message.Response != nil {
-		c.logger.Error("received JsonRpcResponse", types.LogArg{
-			"response": message.Response,
-			"method":   message.Method,
-		})
 		switch message.Method {
 		case mux.RpcRequestMethodProxyRegister:
 			c.handleProxyRegisterResponse(message.Response)
@@ -40,12 +36,7 @@ func (c *ProxyMuxClient) handleProxyRegisterResponse(response *jsonrpc.JsonRpcRe
 		return err
 	}
 
-	c.logger.Info("proxy register response", types.LogArg{
-		"sessionId":  registerResponse.SessionId,
-		"proxyId":    registerResponse.ProxyId,
-		"persistent": registerResponse.Persistent,
-		"denied":     registerResponse.Denied,
-	})
+	c.events.EventMuxProxyRegistered(registerResponse)
 
 	return nil
 }
