@@ -121,11 +121,11 @@ func (c *ProxyClient) Start() error {
 			c.options.ProgramArgs,
 		)
 
-		proxyJsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, "proxy - client (mcp)", c.logger)
+		clientMcpJsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, "proxy - mcpclient", c.logger)
 
 		// create the proxy client
 		proxyClient := proxymcpclient.NewProxyMcpClient(
-			proxyJsonRpcTransport,
+			clientMcpJsonRpcTransport,
 			c.events,
 			c.options,
 			c.logger,

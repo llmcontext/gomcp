@@ -5,6 +5,7 @@ import (
 )
 
 type EventsProcessor interface {
+	EventMcpStared()
 	EventMcpInitializeResponse(initializeResponse *mcp.JsonRpcResponseInitializeResult)
 	EventMcpToolsListResponse(toolsListResponse *mcp.JsonRpcResponseToolsListResult)
 }
@@ -17,6 +18,10 @@ func NewEvents(processor EventsProcessor) *Events {
 	return &Events{
 		processor: processor,
 	}
+}
+
+func (e *Events) EventMcpStarted() {
+	e.processor.EventMcpStared()
 }
 
 func (e *Events) EventMcpToolsListResponse(toolsListResponse *mcp.JsonRpcResponseToolsListResult) {

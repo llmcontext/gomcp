@@ -18,23 +18,23 @@ type ProxyMcpClient struct {
 	logger  types.Logger
 
 	// context for proxy transport
-	proxyJsonRpcTransport *transport.JsonRpcTransport
+	clientMcpJsonRpcTransport *transport.JsonRpcTransport
 
 	// tools is the list of tools available for the proxy
 	tools []mcp.ToolDescription
 }
 
 func NewProxyMcpClient(
-	proxyJsonRpcTransport *transport.JsonRpcTransport,
+	clientMcpJsonRpcTransport *transport.JsonRpcTransport,
 	events *events.Events,
 	options *channels.ProxiedMcpServerDescription,
 	logger types.Logger,
 ) *ProxyMcpClient {
 	return &ProxyMcpClient{
-		proxyJsonRpcTransport: proxyJsonRpcTransport,
-		events:                events,
-		options:               options,
-		logger:                logger,
+		clientMcpJsonRpcTransport: clientMcpJsonRpcTransport,
+		events:                    events,
+		options:                   options,
+		logger:                    logger,
 		//serverInfo:            mcp.ServerInfo{},
 		tools: []mcp.ToolDescription{},
 	}
@@ -45,31 +45,13 @@ func (c *ProxyMcpClient) Start(ctx context.Context) error {
 	errProxyChan := make(chan error, 1)
 
 	// First message to send is always an initialize request
-	c.proxyJsonRpcTransport.OnStarted(func() {
-		// we create the parameters for the initialize request
-		// the proxy does not have any capabilities
-		params := mcp.JsonRpcRequestInitializeParams{
-			ProtocolVersion: mcp.ProtocolVersion,
-			Capabilities:    mcp.ClientCapabilities{},
-			ClientInfo: mcp.ClientInfo{
-				Name:    c.options.ProxyName,
-				Version: version.Version,
-			},
-		}
-
-		// we send the initialize request to the proxy
-		err = c.proxyJsonRpcTransport.SendRequestWithMethodAndParams(
-			mcp.RpcRequestMethodInitialize, params)
-		if err != nil {
-			c.logger.Error("failed to send initialize request", types.LogArg{
-				"error": err,
-			})
-		}
+	c.clientMcpJsonRpcTransport.OnStarted(func() {
+		c.events.EventMcpStarted()
 	})
 
 	go func() {
 		// start the proxy transport
-		err = c.proxyJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
+		err = c.clientMcpJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
 			c.logger.Debug("received message from proxy", types.LogArg{
 				"message": msg,
 				"method":  msg.Method,
@@ -96,16 +78,28 @@ func (c *ProxyMcpClient) Start(ctx context.Context) error {
 }
 
 func (c *ProxyMcpClient) Close() {
-	c.proxyJsonRpcTransport.Close()
+	c.clientMcpJsonRpcTransport.Close()
+}
+
+func (c *ProxyMcpClient) SendInitializeRequest() {
+	params := mcp.JsonRpcRequestInitializeParams{
+		ProtocolVersion: mcp.ProtocolVersion,
+		Capabilities:    mcp.ClientCapabilities{},
+		ClientInfo: mcp.ClientInfo{
+			Name:    c.options.ProxyName,
+			Version: version.Version,
+		},
+	}
+	c.clientMcpJsonRpcTransport.SendRequestWithMethodAndParams(mcp.RpcRequestMethodInitialize, params)
 }
 
 func (c *ProxyMcpClient) SendInitializedNotification() {
 	notification := jsonrpc.NewJsonRpcNotification(mcp.RpcNotificationMethodInitialized)
-	c.proxyJsonRpcTransport.SendRequest(notification)
+	c.clientMcpJsonRpcTransport.SendRequest(notification)
 }
 
 func (c *ProxyMcpClient) SendToolsListRequest() {
 	params := mcp.JsonRpcRequestToolsListParams{}
-	c.proxyJsonRpcTransport.SendRequestWithMethodAndParams(
+	c.clientMcpJsonRpcTransport.SendRequestWithMethodAndParams(
 		mcp.RpcRequestMethodToolsList, params)
 }

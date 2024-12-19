@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"github.com/llmcontext/gomcp/channels"
+	"github.com/llmcontext/gomcp/channels/proxy/events"
 	"github.com/llmcontext/gomcp/channels/proxymcpclient"
 	"github.com/llmcontext/gomcp/channels/proxymuxclient"
 	"github.com/llmcontext/gomcp/protocol/mcp"
@@ -36,6 +37,14 @@ func (s *StateManager) SetMuxClient(muxClient *proxymuxclient.ProxyMuxClient) {
 
 func (s *StateManager) SetProxyClient(proxyClient *proxymcpclient.ProxyMcpClient) {
 	s.mcpClient = proxyClient
+}
+
+func (s *StateManager) AsEventsProcessor() events.EventsProcessor {
+	return s
+}
+
+func (s *StateManager) EventMcpStared() {
+	s.mcpClient.SendInitializeRequest()
 }
 
 func (s *StateManager) EventMcpInitializeResponse(resp *mcp.JsonRpcResponseInitializeResult) {
