@@ -48,9 +48,11 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	}
 
 	// initialize the state manager
-	stateManager := NewStateManager(logger)
-
-	// initialize the events
+	stateManager := NewStateManager(
+		config.ServerInfo.Name,
+		config.ServerInfo.Version,
+		logger,
+	)
 	events := stateManager.AsEvents()
 
 	// Initialize tools registry
@@ -182,8 +184,6 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 		server := hubmcpserver.NewMCPServer(transport,
 			mcp.events,
 			mcp.toolsRegistry, mcp.promptsRegistry,
-			mcp.config.ServerInfo.Name,
-			mcp.config.ServerInfo.Version,
 			mcp.logger)
 
 		// set the server in the state manager

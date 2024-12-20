@@ -16,12 +16,16 @@ func (s *MCPServer) processRequest(ctx context.Context, request *jsonrpc.JsonRpc
 		"request": request,
 	})
 	switch request.Method {
-	case "initialize":
-		return s.handleInitialize(request)
-	case "notifications/initialized":
-		s.isClientInitialized = true
-		// that's a notification, no response is needed
-		return nil
+	case mcp.RpcRequestMethodInitialize:
+		{
+			parsed, err := mcp.ParseJsonRpcRequestInitialize(request)
+			if err != nil {
+				s.SendError(jsonrpc.RpcInvalidRequest, err.Error(), request.Id)
+			}
+			s.events.EventMcpRequestInitialize(parsed, request.Id)
+		}
+	case mcp.RpcNotificationMethodInitialized:
+		s.events.EventMcpNotificationInitialized()
 	case "tools/list":
 		return s.handleToolsList(request)
 	case mcp.RpcRequestMethodToolsCall:
@@ -49,16 +53,5 @@ func (s *MCPServer) processRequest(ctx context.Context, request *jsonrpc.JsonRpc
 		}
 		return s.sendResponse(response)
 	}
-}
-
-func (s *MCPServer) sendResponse(response *jsonrpc.JsonRpcResponse) error {
-	s.logger.Debug("JsonRpcResponse", types.LogArg{
-		"response": response,
-	})
-	jsonResponse, err := jsonrpc.MarshalJsonRpcResponse(response)
-	if err != nil {
-		return err
-	}
-	s.transport.Send(jsonResponse)
 	return nil
 }

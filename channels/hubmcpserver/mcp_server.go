@@ -2,96 +2,63 @@ package hubmcpserver
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 
 	"github.com/llmcontext/gomcp/channels/hub/events"
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/tools"
+	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 )
 
-type ClientInfo struct {
-	name    string
-	version string
-}
-
 type MCPServer struct {
-	transport       types.Transport
+	transport       *transport.JsonRpcTransport
 	events          events.Events
 	toolsRegistry   *tools.ToolsRegistry
 	promptsRegistry *prompts.PromptsRegistry
-	// server information
-	serverName    string
-	serverVersion string
 	// client information
 	isClientInitialized bool
-	protocolVersion     string
-	clientInfo          *ClientInfo
 	logger              types.Logger
 }
 
 func NewMCPServer(
-	transport types.Transport,
+	tran types.Transport,
 	events events.Events,
 	toolsRegistry *tools.ToolsRegistry,
 	promptsRegistry *prompts.PromptsRegistry,
-	serverName string,
-	serverVersion string,
 	logger types.Logger,
 ) *MCPServer {
+	jsonRpcTransport := transport.NewJsonRpcTransport(tran, "mcp server", logger)
 	return &MCPServer{
-		transport:       transport,
+		transport:       jsonRpcTransport,
 		events:          events,
 		toolsRegistry:   toolsRegistry,
 		promptsRegistry: promptsRegistry,
-		serverName:      serverName,
-		serverVersion:   serverVersion,
 		logger:          logger,
 	}
 }
 
 func (s *MCPServer) Start(ctx context.Context) error {
-	transport := s.transport
-
-	// Set up message handler
-	transport.OnMessage(func(msg json.RawMessage) {
-		nature, jsonRpcRawMessage, err := jsonrpc.CheckJsonMessage(msg)
-
-		if err != nil || nature != jsonrpc.MessageNatureRequest {
-			s.logger.Debug("invalid message received message", types.LogArg{
-				"message": string(msg),
-			})
-			s.sendError(&jsonrpc.JsonRpcError{
-				Code:    jsonrpc.RpcParseError,
-				Message: "invalid message",
-			}, nil)
-		}
-
-		request, requestId, rpcErr := jsonrpc.ParseJsonRpcRequest(jsonRpcRawMessage)
-		if rpcErr != nil {
-			s.sendError(rpcErr, requestId)
-			return
-		}
-
-		err = s.processRequest(ctx, request)
-		if err != nil {
-			s.logError("failed to process request", err)
-		}
-
-	})
-
-	// Set up error handler
-	transport.OnError(func(err error) {
-		s.logError("transport error", err)
-	})
+	var err error
 
 	errChan := make(chan error, 1)
 
 	go func() {
 		// Start the transport
-		err := transport.Start(ctx)
+		err := s.transport.Start(ctx, func(message transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
+			if message.Response != nil {
+				s.logger.Debug("invalid message received message", types.LogArg{
+					"message": message,
+				})
+				s.SendError(jsonrpc.RpcParseError, "invalid message", nil)
+			} else if message.Request != nil {
+				err = s.processRequest(ctx, message.Request)
+				if err != nil {
+					s.logError("failed to process request", err)
+				}
+			}
+		})
 		if err != nil {
 			s.logError("failed to start transport", err)
 		}
@@ -102,7 +69,7 @@ func (s *MCPServer) Start(ctx context.Context) error {
 	case err := <-errChan:
 		return err
 	case <-ctx.Done():
-		transport.Close()
+		s.transport.Close()
 		return ctx.Err()
 	}
 }
@@ -123,23 +90,6 @@ func (s *MCPServer) logError(message string, err error) {
 	}
 }
 
-func (s *MCPServer) sendError(error *jsonrpc.JsonRpcError, id *jsonrpc.JsonRpcRequestId) {
-	s.logger.Debug("JsonRpcError", types.LogArg{
-		"error": error,
-		"id":    id,
-	})
-	response := &jsonrpc.JsonRpcResponse{
-		Error: error,
-		Id:    id,
-	}
-	jsonError, err := jsonrpc.MarshalJsonRpcResponse(response)
-	if err != nil {
-		s.logError("failed to marshal error", err)
-		return
-	}
-	s.transport.Send(jsonError)
-}
-
 func (s *MCPServer) OnNewProxyTools() {
 	// TODO: implement
 	tools := s.toolsRegistry.GetListOfTools()
@@ -148,11 +98,29 @@ func (s *MCPServer) OnNewProxyTools() {
 	})
 }
 
-func (s *MCPServer) OnMcpError(code int, message string, data *json.RawMessage, id *jsonrpc.JsonRpcRequestId) {
-	jsonError := &jsonrpc.JsonRpcError{
-		Code:    code,
-		Message: message,
-		Data:    data,
+func (s *MCPServer) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
+	s.transport.SendResponse(&jsonrpc.JsonRpcResponse{
+		Id:     id,
+		Result: response,
+	})
+}
+
+func (s *MCPServer) sendResponse(response *jsonrpc.JsonRpcResponse) error {
+	s.logger.Debug("JsonRpcResponse", types.LogArg{
+		"response": response,
+	})
+	s.transport.SendResponse(response)
+	return nil
+}
+
+func (s *MCPServer) SendError(code int, message string, id *jsonrpc.JsonRpcRequestId) {
+	s.logger.Debug("JsonRpcError", types.LogArg{
+		"code":    code,
+		"message": message,
+		"id":      id,
+	})
+	err := s.transport.SendError(code, message, id)
+	if err != nil {
+		s.logError("failed to send error", err)
 	}
-	s.sendError(jsonError, id)
 }

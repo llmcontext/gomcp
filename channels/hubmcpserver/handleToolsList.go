@@ -28,10 +28,7 @@ func (s *MCPServer) handleToolsList(request *jsonrpc.JsonRpcRequest) error {
 	// marshal response
 	responseBytes, err := json.Marshal(response)
 	if err != nil {
-		s.sendError(&jsonrpc.JsonRpcError{
-			Code:    jsonrpc.RpcInternalError,
-			Message: "failed to marshal response",
-		}, request.Id)
+		s.SendError(jsonrpc.RpcInternalError, "failed to marshal response", request.Id)
 		return nil
 	}
 	jsonResponse := json.RawMessage(responseBytes)

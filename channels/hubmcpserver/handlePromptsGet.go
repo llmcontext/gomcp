@@ -22,19 +22,13 @@ func (s *MCPServer) handlePromptsGet(request *jsonrpc.JsonRpcRequest) error {
 	reqParams := request.Params
 
 	if reqParams == nil || reqParams.NamedParams == nil {
-		s.sendError(&jsonrpc.JsonRpcError{
-			Code:    jsonrpc.RpcInvalidParams,
-			Message: "invalid call parameters, not an object",
-		}, request.Id)
+		s.SendError(jsonrpc.RpcInvalidParams, "invalid call parameters, not an object", request.Id)
 		return nil
 	}
 
 	promptName, ok := reqParams.NamedParams["name"].(string)
 	if !ok {
-		s.sendError(&jsonrpc.JsonRpcError{
-			Code:    jsonrpc.RpcInvalidParams,
-			Message: "invalid call parameters, missing 'name'",
-		}, request.Id)
+		s.SendError(jsonrpc.RpcInvalidParams, "invalid call parameters, missing 'name'", request.Id)
 		return nil
 	}
 
@@ -43,10 +37,7 @@ func (s *MCPServer) handlePromptsGet(request *jsonrpc.JsonRpcRequest) error {
 	if reqParams.NamedParams["arguments"] != nil {
 		args, ok := reqParams.NamedParams["arguments"].(map[string]interface{})
 		if !ok {
-			s.sendError(&jsonrpc.JsonRpcError{
-				Code:    jsonrpc.RpcInvalidParams,
-				Message: "invalid call parameters, 'arguments' is not an object",
-			}, request.Id)
+			s.SendError(jsonrpc.RpcInvalidParams, "invalid call parameters, 'arguments' is not an object", request.Id)
 			return nil
 		}
 		// copy the arguments, as strings
@@ -57,20 +48,14 @@ func (s *MCPServer) handlePromptsGet(request *jsonrpc.JsonRpcRequest) error {
 
 	response, err := s.promptsRegistry.GetPrompt(promptName, templateArgs)
 	if err != nil {
-		s.sendError(&jsonrpc.JsonRpcError{
-			Code:    jsonrpc.RpcInvalidParams,
-			Message: fmt.Sprintf("prompt processing error: %s", err),
-		}, request.Id)
+		s.SendError(jsonrpc.RpcInvalidParams, fmt.Sprintf("prompt processing error: %s", err), request.Id)
 		return nil
 	}
 
 	// marshal response
 	responseBytes, err := json.Marshal(response)
 	if err != nil {
-		s.sendError(&jsonrpc.JsonRpcError{
-			Code:    jsonrpc.RpcInternalError,
-			Message: "failed to marshal response",
-		}, request.Id)
+		s.SendError(jsonrpc.RpcInternalError, "failed to marshal response", request.Id)
 	}
 	jsonResponse := json.RawMessage(responseBytes)
 

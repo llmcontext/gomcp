@@ -13,10 +13,7 @@ func (s *MCPServer) handleToolsCall(ctx context.Context, request *jsonrpc.JsonRp
 	// let's unmarshal the params
 	reqParams, err := mcp.ParseJsonRpcRequestToolsCallParams(request.Params)
 	if err != nil {
-		s.sendError(&jsonrpc.JsonRpcError{
-			Code:    jsonrpc.RpcInvalidParams,
-			Message: fmt.Sprintf("invalid call parameters: %v", err),
-		}, request.Id)
+		s.SendError(jsonrpc.RpcInvalidParams, fmt.Sprintf("invalid call parameters: %v", err), request.Id)
 		return nil
 	}
 	toolName := reqParams.Name
@@ -25,10 +22,7 @@ func (s *MCPServer) handleToolsCall(ctx context.Context, request *jsonrpc.JsonRp
 	// let's check if the tool is a proxy
 	isProxy, proxyId, err := s.toolsRegistry.IsProxyTool(ctx, toolName)
 	if err != nil {
-		s.sendError(&jsonrpc.JsonRpcError{
-			Code:    jsonrpc.RpcInternalError,
-			Message: fmt.Sprintf("tool call failed: %v", err),
-		}, request.Id)
+		s.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool call failed: %v", err), request.Id)
 		return nil
 	}
 
@@ -41,20 +35,14 @@ func (s *MCPServer) handleToolsCall(ctx context.Context, request *jsonrpc.JsonRp
 	// let's call the tool
 	response, err := s.toolsRegistry.CallTool(ctx, toolName, toolArgs)
 	if err != nil {
-		s.sendError(&jsonrpc.JsonRpcError{
-			Code:    jsonrpc.RpcInternalError,
-			Message: fmt.Sprintf("tool call failed: %v", err),
-		}, request.Id)
+		s.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool call failed: %v", err), request.Id)
 		return nil
 	}
 
 	// marshal response
 	responseBytes, err := json.Marshal(response)
 	if err != nil {
-		s.sendError(&jsonrpc.JsonRpcError{
-			Code:    jsonrpc.RpcInternalError,
-			Message: "failed to marshal response",
-		}, request.Id)
+		s.SendError(jsonrpc.RpcInternalError, "failed to marshal response", request.Id)
 	}
 	jsonResponse := json.RawMessage(responseBytes)
 

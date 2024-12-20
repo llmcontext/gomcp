@@ -33,10 +33,7 @@ func (s *MCPServer) handlePromptsList(request *jsonrpc.JsonRpcRequest) error {
 	// marshal response
 	responseBytes, err := json.Marshal(response)
 	if err != nil {
-		s.sendError(&jsonrpc.JsonRpcError{
-			Code:    jsonrpc.RpcInternalError,
-			Message: "failed to marshal response",
-		}, request.Id)
+		s.SendError(jsonrpc.RpcInternalError, "failed to marshal response", request.Id)
 	}
 	jsonResponse := json.RawMessage(responseBytes)
 
