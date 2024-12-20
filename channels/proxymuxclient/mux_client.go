@@ -15,13 +15,13 @@ import (
 type ProxyMuxClient struct {
 	muxJsonRpcTransport *transport.JsonRpcTransport
 	logger              types.Logger
-	events              *events.Events
+	events              events.Events
 	muxAddress          string
 }
 
 func NewProxyMuxClient(
 	muxAddress string,
-	events *events.Events,
+	events events.Events,
 	logger types.Logger,
 ) *ProxyMuxClient {
 	return &ProxyMuxClient{

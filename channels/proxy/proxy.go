@@ -19,7 +19,7 @@ type ProxyClient struct {
 	proxyInformation ProxyInformation
 	logger           types.Logger
 	stateManager     *StateManager
-	events           *events.Events
+	events           events.Events
 	options          *transport.ProxiedMcpServerDescription
 }
 
@@ -42,7 +42,7 @@ func NewProxyClient(proxyInformation ProxyInformation, logger types.Logger) *Pro
 		ProgramArgs:             proxyInformation.Args,
 	}
 	stateManager := NewStateManager(&options, logger)
-	events := events.NewEvents(stateManager)
+	events := stateManager.AsEvents()
 
 	return &ProxyClient{
 		proxyInformation: proxyInformation,

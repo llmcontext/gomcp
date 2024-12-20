@@ -42,11 +42,11 @@ func (s *StateManager) SetProxyClient(proxyClient *proxymcpclient.ProxyMcpClient
 	s.mcpClient = proxyClient
 }
 
-func (s *StateManager) AsEventsProcessor() events.EventsProcessor {
+func (s *StateManager) AsEvents() events.Events {
 	return s
 }
 
-func (s *StateManager) EventMcpStared() {
+func (s *StateManager) EventMcpStarted() {
 	s.mcpClient.SendInitializeRequest()
 }
 

@@ -13,7 +13,7 @@ import (
 
 type ProxyMcpClient struct {
 	options *transport.ProxiedMcpServerDescription
-	events  *events.Events
+	events  events.Events
 	logger  types.Logger
 
 	// context for proxy transport
@@ -24,7 +24,7 @@ type ProxyMcpClient struct {
 }
 
 func NewProxyMcpClient(
-	events *events.Events,
+	events events.Events,
 	options *transport.ProxiedMcpServerDescription,
 	logger types.Logger,
 ) *ProxyMcpClient {
