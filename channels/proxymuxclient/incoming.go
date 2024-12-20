@@ -19,10 +19,15 @@ func (c *ProxyMuxClient) handleIncomingMessage(message transport.JsonRpcMessage)
 			})
 		}
 	} else if message.Request != nil {
-		c.logger.Error("received JsonRpcRequest", types.LogArg{
-			"request": message.Request,
-			"method":  message.Method,
-		})
+		switch message.Method {
+		case mux.RpcRequestMethodCallTool:
+			c.handleToolCall(message.Request)
+		default:
+			c.logger.Error("received message with unexpected method", types.LogArg{
+				"method":  message.Method,
+				"request": message.Request,
+			})
+		}
 	}
 	return nil
 }
@@ -37,6 +42,26 @@ func (c *ProxyMuxClient) handleProxyRegisterResponse(response *jsonrpc.JsonRpcRe
 	}
 
 	c.events.EventMuxProxyRegistered(registerResponse)
+
+	return nil
+}
+
+func (c *ProxyMuxClient) handleToolCall(request *jsonrpc.JsonRpcRequest) error {
+	toolCall, err := mux.ParseJsonRpcRequestToolsCallParams(request)
+	if err != nil {
+		c.logger.Error("error in handleToolCall", types.LogArg{
+			"error": err,
+		})
+		return err
+	}
+
+	c.logger.Info("received tool call", types.LogArg{
+		"name":     toolCall.Name,
+		"args":     toolCall.Args,
+		"mcpReqId": toolCall.McpReqId,
+	})
+
+	c.events.EventMuxToolCall(toolCall.Name, toolCall.Args, toolCall.McpReqId)
 
 	return nil
 }

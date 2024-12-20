@@ -92,3 +92,13 @@ func (s *StateManager) EventMuxProxyRegistered(registerResponse *mux.JsonRpcResp
 	s.mcpClient.SendToolsListRequest()
 
 }
+
+func (s *StateManager) EventMuxToolCall(name string, args map[string]interface{}, mcpReqId string) {
+	s.logger.Info("EventMuxToolCall", types.LogArg{
+		"name":     name,
+		"args":     args,
+		"mcpReqId": mcpReqId,
+	})
+
+	// TODO: we need to forward the tool call to the mcp server
+}
