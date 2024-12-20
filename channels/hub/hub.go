@@ -179,7 +179,8 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 		mcp.logger.Info("Starting MCP server", types.LogArg{})
 
 		// Initialize server
-		server := hubmcpserver.NewMCPServer(transport, mcp.events,
+		server := hubmcpserver.NewMCPServer(transport,
+			mcp.events,
 			mcp.toolsRegistry, mcp.promptsRegistry,
 			mcp.config.ServerInfo.Name,
 			mcp.config.ServerInfo.Version,

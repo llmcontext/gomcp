@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -23,7 +24,7 @@ func (s *MCPServer) processRequest(ctx context.Context, request *jsonrpc.JsonRpc
 		return nil
 	case "tools/list":
 		return s.handleToolsList(request)
-	case "tools/call":
+	case mcp.RpcRequestMethodToolsCall:
 		return s.handleToolsCall(ctx, request)
 	case "resources/list":
 		return s.handleResourcesList(request)

@@ -6,41 +6,21 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/protocol/mcp"
 )
 
 func (s *MCPServer) handleToolsCall(ctx context.Context, request *jsonrpc.JsonRpcRequest) error {
 	// let's unmarshal the params
-	reqParams := request.Params
-
-	if reqParams == nil || reqParams.NamedParams == nil {
+	reqParams, err := mcp.ParseJsonRpcRequestToolsCallParams(request.Params)
+	if err != nil {
 		s.sendError(&jsonrpc.JsonRpcError{
 			Code:    jsonrpc.RpcInvalidParams,
-			Message: "invalid call parameters, not an object",
+			Message: fmt.Sprintf("invalid call parameters: %v", err),
 		}, request.Id)
 		return nil
 	}
-
-	// let's get the tool name
-	// we expect a string
-	toolName, ok := reqParams.NamedParams["name"].(string)
-	if !ok {
-		s.sendError(&jsonrpc.JsonRpcError{
-			Code:    jsonrpc.RpcInvalidParams,
-			Message: "invalid tool name",
-		}, request.Id)
-		return nil
-	}
-
-	// let's get the tool arguments
-	// we expect a map[string]interface{}
-	toolArgs, ok := reqParams.NamedParams["arguments"].(map[string]interface{})
-	if !ok {
-		s.sendError(&jsonrpc.JsonRpcError{
-			Code:    jsonrpc.RpcInvalidParams,
-			Message: "invalid tool arguments",
-		}, request.Id)
-		return nil
-	}
+	toolName := reqParams.Name
+	toolArgs := reqParams.Arguments
 
 	// let's check if the tool is a proxy
 	isProxy, proxyId, err := s.toolsRegistry.IsProxyTool(ctx, toolName)
