@@ -62,12 +62,25 @@ func (s *MuxSession) Start(ctx context.Context) error {
 	}
 }
 
+func (s *MuxSession) sendToolCall(toolName string, toolArgs map[string]interface{}, mcpReqid string) error {
+	params := &mux.JsonRpcRequestToolsCallParams{
+		Name:     toolName,
+		Args:     toolArgs,
+		McpReqId: mcpReqid,
+	}
+	return s.SendRequestWithMethodAndParams(mux.RpcRequestMethodCallTool, params)
+}
+
 func (s *MuxSession) SendRequest(request *jsonrpc.JsonRpcRequest) error {
 	return s.transport.SendRequest(request)
 }
 
 func (s *MuxSession) SendResponse(response *jsonrpc.JsonRpcResponse) error {
 	return s.transport.SendResponse(response)
+}
+
+func (s *MuxSession) SendRequestWithMethodAndParams(method string, params interface{}) error {
+	return s.transport.SendRequestWithMethodAndParams(method, params)
 }
 
 func (s *MuxSession) onJsonRpcResponse(response *jsonrpc.JsonRpcResponse) {

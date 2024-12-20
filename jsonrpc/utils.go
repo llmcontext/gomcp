@@ -2,6 +2,8 @@ package jsonrpc
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 func extractId(rawJson map[string]interface{}) *JsonRpcRequestId {
@@ -26,13 +28,29 @@ func extractId(rawJson map[string]interface{}) *JsonRpcRequestId {
 
 func RequestIdToString(register *JsonRpcRequestId) string {
 	if register == nil {
-		return "**no-id**"
+		return "X"
 	}
 
 	if register.Number != nil {
-		return fmt.Sprintf("%d", *register.Number)
+		return fmt.Sprintf("N:%d", *register.Number)
 	}
-	return *register.String
+	return fmt.Sprintf("S:%s", *register.String)
+}
+
+func ReqIdStringToId(reqId string) *JsonRpcRequestId {
+	if strings.HasPrefix(reqId, "N:") {
+		number := strings.TrimPrefix(reqId, "N:")
+		intValue, err := strconv.Atoi(number)
+		if err != nil {
+			return nil
+		}
+		return &JsonRpcRequestId{Number: &intValue}
+	}
+	if strings.HasPrefix(reqId, "S:") {
+		stringValue := strings.TrimPrefix(reqId, "S:")
+		return &JsonRpcRequestId{String: &stringValue}
+	}
+	return nil
 }
 
 func stringPtr(s string) *string {

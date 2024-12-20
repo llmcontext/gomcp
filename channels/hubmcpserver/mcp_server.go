@@ -146,5 +146,13 @@ func (s *MCPServer) OnNewProxyTools() {
 	s.logger.Info("OnNewProxyTools", types.LogArg{
 		"tools": tools,
 	})
+}
 
+func (s *MCPServer) OnMcpError(code int, message string, data *json.RawMessage, id *jsonrpc.JsonRpcRequestId) {
+	jsonError := &jsonrpc.JsonRpcError{
+		Code:    code,
+		Message: message,
+		Data:    data,
+	}
+	s.sendError(jsonError, id)
 }

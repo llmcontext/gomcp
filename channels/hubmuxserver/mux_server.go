@@ -97,11 +97,37 @@ func (m *MuxServer) Close() {
 	}
 }
 
-func (m *MuxServer) OnProxyToolCall(proxyId string, toolName string, toolArgs map[string]interface{}, id *jsonrpc.JsonRpcRequestId) {
+func (m *MuxServer) OnProxyToolCall(proxyId string, toolName string, toolArgs map[string]interface{}, mcpReqId string) {
 	m.logger.Info("proxy tool call", types.LogArg{
 		"proxyId":  proxyId,
 		"toolName": toolName,
 		"toolArgs": toolArgs,
-		"id":       id,
+		"mcpReqId": mcpReqId,
 	})
+
+	// find the session by proxyId
+	var session *MuxSession
+	for _, s := range m.sessions {
+		if s.proxyId == proxyId {
+			session = s
+			break
+		}
+	}
+	if session == nil {
+		m.logger.Error("proxy tool call - session not found", types.LogArg{
+			"proxyId": proxyId,
+		})
+		reqId := jsonrpc.ReqIdStringToId(mcpReqId)
+		// we report the error to the client
+		m.events.EventMcpError(jsonrpc.RpcInternalError, "tools not found", nil, reqId)
+		return
+	}
+
+	// we forward the tool call to the session
+	err := session.sendToolCall(toolName, toolArgs, mcpReqId)
+	if err != nil {
+		reqId := jsonrpc.ReqIdStringToId(mcpReqId)
+		m.events.EventMcpError(jsonrpc.RpcInternalError, "error calling tool", nil, reqId)
+		return
+	}
 }

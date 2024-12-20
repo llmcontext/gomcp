@@ -54,7 +54,7 @@ func (s *MCPServer) handleToolsCall(ctx context.Context, request *jsonrpc.JsonRp
 
 	// handle proxy tools
 	if isProxy {
-		s.events.EventProxyToolCall(proxyId, toolName, toolArgs, request.Id)
+		s.events.EventProxyToolCall(proxyId, toolName, toolArgs, jsonrpc.RequestIdToString(request.Id))
 		return nil
 	}
 
