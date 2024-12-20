@@ -3,7 +3,6 @@ package proxymcpclient
 import (
 	"context"
 
-	"github.com/llmcontext/gomcp/channels"
 	"github.com/llmcontext/gomcp/channels/proxy/events"
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mcp"
@@ -13,7 +12,7 @@ import (
 )
 
 type ProxyMcpClient struct {
-	options *channels.ProxiedMcpServerDescription
+	options *transport.ProxiedMcpServerDescription
 	events  *events.Events
 	logger  types.Logger
 
@@ -25,13 +24,12 @@ type ProxyMcpClient struct {
 }
 
 func NewProxyMcpClient(
-	clientMcpJsonRpcTransport *transport.JsonRpcTransport,
 	events *events.Events,
-	options *channels.ProxiedMcpServerDescription,
+	options *transport.ProxiedMcpServerDescription,
 	logger types.Logger,
 ) *ProxyMcpClient {
 	return &ProxyMcpClient{
-		clientMcpJsonRpcTransport: clientMcpJsonRpcTransport,
+		clientMcpJsonRpcTransport: nil,
 		events:                    events,
 		options:                   options,
 		logger:                    logger,
@@ -43,6 +41,12 @@ func NewProxyMcpClient(
 func (c *ProxyMcpClient) Start(ctx context.Context) error {
 	var err error
 	errProxyChan := make(chan error, 1)
+
+	// create the transport for the proxy client
+	proxyTransport := transport.NewStdioProxyClientTransport(c.options)
+
+	clientMcpJsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, "proxy - mcpclient", c.logger)
+	c.clientMcpJsonRpcTransport = clientMcpJsonRpcTransport
 
 	// First message to send is always an initialize request
 	c.clientMcpJsonRpcTransport.OnStarted(func() {

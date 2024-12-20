@@ -11,30 +11,35 @@ import (
 	"github.com/llmcontext/gomcp/types"
 )
 
+type ProxiedMcpServerDescription struct {
+	ProxyName               string
+	CurrentWorkingDirectory string
+	ProgramName             string
+	ProgramArgs             []string
+}
+
 type StdioProxyClientTransport struct {
-	programName string
-	args        []string
-	cmd         *exec.Cmd
-	stdin       io.WriteCloser
-	stdout      io.ReadCloser
-	onMessage   func(json.RawMessage)
-	onClose     func()
-	onError     func(error)
-	onStarted   func()
+	options   *ProxiedMcpServerDescription
+	cmd       *exec.Cmd
+	stdin     io.WriteCloser
+	stdout    io.ReadCloser
+	onMessage func(json.RawMessage)
+	onClose   func()
+	onError   func(error)
+	onStarted func()
 	// we need to keep track of the pipe reader
 	pipeReader *io.PipeReader
 }
 
-func NewStdioProxyClientTransport(programName string, args []string) types.Transport {
+func NewStdioProxyClientTransport(options *ProxiedMcpServerDescription) types.Transport {
 	return &StdioProxyClientTransport{
-		programName: programName,
-		args:        args,
-		pipeReader:  nil,
+		options:    options,
+		pipeReader: nil,
 	}
 }
 
 func (t *StdioProxyClientTransport) Start(ctx context.Context) error {
-	t.cmd = exec.Command(t.programName, t.args...)
+	t.cmd = exec.Command(t.options.ProgramName, t.options.ProgramArgs...)
 
 	stdin, err := t.cmd.StdinPipe()
 	if err != nil {

@@ -1,18 +1,18 @@
 package proxy
 
 import (
-	"github.com/llmcontext/gomcp/channels"
 	"github.com/llmcontext/gomcp/channels/proxy/events"
 	"github.com/llmcontext/gomcp/channels/proxymcpclient"
 	"github.com/llmcontext/gomcp/channels/proxymuxclient"
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/protocol/mux"
+	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 )
 
 type StateManager struct {
 	logger    types.Logger
-	options   *channels.ProxiedMcpServerDescription
+	options   *transport.ProxiedMcpServerDescription
 	muxClient *proxymuxclient.ProxyMuxClient
 	mcpClient *proxymcpclient.ProxyMcpClient
 
@@ -21,7 +21,7 @@ type StateManager struct {
 	proxyId    string
 }
 
-func NewStateManager(options *channels.ProxiedMcpServerDescription, logger types.Logger) *StateManager {
+func NewStateManager(options *transport.ProxiedMcpServerDescription, logger types.Logger) *StateManager {
 	return &StateManager{
 		options:    options,
 		logger:     logger,
