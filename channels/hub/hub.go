@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/llmcontext/gomcp/channels/hub/events"
 	"github.com/llmcontext/gomcp/channels/hubinspector"
 	"github.com/llmcontext/gomcp/channels/hubmcpserver"
 	"github.com/llmcontext/gomcp/channels/hubmuxserver"
@@ -50,7 +49,7 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	stateManager := NewStateManager(logger)
 
 	// initialize the events
-	events := events.NewEvents(stateManager)
+	events := stateManager.AsEvents()
 
 	// Initialize tools registry
 	toolsRegistry := tools.NewToolsRegistry(logger)

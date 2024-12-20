@@ -18,12 +18,12 @@ type MuxServer struct {
 	sessions      []*MuxSession
 	sessionCount  int
 	logger        types.Logger
-	events        *events.Events
+	events        events.Events
 	toolsRegistry *tools.ToolsRegistry
 }
 
 // server inside the mcp server in charge of multiplexing multiple proxy clients
-func NewMuxServer(config *config.ProxyConfig, events *events.Events, toolsRegistry *tools.ToolsRegistry, logger types.Logger) *MuxServer {
+func NewMuxServer(config *config.ProxyConfig, events events.Events, toolsRegistry *tools.ToolsRegistry, logger types.Logger) *MuxServer {
 	return &MuxServer{
 		listenAddress: config.ListenAddress,
 		socketServer:  nil,

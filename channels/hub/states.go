@@ -27,7 +27,7 @@ func (s *StateManager) SetMuxServer(server *hubmuxserver.MuxServer) {
 	s.muxServer = server
 }
 
-func (s *StateManager) AsEventsProcessor() events.EventsProcessor {
+func (s *StateManager) AsEvents() events.Events {
 	return s
 }
 

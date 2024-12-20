@@ -18,10 +18,10 @@ type MuxSession struct {
 	toolsRegistry *tools.ToolsRegistry
 	proxyId       string
 	proxyName     string
-	events        *events.Events
+	events        events.Events
 }
 
-func NewMuxSession(sessionId string, tran types.Transport, logger types.Logger, toolsRegistry *tools.ToolsRegistry, events *events.Events) *MuxSession {
+func NewMuxSession(sessionId string, tran types.Transport, logger types.Logger, toolsRegistry *tools.ToolsRegistry, events events.Events) *MuxSession {
 	jsonRpcTransport := transport.NewJsonRpcTransport(tran, "gomcp - proxy (mux)", logger)
 
 	session := &MuxSession{
