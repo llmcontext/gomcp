@@ -30,6 +30,7 @@ type ModelContextProtocolImpl struct {
 	promptsRegistry *prompts.PromptsRegistry
 	inspector       *hubinspector.Inspector
 	muxServer       *hubmuxserver.MuxServer
+	stateManager    *StateManager
 	logger          types.Logger
 }
 
@@ -45,6 +46,9 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize logger: %v", err)
 	}
+
+	// initialize the state manager
+	stateManager := NewStateManager(logger)
 
 	// Initialize the event bus used to communicate between the
 	// different components of the server
@@ -81,6 +85,7 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 		promptsRegistry: promptsRegistry,
 		inspector:       inspectorInstance,
 		muxServer:       muxServerInstance,
+		stateManager:    stateManager,
 		logger:          logger,
 	}, nil
 }
