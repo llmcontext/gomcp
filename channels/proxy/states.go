@@ -100,5 +100,6 @@ func (s *StateManager) EventMuxToolCall(name string, args map[string]interface{}
 		"mcpReqId": mcpReqId,
 	})
 
-	// TODO: we need to forward the tool call to the mcp server
+	// we forward the tool call to the mcp client
+	s.mcpClient.SendToolCallRequest(name, args, mcpReqId)
 }

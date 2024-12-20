@@ -10,8 +10,9 @@ import (
 )
 
 type pendingRequest struct {
-	method    string
-	requestId *jsonrpc.JsonRpcRequestId
+	method     string
+	requestId  *jsonrpc.JsonRpcRequestId
+	extraParam string
 }
 
 type JsonRpcTransport struct {
@@ -25,9 +26,10 @@ type JsonRpcTransport struct {
 }
 
 type JsonRpcMessage struct {
-	Method   string
-	Request  *jsonrpc.JsonRpcRequest
-	Response *jsonrpc.JsonRpcResponse
+	Method     string
+	Request    *jsonrpc.JsonRpcRequest
+	Response   *jsonrpc.JsonRpcResponse
+	ExtraParam string
 }
 
 func (m *JsonRpcMessage) IsRequest() bool {
@@ -128,12 +130,13 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 					})
 					return
 				}
-				pendingRequestMethod, reqId := t.GetPendingRequest(response.Id)
+				pendingRequestMethod, reqId, extraParam := t.GetPendingRequest(response.Id)
 				if pendingRequestMethod == "" {
 					t.logger.Error("pending request method not found", types.LogArg{
-						"requestId": jsonrpc.RequestIdToString(response.Id),
-						"name":      t.name,
-						"response":  response,
+						"requestId":  jsonrpc.RequestIdToString(response.Id),
+						"name":       t.name,
+						"extraParam": extraParam,
+						"response":   response,
 					})
 					return
 				}
@@ -143,8 +146,9 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 					"id":     jsonrpc.RequestIdToString(reqId),
 				})
 				onMessage(JsonRpcMessage{
-					Response: response,
-					Method:   pendingRequestMethod,
+					Response:   response,
+					Method:     pendingRequestMethod,
+					ExtraParam: extraParam,
 				}, t)
 			default:
 				t.logger.Error("invalid message nature", types.LogArg{
@@ -196,7 +200,7 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 	}
 }
 
-func (t *JsonRpcTransport) SendRequestWithMethodAndParams(method string, params interface{}) error {
+func (t *JsonRpcTransport) SendRequestWithMethodAndParams(method string, params interface{}, extraParam string) error {
 
 	request := buildJsonRpcRequestWithNamedParams(
 		method, params, t.GetNextRequestId())
@@ -205,7 +209,7 @@ func (t *JsonRpcTransport) SendRequestWithMethodAndParams(method string, params 
 		return fmt.Errorf("failed to create initialize request")
 	}
 
-	return t.SendRequest(request)
+	return t.SendRequest(request, extraParam)
 }
 
 func (t *JsonRpcTransport) SendResponseWithResults(reqId *jsonrpc.JsonRpcRequestId, result interface{}) error {
@@ -218,7 +222,7 @@ func (t *JsonRpcTransport) SendResponseWithResults(reqId *jsonrpc.JsonRpcRequest
 	return t.SendResponse(response)
 }
 
-func (t *JsonRpcTransport) SendRequest(request *jsonrpc.JsonRpcRequest) error {
+func (t *JsonRpcTransport) SendRequest(request *jsonrpc.JsonRpcRequest, extraParam string) error {
 	jsonMessage, err := jsonrpc.MarshalJsonRpcRequest(request)
 	if err != nil {
 		t.logger.Error("error marshalling message", types.LogArg{
@@ -231,8 +235,9 @@ func (t *JsonRpcTransport) SendRequest(request *jsonrpc.JsonRpcRequest) error {
 	// so we can match the response with the request
 	if request.Id != nil {
 		t.pendingRequests[jsonrpc.RequestIdToString(request.Id)] = &pendingRequest{
-			method:    request.Method,
-			requestId: request.Id,
+			method:     request.Method,
+			requestId:  request.Id,
+			extraParam: extraParam,
 		}
 	}
 
@@ -292,9 +297,9 @@ func (t *JsonRpcTransport) GetNextRequestId() *jsonrpc.JsonRpcRequestId {
 
 // GetPendingRequest returns the method and message id of the pending request
 // if the request is not found, it returns an empty string and nil
-func (t *JsonRpcTransport) GetPendingRequest(reqId *jsonrpc.JsonRpcRequestId) (string, *jsonrpc.JsonRpcRequestId) {
+func (t *JsonRpcTransport) GetPendingRequest(reqId *jsonrpc.JsonRpcRequestId) (string, *jsonrpc.JsonRpcRequestId, string) {
 	if reqId == nil {
-		return "", nil
+		return "", nil, ""
 	}
 	reqIdStr := jsonrpc.RequestIdToString(reqId)
 	pendingRequest := t.pendingRequests[reqIdStr]
@@ -302,11 +307,11 @@ func (t *JsonRpcTransport) GetPendingRequest(reqId *jsonrpc.JsonRpcRequestId) (s
 		t.logger.Error("pending request not found", types.LogArg{
 			"requestId": reqIdStr,
 		})
-		return "", nil
+		return "", nil, ""
 	}
 	// we delete the pending request from the map
 	delete(t.pendingRequests, reqIdStr)
-	return pendingRequest.method, pendingRequest.requestId
+	return pendingRequest.method, pendingRequest.requestId, pendingRequest.extraParam
 }
 
 func structToMap(obj interface{}) (map[string]interface{}, error) {

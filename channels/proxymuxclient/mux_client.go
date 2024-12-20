@@ -119,7 +119,7 @@ func (c *ProxyMuxClient) SendProxyRegistrationRequest(
 		"params":        params,
 		"transportName": c.muxJsonRpcTransport.Name(),
 	})
-	err := c.muxJsonRpcTransport.SendRequestWithMethodAndParams(mux.RpcRequestMethodProxyRegister, params)
+	err := c.muxJsonRpcTransport.SendRequestWithMethodAndParams(mux.RpcRequestMethodProxyRegister, params, "")
 	if err != nil {
 		c.logger.Error("error sending proxy registration request", types.LogArg{
 			"error":         err,
@@ -140,5 +140,5 @@ func (c *ProxyMuxClient) SendToolsRegisterRequest(tools []mcp.ToolDescription) {
 	params := mux.JsonRpcRequestToolsRegisterParams{
 		Tools: toolsMux,
 	}
-	c.muxJsonRpcTransport.SendRequestWithMethodAndParams(mux.RpcRequestMethodToolsRegister, params)
+	c.muxJsonRpcTransport.SendRequestWithMethodAndParams(mux.RpcRequestMethodToolsRegister, params, "")
 }

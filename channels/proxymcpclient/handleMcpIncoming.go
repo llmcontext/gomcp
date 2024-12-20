@@ -25,6 +25,8 @@ func (c *ProxyMcpClient) handleMcpIncomingMessage(message transport.JsonRpcMessa
 			c.handleMcpInitializeResponse(response)
 		case mcp.RpcRequestMethodToolsList:
 			c.handleMcpToolsListResponse(response)
+		case mcp.RpcRequestMethodToolsCall:
+			c.handleMcpToolsCallResponse(response, message.ExtraParam)
 		default:
 			c.logger.Error("received message with unexpected method", types.LogArg{
 				"method": message.Method,

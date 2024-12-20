@@ -94,16 +94,24 @@ func (c *ProxyMcpClient) SendInitializeRequest() {
 			Version: version.Version,
 		},
 	}
-	c.clientMcpJsonRpcTransport.SendRequestWithMethodAndParams(mcp.RpcRequestMethodInitialize, params)
+	c.clientMcpJsonRpcTransport.SendRequestWithMethodAndParams(mcp.RpcRequestMethodInitialize, params, "")
 }
 
 func (c *ProxyMcpClient) SendInitializedNotification() {
 	notification := jsonrpc.NewJsonRpcNotification(mcp.RpcNotificationMethodInitialized)
-	c.clientMcpJsonRpcTransport.SendRequest(notification)
+	c.clientMcpJsonRpcTransport.SendRequest(notification, "")
 }
 
 func (c *ProxyMcpClient) SendToolsListRequest() {
 	params := mcp.JsonRpcRequestToolsListParams{}
 	c.clientMcpJsonRpcTransport.SendRequestWithMethodAndParams(
-		mcp.RpcRequestMethodToolsList, params)
+		mcp.RpcRequestMethodToolsList, params, "")
+}
+
+func (c *ProxyMcpClient) SendToolCallRequest(name string, args map[string]interface{}, mcpReqId string) {
+	params := mcp.JsonRpcRequestToolsCallParams{
+		Name:      name,
+		Arguments: args,
+	}
+	c.clientMcpJsonRpcTransport.SendRequestWithMethodAndParams(mcp.RpcRequestMethodToolsCall, params, mcpReqId)
 }
