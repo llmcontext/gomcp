@@ -82,7 +82,7 @@ func (s *MuxSession) onJsonRpcRequest(request *jsonrpc.JsonRpcRequest) {
 	})
 	switch request.Method {
 	case mux.RpcRequestMethodProxyRegister:
-		err := handleProxyRegister(s, request)
+		err := s.handleProxyRegister(request)
 		if err != nil {
 			s.logger.Error("Failed to handle proxy register", types.LogArg{
 				"request": request,
@@ -92,7 +92,7 @@ func (s *MuxSession) onJsonRpcRequest(request *jsonrpc.JsonRpcRequest) {
 			return
 		}
 	case mux.RpcRequestMethodToolsRegister:
-		err := handleToolsRegister(s, request)
+		err := s.handleToolsRegister(request)
 		if err != nil {
 			s.logger.Error("Failed to handle tools register", types.LogArg{
 				"request": request,

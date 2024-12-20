@@ -6,7 +6,7 @@ import (
 	"github.com/llmcontext/gomcp/types"
 )
 
-func handleToolsRegister(s *MuxSession, request *jsonrpc.JsonRpcRequest) error {
+func (s *MuxSession) handleToolsRegister(request *jsonrpc.JsonRpcRequest) error {
 	params, err := mux.ParseJsonRpcRequestToolsRegisterParams(request)
 	if err != nil {
 		return err

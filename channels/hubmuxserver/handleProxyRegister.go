@@ -7,7 +7,7 @@ import (
 	"github.com/llmcontext/gomcp/types"
 )
 
-func handleProxyRegister(s *MuxSession, request *jsonrpc.JsonRpcRequest) error {
+func (s *MuxSession) handleProxyRegister(request *jsonrpc.JsonRpcRequest) error {
 	params, err := mux.ParseJsonRpcRequestProxyRegisterParams(request)
 	if err != nil {
 		s.logger.Error("Failed to parse request params", types.LogArg{
