@@ -83,7 +83,7 @@ func (t *StdioProxyClientTransport) readLoop(ctx context.Context, errChan chan e
 	go func() {
 		defer w.Close()
 		_, err := io.Copy(w, t.stdout)
-		if err != nil && err != io.EOF {
+		if err != nil {
 			if t.onError != nil {
 				t.onError(fmt.Errorf("error reading from process stdout: %w", err))
 			}

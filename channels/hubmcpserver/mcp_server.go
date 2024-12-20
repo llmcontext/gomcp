@@ -3,6 +3,7 @@ package hubmcpserver
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/prompts"
@@ -97,6 +98,7 @@ func (s *MCPServer) Start(ctx context.Context) error {
 	case err := <-errChan:
 		return err
 	case <-ctx.Done():
+		transport.Close()
 		return ctx.Err()
 	}
 }
@@ -106,10 +108,15 @@ func (s *MCPServer) Close() {
 }
 
 func (s *MCPServer) logError(message string, err error) {
-	s.logger.Error(message, types.LogArg{
-		"message": message,
-		"error":   err,
-	})
+	// check if the error is because the context was cancelled
+	if errors.Is(err, context.Canceled) {
+		s.logger.Info("transport - context cancelled", types.LogArg{})
+	} else {
+		s.logger.Error(message, types.LogArg{
+			"message": message,
+			"error":   err,
+		})
+	}
 }
 
 func (s *MCPServer) sendError(error *jsonrpc.JsonRpcError, id *jsonrpc.JsonRpcRequestId) {

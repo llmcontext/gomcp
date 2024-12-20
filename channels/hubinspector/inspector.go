@@ -43,6 +43,7 @@ type Inspector struct {
 	mutex         sync.RWMutex
 	logger        types.Logger
 	server        *http.Server
+	isClosing     bool
 }
 
 func NewInspector(config *config.InspectorInfo, logger types.Logger) *Inspector {
@@ -52,6 +53,7 @@ func NewInspector(config *config.InspectorInfo, logger types.Logger) *Inspector 
 		clients:       make(map[*websocket.Conn]bool),
 		logger:        logger,
 		server:        nil,
+		isClosing:     false,
 	}
 }
 
@@ -87,10 +89,15 @@ func (i *Inspector) Start(ctx context.Context) error {
 	go func() {
 		err := server.ListenAndServe()
 		if err != nil {
+			if i.isClosing {
+				return
+			}
 			i.logger.Error("error starting inspector", types.LogArg{
 				"error": err,
 			})
-			errChan <- err
+			if !i.isClosing {
+				errChan <- err
+			}
 		}
 	}()
 
@@ -102,8 +109,10 @@ func (i *Inspector) Start(ctx context.Context) error {
 
 	select {
 	case err := <-errChan:
+		i.Close(ctx)
 		return err
 	case <-ctx.Done():
+		i.Close(ctx)
 		return ctx.Err()
 	}
 }
@@ -156,20 +165,11 @@ func (i *Inspector) serveWs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (i *Inspector) shutdown() {
-	i.logger.Info("shutdown()", types.LogArg{
-		"step": 1,
-	})
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
-	i.logger.Info("shutdown()", types.LogArg{
-		"step": 2,
-	})
 	for client := range i.clients {
 		client.Close()
 	}
-	i.logger.Info("shutdown()", types.LogArg{
-		"step": 3,
-	})
 	close(i.messageChan)
 }
 
@@ -177,6 +177,11 @@ func (i *Inspector) Close(ctx context.Context) {
 	i.logger.Info("Shutting down inspector", types.LogArg{
 		"listenAddress": i.listenAddress,
 	})
+
+	if i.isClosing {
+		return
+	}
+	i.isClosing = true
 
 	if i.server != nil {
 		// shutdown the server

@@ -9,15 +9,17 @@ import (
 )
 
 type SocketServer struct {
-	address  string
-	listener net.Listener
-	onError  func(error)
+	address   string
+	listener  net.Listener
+	onError   func(error)
+	isClosing bool
 }
 
 func NewSocketServer(address string) *SocketServer {
 	return &SocketServer{
-		address:  address,
-		listener: nil,
+		address:   address,
+		listener:  nil,
+		isClosing: false,
 	}
 }
 
@@ -42,6 +44,9 @@ func (s *SocketServer) Start(ctx context.Context, callback func(types.Transport)
 			default:
 				conn, err := s.listener.Accept()
 				if err != nil {
+					if s.isClosing {
+						return
+					}
 					if s.onError != nil {
 						s.onError(err)
 					}
@@ -58,6 +63,10 @@ func (s *SocketServer) Start(ctx context.Context, callback func(types.Transport)
 }
 
 func (s *SocketServer) Close() {
+	if s.isClosing {
+		return
+	}
+	s.isClosing = true
 	if s.listener != nil {
 		s.listener.Close()
 	}

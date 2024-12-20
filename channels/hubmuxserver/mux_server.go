@@ -78,10 +78,15 @@ func (m *MuxServer) Start(ctx context.Context) error {
 					return s.SessionId() == sessionId
 				})
 			}
+
 		}()
 	})
 
-	return nil
+	<-ctx.Done()
+	m.logger.Info("mux server - context cancelled, closing", types.LogArg{})
+	m.Close()
+	return ctx.Err()
+
 }
 
 func (m *MuxServer) Close() {
