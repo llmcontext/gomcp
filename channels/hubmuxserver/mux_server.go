@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/llmcontext/gomcp/channels/hub/events"
 	"github.com/llmcontext/gomcp/config"
-	"github.com/llmcontext/gomcp/eventbus"
 	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport/socket"
 	"github.com/llmcontext/gomcp/types"
@@ -18,19 +18,19 @@ type MuxServer struct {
 	sessions      []*MuxSession
 	sessionCount  int
 	logger        types.Logger
-	eventBus      *eventbus.EventBus
+	events        *events.Events
 	toolsRegistry *tools.ToolsRegistry
 }
 
 // server inside the mcp server in charge of multiplexing multiple proxy clients
-func NewMuxServer(config *config.ProxyConfig, eventBus *eventbus.EventBus, toolsRegistry *tools.ToolsRegistry, logger types.Logger) *MuxServer {
+func NewMuxServer(config *config.ProxyConfig, events *events.Events, toolsRegistry *tools.ToolsRegistry, logger types.Logger) *MuxServer {
 	return &MuxServer{
 		listenAddress: config.ListenAddress,
 		socketServer:  nil,
 		sessions:      []*MuxSession{},
 		sessionCount:  0,
 		logger:        logger,
-		eventBus:      eventBus,
+		events:        events,
 		toolsRegistry: toolsRegistry,
 	}
 }
@@ -59,7 +59,7 @@ func (m *MuxServer) Start(ctx context.Context) error {
 		})
 
 		// create a new session
-		session := NewMuxSession(sessionId, transport, subLogger, m.eventBus, m.toolsRegistry)
+		session := NewMuxSession(sessionId, transport, subLogger, m.toolsRegistry, m.events)
 		m.sessions = append(m.sessions, session)
 
 		// start the session processing in a goroutine

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/config"
-	"github.com/llmcontext/gomcp/eventbus"
 	"github.com/llmcontext/gomcp/types"
 	"github.com/llmcontext/gomcp/utils"
 )
@@ -22,15 +21,13 @@ type ToolsRegistry struct {
 	ToolProviders []*ToolProvider
 	Tools         map[string]*toolProviderPrepared
 	logger        types.Logger
-	eventBus      *eventbus.EventBus
 }
 
-func NewToolsRegistry(eventBus *eventbus.EventBus, logger types.Logger) *ToolsRegistry {
+func NewToolsRegistry(logger types.Logger) *ToolsRegistry {
 	return &ToolsRegistry{
 		ToolProviders: []*ToolProvider{},
 		Tools:         make(map[string]*toolProviderPrepared),
 		logger:        logger,
-		eventBus:      eventBus,
 	}
 }
 

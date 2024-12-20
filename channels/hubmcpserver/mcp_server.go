@@ -135,3 +135,12 @@ func (s *MCPServer) sendError(error *jsonrpc.JsonRpcError, id *jsonrpc.JsonRpcRe
 	}
 	s.transport.Send(jsonError)
 }
+
+func (s *MCPServer) OnNewProxyTools() {
+	// TODO: implement
+	tools := s.toolsRegistry.GetListOfTools()
+	s.logger.Info("OnNewProxyTools", types.LogArg{
+		"tools": tools,
+	})
+
+}

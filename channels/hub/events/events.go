@@ -1,7 +1,7 @@
 package events
 
 type EventsProcessor interface {
-	EventMcpStared()
+	EventNewProxyTools()
 }
 
 type Events struct {
@@ -14,6 +14,6 @@ func NewEvents(processor EventsProcessor) *Events {
 	}
 }
 
-func (e *Events) EventMcpStarted() {
-	e.processor.EventMcpStared()
+func (e *Events) EventNewProxyTools() {
+	e.processor.EventNewProxyTools()
 }

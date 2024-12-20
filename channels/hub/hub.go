@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/llmcontext/gomcp/channels/hub/events"
 	"github.com/llmcontext/gomcp/channels/hubinspector"
 	"github.com/llmcontext/gomcp/channels/hubmcpserver"
 	"github.com/llmcontext/gomcp/channels/hubmuxserver"
 	"github.com/llmcontext/gomcp/config"
-	"github.com/llmcontext/gomcp/eventbus"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/tools"
@@ -25,7 +25,6 @@ import (
 
 type ModelContextProtocolImpl struct {
 	config          *config.Config
-	eventBus        *eventbus.EventBus
 	toolsRegistry   *tools.ToolsRegistry
 	promptsRegistry *prompts.PromptsRegistry
 	inspector       *hubinspector.Inspector
@@ -50,12 +49,11 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	// initialize the state manager
 	stateManager := NewStateManager(logger)
 
-	// Initialize the event bus used to communicate between the
-	// different components of the server
-	eventBus := eventbus.NewEventBus()
+	// initialize the events
+	events := events.NewEvents(stateManager)
 
 	// Initialize tools registry
-	toolsRegistry := tools.NewToolsRegistry(eventBus, logger)
+	toolsRegistry := tools.NewToolsRegistry(logger)
 
 	// Initialize prompts registry
 	promptsRegistry := prompts.NewEmptyPromptsRegistry()
@@ -75,12 +73,12 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	// Start multiplexer if enabled
 	var muxServerInstance *hubmuxserver.MuxServer = nil
 	if config.Proxy != nil && config.Proxy.Enabled {
-		muxServerInstance = hubmuxserver.NewMuxServer(config.Proxy, eventBus, toolsRegistry, logger)
+		muxServerInstance = hubmuxserver.NewMuxServer(config.Proxy, events, toolsRegistry, logger)
+		stateManager.SetMuxServer(muxServerInstance)
 	}
 
 	return &ModelContextProtocolImpl{
 		config:          config,
-		eventBus:        eventBus,
 		toolsRegistry:   toolsRegistry,
 		promptsRegistry: promptsRegistry,
 		inspector:       inspectorInstance,
@@ -170,7 +168,7 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 					})
 				}
 			}
-			mcp.logger.Info("inpsector stopped", types.LogArg{})
+			mcp.logger.Info("inspector stopped", types.LogArg{})
 			return err
 		})
 	}
@@ -183,6 +181,9 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 			mcp.config.ServerInfo.Name,
 			mcp.config.ServerInfo.Version,
 			mcp.logger)
+
+		// set the server in the state manager
+		mcp.stateManager.SetMcpServer(server)
 
 		// Start server
 		err := server.Start(egCtx)

@@ -40,10 +40,7 @@ func (s *MuxSession) handleToolsRegister(request *jsonrpc.JsonRpcRequest) error 
 		return err
 	}
 
-	tools := s.toolsRegistry.GetListOfTools()
-	s.logger.Info("Tools registered", types.LogArg{
-		"tools": tools,
-	})
+	s.events.EventNewProxyTools()
 
 	return nil
 }
