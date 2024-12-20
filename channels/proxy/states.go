@@ -4,6 +4,7 @@ import (
 	"github.com/llmcontext/gomcp/channels/proxy/events"
 	"github.com/llmcontext/gomcp/channels/proxymcpclient"
 	"github.com/llmcontext/gomcp/channels/proxymuxclient"
+	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/protocol/mux"
 	"github.com/llmcontext/gomcp/transport"
@@ -102,4 +103,12 @@ func (s *StateManager) EventMuxToolCall(name string, args map[string]interface{}
 
 	// we forward the tool call to the mcp client
 	s.mcpClient.SendToolCallRequest(name, args, mcpReqId)
+}
+
+func (s *StateManager) EventMcpToolCallResponse(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string) {
+	s.logger.Info("event mcp tool call response", types.LogArg{
+		"content": toolsCallResult.Content,
+		"isError": toolsCallResult.IsError,
+	})
+	s.muxClient.SendToolCallResponse(toolsCallResult, reqId, mcpReqId)
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/llmcontext/gomcp/protocol"
 )
 
-// this is an event
 const (
 	RpcRequestMethodToolsRegister = "tools/register"
 )

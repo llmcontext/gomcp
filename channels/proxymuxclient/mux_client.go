@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/channels/proxy/events"
+	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/protocol/mux"
 	"github.com/llmcontext/gomcp/transport"
@@ -141,4 +142,13 @@ func (c *ProxyMuxClient) SendToolsRegisterRequest(tools []mcp.ToolDescription) {
 		Tools: toolsMux,
 	}
 	c.muxJsonRpcTransport.SendRequestWithMethodAndParams(mux.RpcRequestMethodToolsRegister, params, "")
+}
+
+func (c *ProxyMuxClient) SendToolCallResponse(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string) {
+	params := mux.JsonRpcResponseToolsCallResult{
+		Content:  toolsCallResult.Content,
+		IsError:  toolsCallResult.IsError,
+		McpReqId: mcpReqId,
+	}
+	c.muxJsonRpcTransport.SendResponseWithResults(reqId, params)
 }

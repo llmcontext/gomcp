@@ -1,6 +1,7 @@
 package events
 
 import (
+	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/protocol/mux"
 )
@@ -12,4 +13,5 @@ type Events interface {
 
 	EventMuxProxyRegistered(registerResponse *mux.JsonRpcResponseProxyRegisterResult)
 	EventMuxToolCall(name string, args map[string]interface{}, mcpReqId string)
+	EventMcpToolCallResponse(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string)
 }

@@ -23,5 +23,6 @@ func (c *ProxyMcpClient) handleMcpToolsCallResponse(response *jsonrpc.JsonRpcRes
 		"extraParam": extraParam,
 	})
 
-	// TODO: we need to forward the response to the hubmux server
+	// we forward the response to the hubmux server
+	c.events.EventMcpToolCallResponse(toolsCallResult, response.Id, extraParam)
 }
