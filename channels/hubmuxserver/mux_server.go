@@ -7,6 +7,7 @@ import (
 
 	"github.com/llmcontext/gomcp/channels/hub/events"
 	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport/socket"
 	"github.com/llmcontext/gomcp/types"
@@ -94,4 +95,13 @@ func (m *MuxServer) Close() {
 	for _, session := range m.sessions {
 		session.Close()
 	}
+}
+
+func (m *MuxServer) OnProxyToolCall(proxyId string, toolName string, toolArgs map[string]interface{}, id *jsonrpc.JsonRpcRequestId) {
+	m.logger.Info("proxy tool call", types.LogArg{
+		"proxyId":  proxyId,
+		"toolName": toolName,
+		"toolArgs": toolArgs,
+		"id":       id,
+	})
 }

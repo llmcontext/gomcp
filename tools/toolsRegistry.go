@@ -108,6 +108,12 @@ func (r *ToolsRegistry) initializeProviders(ctx context.Context, toolConfigs []c
 		if toolProvider.isDisabled {
 			continue
 		}
+
+		// if the tool provider is a proxy, we don't need to initialize it
+		if toolProvider.proxyId != "" {
+			continue
+		}
+
 		// let's see if the tool provider has a configuration schema
 		if toolProvider.configSchema != nil {
 			// let's find the corresponding tool config
@@ -189,11 +195,20 @@ func (r *ToolsRegistry) getTool(toolName string) (*ToolDefinition, *ToolProvider
 	return tool.ToolDefinition, tool.ToolProvider, nil
 }
 
+func (r *ToolsRegistry) IsProxyTool(ctx context.Context, toolName string) (bool, string, error) {
+	_, toolProvider, err := r.getTool(toolName)
+	if err != nil {
+		return false, "", err
+	}
+	return toolProvider.proxyId != "", toolProvider.proxyId, nil
+}
+
 func (r *ToolsRegistry) CallTool(ctx context.Context, toolName string, toolArgs map[string]interface{}) (interface{}, error) {
 	toolDefinition, toolProvider, err := r.getTool(toolName)
 	if err != nil {
 		return nil, err
 	}
+
 	// let's check if the arguments patch the schema
 	err = utils.ValidateJsonSchemaWithObject(toolDefinition.InputSchema, toolArgs)
 	if err != nil {

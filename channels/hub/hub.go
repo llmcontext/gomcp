@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/llmcontext/gomcp/channels/hub/events"
 	"github.com/llmcontext/gomcp/channels/hubinspector"
 	"github.com/llmcontext/gomcp/channels/hubmcpserver"
 	"github.com/llmcontext/gomcp/channels/hubmuxserver"
@@ -29,6 +30,7 @@ type ModelContextProtocolImpl struct {
 	inspector       *hubinspector.Inspector
 	muxServer       *hubmuxserver.MuxServer
 	stateManager    *StateManager
+	events          events.Events
 	logger          types.Logger
 }
 
@@ -83,6 +85,7 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 		inspector:       inspectorInstance,
 		muxServer:       muxServerInstance,
 		stateManager:    stateManager,
+		events:          events,
 		logger:          logger,
 	}, nil
 }
@@ -176,7 +179,8 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 		mcp.logger.Info("Starting MCP server", types.LogArg{})
 
 		// Initialize server
-		server := hubmcpserver.NewMCPServer(transport, mcp.toolsRegistry, mcp.promptsRegistry,
+		server := hubmcpserver.NewMCPServer(transport, mcp.events,
+			mcp.toolsRegistry, mcp.promptsRegistry,
 			mcp.config.ServerInfo.Name,
 			mcp.config.ServerInfo.Version,
 			mcp.logger)
