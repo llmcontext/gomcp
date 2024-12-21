@@ -69,3 +69,54 @@ func BoolPtr(b bool) *bool {
 // 	rm := json.RawMessage(s)
 // 	return &rm
 // }
+
+type reqIdMappingEntry struct {
+	reqIdA *JsonRpcRequestId
+	reqIdB *JsonRpcRequestId
+}
+
+type ReqIdMapping struct {
+	entries []reqIdMappingEntry
+}
+
+func NewReqIdMapping() *ReqIdMapping {
+	return &ReqIdMapping{
+		entries: []reqIdMappingEntry{},
+	}
+}
+
+func (m *ReqIdMapping) AddMapping(reqIdA *JsonRpcRequestId, reqIdB *JsonRpcRequestId) {
+	m.entries = append(m.entries, reqIdMappingEntry{reqIdA, reqIdB})
+}
+
+func (m *ReqIdMapping) GetMapping(reqId *JsonRpcRequestId) *JsonRpcRequestId {
+	var foundEntry *JsonRpcRequestId = nil
+	var ixEntry int = -1
+	for ix, entry := range m.entries {
+		// Compare the actual values instead of pointer addresses
+		if equalRequestIds(entry.reqIdA, reqId) {
+			foundEntry = entry.reqIdB
+			ixEntry = ix
+			break
+		}
+	}
+	if foundEntry != nil {
+		// delete the entry from the list
+		m.entries = append(m.entries[:ixEntry], m.entries[ixEntry+1:]...)
+	}
+	return foundEntry
+}
+
+func equalRequestIds(a, b *JsonRpcRequestId) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	if a.Number != nil && b.Number != nil {
+		return *a.Number == *b.Number
+	}
+	if a.String != nil && b.String != nil {
+		return *a.String == *b.String
+	}
+	return false
+}
