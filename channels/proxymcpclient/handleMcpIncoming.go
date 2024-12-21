@@ -1,6 +1,8 @@
 package proxymcpclient
 
 import (
+	"fmt"
+
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
@@ -15,7 +17,11 @@ func (c *ProxyMcpClient) handleMcpIncomingMessage(message transport.JsonRpcMessa
 		response := message.Response
 		if response.Error != nil {
 			c.logger.Error("error in response", types.LogArg{
-				"response": response,
+				"response":      fmt.Sprintf("%+v", response),
+				"error":         response.Error,
+				"error_message": response.Error.Message,
+				"error_code":    response.Error.Code,
+				"error_data":    response.Error.Data,
 			})
 			return
 		}

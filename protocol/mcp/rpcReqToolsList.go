@@ -23,11 +23,8 @@ func ParseJsonRpcRequestToolsList(request *jsonrpc.JsonRpcRequest) (*JsonRpcRequ
 		if !request.Params.IsNamed() {
 			return nil, fmt.Errorf("invalid call parameters, not an object")
 		}
-		cursor, err := protocol.GetStringField(request.Params.NamedParams, "cursor")
-		if err != nil {
-			return nil, fmt.Errorf("invalid call parameters, cursor is not a string")
-		}
-		params.Cursor = &cursor
+		cursor := protocol.GetOptionalStringField(request.Params.NamedParams, "cursor")
+		params.Cursor = cursor
 	}
 
 	return params, nil

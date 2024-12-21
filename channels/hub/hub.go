@@ -185,7 +185,6 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 		// Initialize server
 		server := hubmcpserver.NewMCPServer(transport,
 			mcp.events,
-			mcp.promptsRegistry,
 			mcp.logger)
 
 		// set the server in the state manager

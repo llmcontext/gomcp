@@ -6,30 +6,26 @@ import (
 
 	"github.com/llmcontext/gomcp/channels/hub/events"
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 )
 
 type MCPServer struct {
-	transport       *transport.JsonRpcTransport
-	events          events.Events
-	promptsRegistry *prompts.PromptsRegistry
-	logger          types.Logger
+	transport *transport.JsonRpcTransport
+	events    events.Events
+	logger    types.Logger
 }
 
 func NewMCPServer(
 	tran types.Transport,
 	events events.Events,
-	promptsRegistry *prompts.PromptsRegistry,
 	logger types.Logger,
 ) *MCPServer {
 	jsonRpcTransport := transport.NewJsonRpcTransport(tran, "mcp server", logger)
 	return &MCPServer{
-		transport:       jsonRpcTransport,
-		events:          events,
-		promptsRegistry: promptsRegistry,
-		logger:          logger,
+		transport: jsonRpcTransport,
+		events:    events,
+		logger:    logger,
 	}
 }
 
