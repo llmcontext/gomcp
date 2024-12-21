@@ -215,10 +215,7 @@ func (s *StateManager) EventMcpRequestPromptsGet(params *mcp.JsonRpcRequestPromp
 	jsonResponse := json.RawMessage(responseBytes)
 
 	// we send the response
-	s.mcpServer.SendResponse(&jsonrpc.JsonRpcResponse{
-		Id:     reqId,
-		Result: &jsonResponse,
-	})
+	s.mcpServer.SendJsonRpcResponse(&jsonResponse, reqId)
 }
 
 func (s *StateManager) EventNewProxyTools() {

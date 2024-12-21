@@ -82,14 +82,6 @@ func (s *MCPServer) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRp
 	})
 }
 
-func (s *MCPServer) SendResponse(response *jsonrpc.JsonRpcResponse) error {
-	s.logger.Debug("JsonRpcResponse", types.LogArg{
-		"response": response,
-	})
-	s.transport.SendResponse(response)
-	return nil
-}
-
 func (s *MCPServer) SendError(code int, message string, id *jsonrpc.JsonRpcRequestId) {
 	s.logger.Debug("JsonRpcError", types.LogArg{
 		"code":    code,

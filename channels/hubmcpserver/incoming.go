@@ -85,11 +85,7 @@ func (s *MCPServer) handleIncomingMessage(ctx context.Context, message transport
 			}
 		case "ping":
 			result := json.RawMessage(`{}`)
-			response := &jsonrpc.JsonRpcResponse{
-				Id:     request.Id,
-				Result: &result,
-			}
-			s.SendResponse(response)
+			s.SendJsonRpcResponse(result, request.Id)
 		default:
 			s.SendError(jsonrpc.RpcMethodNotFound, fmt.Sprintf("unknown method: %s", request.Method), request.Id)
 		}
