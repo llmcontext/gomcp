@@ -8,12 +8,8 @@ import (
 	"github.com/llmcontext/gomcp/types"
 )
 
-func (c *ProxyMcpClient) handleMcpIncomingMessage(message transport.JsonRpcMessage) {
-	if message.Request != nil {
-		c.logger.Error("received JsonRpcRequest", types.LogArg{
-			"request": message.Request,
-		})
-	} else if message.Response != nil {
+func (c *ProxyMcpClient) handleIncomingMessage(message transport.JsonRpcMessage) error {
+	if message.Response != nil {
 		response := message.Response
 		if response.Error != nil {
 			c.logger.Error("error in response", types.LogArg{
@@ -23,9 +19,8 @@ func (c *ProxyMcpClient) handleMcpIncomingMessage(message transport.JsonRpcMessa
 				"error_code":    response.Error.Code,
 				"error_data":    response.Error.Data,
 			})
-			return
+			return nil
 		}
-		// we check if the pending request is not nil
 		switch message.Method {
 		case mcp.RpcRequestMethodInitialize:
 			c.handleMcpInitializeResponse(response)
@@ -38,9 +33,20 @@ func (c *ProxyMcpClient) handleMcpIncomingMessage(message transport.JsonRpcMessa
 				"method": message.Method,
 			})
 		}
+	} else if message.Request != nil {
+		request := message.Request
+		switch message.Method {
+		default:
+			c.logger.Error("received message with unexpected method", types.LogArg{
+				"method":  message.Method,
+				"request": request,
+			})
+		}
 	} else {
 		c.logger.Error("received message with unexpected nature", types.LogArg{
 			"message": message,
 		})
 	}
+
+	return nil
 }

@@ -96,7 +96,6 @@ func (c *ProxyClient) Start() error {
 
 	// go routine for proxy mcp client
 	eg.Go(func() error {
-
 		// create the proxy client
 		proxyClient := proxymcpclient.NewProxyMcpClient(
 			c.events,

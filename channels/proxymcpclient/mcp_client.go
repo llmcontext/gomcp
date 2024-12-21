@@ -61,7 +61,7 @@ func (c *ProxyMcpClient) Start(ctx context.Context) error {
 				"method":  msg.Method,
 				"name":    jsonRpcTransport.Name(),
 			})
-			c.handleMcpIncomingMessage(msg)
+			c.handleIncomingMessage(msg)
 		})
 		if err != nil {
 			c.logger.Error("failed to start proxy transport", types.LogArg{
@@ -108,10 +108,35 @@ func (c *ProxyMcpClient) SendToolsListRequest() {
 		mcp.RpcRequestMethodToolsList, params, "")
 }
 
-func (c *ProxyMcpClient) SendToolCallRequest(name string, args map[string]interface{}, mcpReqId string) {
-	params := mcp.JsonRpcRequestToolsCallParams{
-		Name:      name,
-		Arguments: args,
+func (s *ProxyMcpClient) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
+	s.clientMcpJsonRpcTransport.SendResponse(&jsonrpc.JsonRpcResponse{
+		Id:     id,
+		Result: response,
+	})
+}
+
+func (s *ProxyMcpClient) SendResponse(response *jsonrpc.JsonRpcResponse) error {
+	s.logger.Debug("JsonRpcResponse", types.LogArg{
+		"response": response,
+	})
+	s.clientMcpJsonRpcTransport.SendResponse(response)
+	return nil
+}
+
+func (s *ProxyMcpClient) SendRequestWithMethodAndParams(method string, params interface{}, id *jsonrpc.JsonRpcRequestId) {
+	s.clientMcpJsonRpcTransport.SendRequestWithMethodAndParams(method, params, "")
+}
+
+func (s *ProxyMcpClient) SendError(code int, message string, id *jsonrpc.JsonRpcRequestId) {
+	s.logger.Debug("JsonRpcError", types.LogArg{
+		"code":    code,
+		"message": message,
+		"id":      id,
+	})
+	err := s.clientMcpJsonRpcTransport.SendError(code, message, id)
+	if err != nil {
+		s.logger.Error("failed to send error", types.LogArg{
+			"error": err,
+		})
 	}
-	c.clientMcpJsonRpcTransport.SendRequestWithMethodAndParams(mcp.RpcRequestMethodToolsCall, params, mcpReqId)
 }

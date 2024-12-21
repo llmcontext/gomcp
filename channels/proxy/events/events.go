@@ -11,7 +11,8 @@ type Events interface {
 	EventMcpInitializeResponse(initializeResponse *mcp.JsonRpcResponseInitializeResult)
 	EventMcpToolsListResponse(toolsListResponse *mcp.JsonRpcResponseToolsListResult)
 
-	EventMuxProxyRegistered(registerResponse *mux.JsonRpcResponseProxyRegisterResult)
-	EventMuxToolCall(name string, args map[string]interface{}, mcpReqId string)
+	EventMuxRequestToolCall(params *mux.JsonRpcRequestToolsCallParams, mcpReqId *jsonrpc.JsonRpcRequestId)
+
+	EventMuxResponseProxyRegistered(registerResponse *mux.JsonRpcResponseProxyRegisterResult)
 	EventMcpToolCallResponse(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string)
 }

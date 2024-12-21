@@ -1,7 +1,6 @@
 package proxymuxclient
 
 import (
-	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mux"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
@@ -9,9 +8,20 @@ import (
 
 func (c *ProxyMuxClient) handleIncomingMessage(message transport.JsonRpcMessage) error {
 	if message.Response != nil {
+		response := message.Response
 		switch message.Method {
 		case mux.RpcRequestMethodProxyRegister:
-			c.handleProxyRegisterResponse(message.Response)
+			{
+				response, err := mux.ParseJsonRpcResponseProxyRegister(response)
+				if err != nil {
+					c.logger.Error("error in handleProxyRegisterResponse", types.LogArg{
+						"error": err,
+					})
+					return err
+				}
+
+				c.events.EventMuxResponseProxyRegistered(response)
+			}
 		default:
 			c.logger.Error("received message with unexpected method", types.LogArg{
 				"method":   message.Method,
@@ -19,9 +29,21 @@ func (c *ProxyMuxClient) handleIncomingMessage(message transport.JsonRpcMessage)
 			})
 		}
 	} else if message.Request != nil {
+		request := message.Request
 		switch message.Method {
 		case mux.RpcRequestMethodCallTool:
-			c.handleToolCall(message.Request)
+			{
+				params, err := mux.ParseJsonRpcRequestToolsCallParams(request)
+				if err != nil {
+					c.logger.Error("error in handleToolCall", types.LogArg{
+						"error": err,
+					})
+					return err
+				}
+
+				c.events.EventMuxRequestToolCall(params, request.Id)
+
+			}
 		default:
 			c.logger.Error("received message with unexpected method", types.LogArg{
 				"method":  message.Method,
@@ -29,39 +51,5 @@ func (c *ProxyMuxClient) handleIncomingMessage(message transport.JsonRpcMessage)
 			})
 		}
 	}
-	return nil
-}
-
-func (c *ProxyMuxClient) handleProxyRegisterResponse(response *jsonrpc.JsonRpcResponse) error {
-	registerResponse, err := mux.ParseJsonRpcResponseProxyRegister(response)
-	if err != nil {
-		c.logger.Error("error in handleProxyRegisterResponse", types.LogArg{
-			"error": err,
-		})
-		return err
-	}
-
-	c.events.EventMuxProxyRegistered(registerResponse)
-
-	return nil
-}
-
-func (c *ProxyMuxClient) handleToolCall(request *jsonrpc.JsonRpcRequest) error {
-	toolCall, err := mux.ParseJsonRpcRequestToolsCallParams(request)
-	if err != nil {
-		c.logger.Error("error in handleToolCall", types.LogArg{
-			"error": err,
-		})
-		return err
-	}
-
-	c.logger.Info("received tool call", types.LogArg{
-		"name":     toolCall.Name,
-		"args":     toolCall.Args,
-		"mcpReqId": toolCall.McpReqId,
-	})
-
-	c.events.EventMuxToolCall(toolCall.Name, toolCall.Args, toolCall.McpReqId)
-
 	return nil
 }

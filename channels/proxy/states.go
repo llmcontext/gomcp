@@ -75,7 +75,7 @@ func (s *StateManager) EventMcpToolsListResponse(resp *mcp.JsonRpcResponseToolsL
 	s.muxClient.SendToolsRegisterRequest(resp.Tools)
 }
 
-func (s *StateManager) EventMuxProxyRegistered(registerResponse *mux.JsonRpcResponseProxyRegisterResult) {
+func (s *StateManager) EventMuxResponseProxyRegistered(registerResponse *mux.JsonRpcResponseProxyRegisterResult) {
 	s.logger.Info("event mux proxy registered", types.LogArg{
 		"sessionId":  registerResponse.SessionId,
 		"proxyId":    registerResponse.ProxyId,
@@ -94,15 +94,20 @@ func (s *StateManager) EventMuxProxyRegistered(registerResponse *mux.JsonRpcResp
 
 }
 
-func (s *StateManager) EventMuxToolCall(name string, args map[string]interface{}, mcpReqId string) {
-	s.logger.Info("EventMuxToolCall", types.LogArg{
-		"name":     name,
-		"args":     args,
-		"mcpReqId": mcpReqId,
+func (s *StateManager) EventMuxRequestToolCall(params *mux.JsonRpcRequestToolsCallParams, reqId *jsonrpc.JsonRpcRequestId) {
+	s.logger.Info("EventMuxRequestToolCall", types.LogArg{
+		"name":     params.Name,
+		"args":     params.Args,
+		"mcpReqId": params.McpReqId,
 	})
 
+	req := mcp.JsonRpcRequestToolsCallParams{
+		Name:      params.Name,
+		Arguments: params.Args,
+	}
+
 	// we forward the tool call to the mcp client
-	s.mcpClient.SendToolCallRequest(name, args, mcpReqId)
+	s.mcpClient.SendRequestWithMethodAndParams(mcp.RpcRequestMethodToolsCall, req, reqId)
 }
 
 func (s *StateManager) EventMcpToolCallResponse(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string) {
