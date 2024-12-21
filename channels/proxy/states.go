@@ -9,6 +9,7 @@ import (
 	"github.com/llmcontext/gomcp/protocol/mux"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
+	"github.com/llmcontext/gomcp/version"
 )
 
 type StateManager struct {
@@ -48,7 +49,16 @@ func (s *StateManager) AsEvents() events.Events {
 }
 
 func (s *StateManager) EventMcpStarted() {
-	s.mcpClient.SendInitializeRequest()
+	params := mcp.JsonRpcRequestInitializeParams{
+		ProtocolVersion: mcp.ProtocolVersion,
+		Capabilities:    mcp.ClientCapabilities{},
+		ClientInfo: mcp.ClientInfo{
+			Name:    s.options.ProxyName,
+			Version: version.Version,
+		},
+	}
+	s.mcpClient.SendRequestWithMethodAndParams(mcp.RpcRequestMethodInitialize, params)
+
 }
 
 func (s *StateManager) EventMcpResponseInitialize(resp *mcp.JsonRpcResponseInitializeResult) {
@@ -111,10 +121,11 @@ func (s *StateManager) EventMuxResponseProxyRegistered(registerResponse *mux.Jso
 	s.proxyId = registerResponse.ProxyId
 
 	// we send the "notifications/initialized" notification
-	s.mcpClient.SendInitializedNotification()
+	s.mcpClient.SendNotification(mcp.RpcNotificationMethodInitialized)
 
 	// we send the "tools/list" request
-	s.mcpClient.SendToolsListRequest()
+	s.mcpClient.SendRequestWithMethodAndParams(
+		mcp.RpcRequestMethodToolsList, mcp.JsonRpcRequestToolsListParams{})
 
 }
 
@@ -131,7 +142,7 @@ func (s *StateManager) EventMuxRequestToolCall(params *mux.JsonRpcRequestToolsCa
 	}
 
 	// we forward the tool call to the mcp client
-	s.mcpClient.SendRequestWithMethodAndParams(mcp.RpcRequestMethodToolsCall, req, reqId)
+	s.mcpClient.SendRequestWithMethodAndParams(mcp.RpcRequestMethodToolsCall, req)
 }
 
 func (s *StateManager) EventMcpResponseToolCall(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string) {

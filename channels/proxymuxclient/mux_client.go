@@ -117,14 +117,6 @@ func (s *ProxyMuxClient) SendJsonRpcResponse(response interface{}, id *jsonrpc.J
 	})
 }
 
-func (s *ProxyMuxClient) SendResponse(response *jsonrpc.JsonRpcResponse) error {
-	s.logger.Debug("JsonRpcResponse", types.LogArg{
-		"response": response,
-	})
-	s.muxJsonRpcTransport.SendResponse(response)
-	return nil
-}
-
 func (s *ProxyMuxClient) SendRequestWithMethodAndParams(method string, params interface{}) {
 	s.muxJsonRpcTransport.SendRequestWithMethodAndParams(method, params, "")
 }

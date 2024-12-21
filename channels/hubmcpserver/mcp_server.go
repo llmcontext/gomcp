@@ -73,6 +73,10 @@ func (s *MCPServer) logError(message string, err error) {
 	}
 }
 
+func (s *MCPServer) SendRequestWithMethodAndParams(method string, params interface{}, extraParam string) error {
+	return s.transport.SendRequestWithMethodAndParams(method, params, extraParam)
+}
+
 func (s *MCPServer) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
 	s.transport.SendResponse(&jsonrpc.JsonRpcResponse{
 		JsonRpcVersion: jsonrpc.JsonRpcVersion,
