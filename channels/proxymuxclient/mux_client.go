@@ -6,18 +6,16 @@ import (
 
 	"github.com/llmcontext/gomcp/channels/proxy/events"
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/protocol/mcp"
-	"github.com/llmcontext/gomcp/protocol/mux"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/transport/socket"
 	"github.com/llmcontext/gomcp/types"
 )
 
 type ProxyMuxClient struct {
-	muxJsonRpcTransport *transport.JsonRpcTransport
-	logger              types.Logger
-	events              events.Events
-	muxAddress          string
+	transport  *transport.JsonRpcTransport
+	logger     types.Logger
+	events     events.Events
+	muxAddress string
 }
 
 func NewProxyMuxClient(
@@ -26,10 +24,10 @@ func NewProxyMuxClient(
 	logger types.Logger,
 ) *ProxyMuxClient {
 	return &ProxyMuxClient{
-		muxAddress:          muxAddress,
-		muxJsonRpcTransport: nil,
-		logger:              logger,
-		events:              events,
+		muxAddress: muxAddress,
+		transport:  nil,
+		logger:     logger,
+		events:     events,
 	}
 }
 
@@ -58,9 +56,9 @@ func (c *ProxyMuxClient) Start(ctx context.Context) error {
 	// create the json rpc transport for the mux client
 	muxJsonRpcTransport := transport.NewJsonRpcTransport(muxClientTransport, "proxy client - gomcp (mux)", c.logger)
 
-	c.muxJsonRpcTransport = muxJsonRpcTransport
+	c.transport = muxJsonRpcTransport
 	go func() {
-		err = c.muxJsonRpcTransport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
+		err = c.transport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
 			c.logger.Debug("received message from mux", types.LogArg{
 				"message":  msg,
 				"method":   msg.Method,
@@ -92,24 +90,14 @@ func (c *ProxyMuxClient) Start(ctx context.Context) error {
 		c.Close()
 		return ctx.Err()
 	}
-
 }
 
 func (c *ProxyMuxClient) Close() {
-	c.muxJsonRpcTransport.Close()
-}
-
-func (c *ProxyMuxClient) SendToolCallResponse(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string) {
-	params := mux.JsonRpcResponseToolsCallResult{
-		Content:  toolsCallResult.Content,
-		IsError:  toolsCallResult.IsError,
-		McpReqId: mcpReqId,
-	}
-	c.muxJsonRpcTransport.SendResponseWithResults(reqId, params)
+	c.transport.Close()
 }
 
 func (s *ProxyMuxClient) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
-	s.muxJsonRpcTransport.SendResponse(&jsonrpc.JsonRpcResponse{
+	s.transport.SendResponse(&jsonrpc.JsonRpcResponse{
 		JsonRpcVersion: jsonrpc.JsonRpcVersion,
 		Id:             id,
 		Result:         response,
@@ -118,7 +106,7 @@ func (s *ProxyMuxClient) SendJsonRpcResponse(response interface{}, id *jsonrpc.J
 }
 
 func (s *ProxyMuxClient) SendRequestWithMethodAndParams(method string, params interface{}) {
-	s.muxJsonRpcTransport.SendRequestWithMethodAndParams(method, params, "")
+	s.transport.SendRequestWithMethodAndParams(method, params, "")
 }
 
 func (s *ProxyMuxClient) SendError(code int, message string, id *jsonrpc.JsonRpcRequestId) {
@@ -127,7 +115,7 @@ func (s *ProxyMuxClient) SendError(code int, message string, id *jsonrpc.JsonRpc
 		"message": message,
 		"id":      id,
 	})
-	err := s.muxJsonRpcTransport.SendError(code, message, id)
+	err := s.transport.SendError(code, message, id)
 	if err != nil {
 		s.logger.Error("failed to send error", types.LogArg{
 			"error": err,
