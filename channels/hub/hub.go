@@ -47,14 +47,6 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 		return nil, fmt.Errorf("failed to initialize logger: %v", err)
 	}
 
-	// initialize the state manager
-	stateManager := NewStateManager(
-		config.ServerInfo.Name,
-		config.ServerInfo.Version,
-		logger,
-	)
-	events := stateManager.AsEvents()
-
 	// Initialize tools registry
 	toolsRegistry := tools.NewToolsRegistry(logger)
 
@@ -66,6 +58,16 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 			return nil, fmt.Errorf("failed to initialize prompts registry: %v", err)
 		}
 	}
+
+	// initialize the state manager
+	stateManager := NewStateManager(
+		config.ServerInfo.Name,
+		config.ServerInfo.Version,
+		toolsRegistry,
+		promptsRegistry,
+		logger,
+	)
+	events := stateManager.AsEvents()
 
 	// Start inspector if enabled
 	var inspectorInstance *hubinspector.Inspector = nil
@@ -183,7 +185,7 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 		// Initialize server
 		server := hubmcpserver.NewMCPServer(transport,
 			mcp.events,
-			mcp.toolsRegistry, mcp.promptsRegistry,
+			mcp.promptsRegistry,
 			mcp.logger)
 
 		// set the server in the state manager

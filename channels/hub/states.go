@@ -1,13 +1,18 @@
 package hub
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/llmcontext/gomcp/channels/hub/events"
 	"github.com/llmcontext/gomcp/channels/hubmcpserver"
 	"github.com/llmcontext/gomcp/channels/hubmuxserver"
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/protocol/mcp"
+	"github.com/llmcontext/gomcp/protocol/mux"
+	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -22,6 +27,8 @@ type StateManager struct {
 	serverVersion       string
 	clientInfo          *ClientInfo
 	isClientInitialized bool
+	toolsRegistry       *tools.ToolsRegistry
+	promptsRegistry     *prompts.PromptsRegistry
 
 	// mux related state
 
@@ -30,11 +37,19 @@ type StateManager struct {
 	muxServer *hubmuxserver.MuxServer
 }
 
-func NewStateManager(serverName string, serverVersion string, logger types.Logger) *StateManager {
+func NewStateManager(
+	serverName string,
+	serverVersion string,
+	toolsRegistry *tools.ToolsRegistry,
+	promptsRegistry *prompts.PromptsRegistry,
+	logger types.Logger,
+) *StateManager {
 	return &StateManager{
 		serverName:          serverName,
 		serverVersion:       serverVersion,
 		isClientInitialized: false,
+		toolsRegistry:       toolsRegistry,
+		promptsRegistry:     promptsRegistry,
 		logger:              logger,
 	}
 }
@@ -86,12 +101,128 @@ func (s *StateManager) EventMcpNotificationInitialized() {
 	s.isClientInitialized = true
 }
 
-func (s *StateManager) EventNewProxyTools() {
-	s.mcpServer.OnNewProxyTools()
+func (s *StateManager) EventMcpRequestToolsList(params *mcp.JsonRpcRequestToolsListParams, reqId *jsonrpc.JsonRpcRequestId) {
+	// we query the tools registry
+	tools := s.toolsRegistry.GetListOfTools()
+
+	var response = mcp.JsonRpcResponseToolsListResult{
+		Tools: make([]mcp.ToolDescription, 0, len(tools)),
+	}
+
+	// we build the response
+	for _, tool := range tools {
+		// schemaBytes, _ := json.Marshal(tool.InputSchema)
+		response.Tools = append(response.Tools, mcp.ToolDescription{
+			Name:        tool.ToolName,
+			Description: tool.Description,
+			InputSchema: tool.InputSchema,
+		})
+	}
+
+	s.mcpServer.SendJsonRpcResponse(&response, reqId)
 }
 
-func (s *StateManager) EventProxyToolCall(proxyId string, toolName string, toolArgs map[string]interface{}, mcpReqId string) {
-	s.muxServer.OnProxyToolCall(proxyId, toolName, toolArgs, mcpReqId)
+func (s *StateManager) EventMcpRequestToolsCall(ctx context.Context, params *mcp.JsonRpcRequestToolsCallParams, reqId *jsonrpc.JsonRpcRequestId) {
+	toolName := params.Name
+	toolArgs := params.Arguments
+
+	// let's check if the tool is a proxy
+	isProxy, proxyId, err := s.toolsRegistry.IsProxyTool(toolName)
+	if err != nil {
+		s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool call failed: %v", err), reqId)
+		return
+	}
+
+	// handle proxy tools
+	if isProxy {
+		session := s.muxServer.GetSessionByProxyId(proxyId)
+		if session == nil {
+			s.mcpServer.SendError(jsonrpc.RpcInternalError, "session not found", reqId)
+			return
+		}
+		mcpReqId := jsonrpc.RequestIdToString(reqId)
+		params := &mux.JsonRpcRequestToolsCallParams{
+			Name:     toolName,
+			Args:     toolArgs,
+			McpReqId: mcpReqId,
+		}
+		session.SendRequestWithMethodAndParams(mux.RpcRequestMethodCallTool, params, mcpReqId)
+		return
+	}
+
+	// let's call the tool
+	response, err := s.toolsRegistry.CallTool(ctx, toolName, toolArgs)
+	if err != nil {
+		s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool call failed: %v", err), reqId)
+		return
+	}
+
+	s.mcpServer.SendJsonRpcResponse(&response, reqId)
+}
+
+func (s *StateManager) EventMcpRequestResourcesList(params *mcp.JsonRpcRequestResourcesListParams, reqId *jsonrpc.JsonRpcRequestId) {
+	var response = mcp.JsonRpcResponseResourcesListResult{
+		Resources: make([]mcp.ResourceDescription, 0),
+	}
+
+	s.mcpServer.SendJsonRpcResponse(&response, reqId)
+}
+
+func (s *StateManager) EventMcpRequestPromptsList(params *mcp.JsonRpcRequestPromptsListParams, reqId *jsonrpc.JsonRpcRequestId) {
+	var response = mcp.JsonRpcResponsePromptsListResult{
+		Prompts: make([]mcp.PromptDescription, 0),
+	}
+
+	prompts := s.promptsRegistry.GetListOfPrompts()
+	for _, prompt := range prompts {
+		arguments := make([]mcp.PromptArgumentDescription, 0, len(prompt.Arguments))
+		for _, argument := range prompt.Arguments {
+			arguments = append(arguments, mcp.PromptArgumentDescription{
+				Name:        argument.Name,
+				Description: argument.Description,
+				Required:    argument.Required,
+			})
+		}
+		response.Prompts = append(response.Prompts, mcp.PromptDescription{
+			Name:        prompt.Name,
+			Description: prompt.Description,
+			Arguments:   arguments,
+		})
+	}
+
+	s.mcpServer.SendJsonRpcResponse(&response, reqId)
+}
+
+func (s *StateManager) EventMcpRequestPromptsGet(params *mcp.JsonRpcRequestPromptsGetParams, reqId *jsonrpc.JsonRpcRequestId) {
+	var templateArgs = map[string]string{}
+	// copy the arguments, as strings
+	for key, value := range params.Arguments {
+		templateArgs[key] = fmt.Sprintf("%v", value)
+	}
+	promptName := params.Name
+
+	response, err := s.promptsRegistry.GetPrompt(promptName, templateArgs)
+	if err != nil {
+		s.mcpServer.SendError(jsonrpc.RpcInvalidParams, fmt.Sprintf("prompt processing error: %s", err), reqId)
+		return
+	}
+
+	// marshal response
+	responseBytes, err := json.Marshal(response)
+	if err != nil {
+		s.mcpServer.SendError(jsonrpc.RpcInternalError, "failed to marshal response", reqId)
+	}
+	jsonResponse := json.RawMessage(responseBytes)
+
+	// we send the response
+	s.mcpServer.SendResponse(&jsonrpc.JsonRpcResponse{
+		Id:     reqId,
+		Result: &jsonResponse,
+	})
+}
+
+func (s *StateManager) EventNewProxyTools() {
+	// s.mcpServer.OnNewProxyTools()
 }
 
 func (s *StateManager) EventMcpError(code int, message string, data *json.RawMessage, id *jsonrpc.JsonRpcRequestId) {

@@ -195,7 +195,7 @@ func (r *ToolsRegistry) getTool(toolName string) (*ToolDefinition, *ToolProvider
 	return tool.ToolDefinition, tool.ToolProvider, nil
 }
 
-func (r *ToolsRegistry) IsProxyTool(ctx context.Context, toolName string) (bool, string, error) {
+func (r *ToolsRegistry) IsProxyTool(toolName string) (bool, string, error) {
 	_, toolProvider, err := r.getTool(toolName)
 	if err != nil {
 		return false, "", err

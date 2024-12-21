@@ -7,7 +7,6 @@ import (
 	"github.com/llmcontext/gomcp/channels/hub/events"
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/prompts"
-	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 )
@@ -15,17 +14,13 @@ import (
 type MCPServer struct {
 	transport       *transport.JsonRpcTransport
 	events          events.Events
-	toolsRegistry   *tools.ToolsRegistry
 	promptsRegistry *prompts.PromptsRegistry
-	// client information
-	isClientInitialized bool
-	logger              types.Logger
+	logger          types.Logger
 }
 
 func NewMCPServer(
 	tran types.Transport,
 	events events.Events,
-	toolsRegistry *tools.ToolsRegistry,
 	promptsRegistry *prompts.PromptsRegistry,
 	logger types.Logger,
 ) *MCPServer {
@@ -33,7 +28,6 @@ func NewMCPServer(
 	return &MCPServer{
 		transport:       jsonRpcTransport,
 		events:          events,
-		toolsRegistry:   toolsRegistry,
 		promptsRegistry: promptsRegistry,
 		logger:          logger,
 	}
@@ -90,13 +84,13 @@ func (s *MCPServer) logError(message string, err error) {
 	}
 }
 
-func (s *MCPServer) OnNewProxyTools() {
-	// TODO: implement
-	tools := s.toolsRegistry.GetListOfTools()
-	s.logger.Info("OnNewProxyTools", types.LogArg{
-		"tools": tools,
-	})
-}
+// func (s *MCPServer) OnNewProxyTools() {
+// 	// TODO: implement
+// 	tools := s.toolsRegistry.GetListOfTools()
+// 	s.logger.Info("OnNewProxyTools", types.LogArg{
+// 		"tools": tools,
+// 	})
+// }
 
 func (s *MCPServer) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
 	s.transport.SendResponse(&jsonrpc.JsonRpcResponse{
@@ -105,7 +99,7 @@ func (s *MCPServer) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRp
 	})
 }
 
-func (s *MCPServer) sendResponse(response *jsonrpc.JsonRpcResponse) error {
+func (s *MCPServer) SendResponse(response *jsonrpc.JsonRpcResponse) error {
 	s.logger.Debug("JsonRpcResponse", types.LogArg{
 		"response": response,
 	})

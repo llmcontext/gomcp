@@ -26,32 +26,56 @@ func (s *MCPServer) processRequest(ctx context.Context, request *jsonrpc.JsonRpc
 		}
 	case mcp.RpcNotificationMethodInitialized:
 		s.events.EventMcpNotificationInitialized()
-	case "tools/list":
-		return s.handleToolsList(request)
+	case mcp.RpcRequestMethodToolsList:
+		{
+			parsed, err := mcp.ParseJsonRpcRequestToolsList(request)
+			if err != nil {
+				s.SendError(jsonrpc.RpcInvalidRequest, err.Error(), request.Id)
+			}
+			s.events.EventMcpRequestToolsList(parsed, request.Id)
+		}
 	case mcp.RpcRequestMethodToolsCall:
-		return s.handleToolsCall(ctx, request)
-	case "resources/list":
-		return s.handleResourcesList(request)
-	case "prompts/list":
-		return s.handlePromptsList(request)
-	case "prompts/get":
-		return s.handlePromptsGet(request)
+		{
+			parsed, err := mcp.ParseJsonRpcRequestToolsCallParams(request.Params)
+			if err != nil {
+				s.SendError(jsonrpc.RpcInvalidRequest, err.Error(), request.Id)
+				return nil
+			}
+			s.events.EventMcpRequestToolsCall(ctx, parsed, request.Id)
+		}
+	case mcp.RpcRequestMethodResourcesList:
+		{
+			parsed, err := mcp.ParseJsonRpcRequestResourcesList(request.Params)
+			if err != nil {
+				s.SendError(jsonrpc.RpcInvalidRequest, err.Error(), request.Id)
+			}
+			s.events.EventMcpRequestResourcesList(parsed, request.Id)
+		}
+	case mcp.RpcRequestMethodPromptsList:
+		{
+			parsed, err := mcp.ParseJsonRpcRequestPromptsList(request.Params)
+			if err != nil {
+				s.SendError(jsonrpc.RpcInvalidRequest, err.Error(), request.Id)
+			}
+			s.events.EventMcpRequestPromptsList(parsed, request.Id)
+		}
+	case mcp.RpcRequestMethodPromptsGet:
+		{
+			parsed, err := mcp.ParseJsonRpcRequestPromptsGet(request.Params)
+			if err != nil {
+				s.SendError(jsonrpc.RpcInvalidRequest, err.Error(), request.Id)
+			}
+			s.events.EventMcpRequestPromptsGet(parsed, request.Id)
+		}
 	case "ping":
 		result := json.RawMessage(`{}`)
 		response := &jsonrpc.JsonRpcResponse{
 			Id:     request.Id,
 			Result: &result,
 		}
-		return s.sendResponse(response)
+		s.SendResponse(response)
 	default:
-		response := &jsonrpc.JsonRpcResponse{
-			Id: request.Id,
-			Error: &jsonrpc.JsonRpcError{
-				Code:    jsonrpc.RpcMethodNotFound,
-				Message: fmt.Sprintf("unknown method: %s", request.Method),
-			},
-		}
-		return s.sendResponse(response)
+		s.SendError(jsonrpc.RpcMethodNotFound, fmt.Sprintf("unknown method: %s", request.Method), request.Id)
 	}
 	return nil
 }
