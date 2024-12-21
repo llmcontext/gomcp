@@ -7,30 +7,27 @@ import (
 	"github.com/llmcontext/gomcp/channels/hub/events"
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mux"
-	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 )
 
 type MuxSession struct {
-	sessionId     string
-	transport     *transport.JsonRpcTransport
-	logger        types.Logger
-	toolsRegistry *tools.ToolsRegistry
-	proxyId       string
-	proxyName     string
-	events        events.Events
+	sessionId string
+	transport *transport.JsonRpcTransport
+	logger    types.Logger
+	proxyId   string
+	proxyName string
+	events    events.Events
 }
 
-func NewMuxSession(sessionId string, tran types.Transport, logger types.Logger, toolsRegistry *tools.ToolsRegistry, events events.Events) *MuxSession {
+func NewMuxSession(sessionId string, tran types.Transport, logger types.Logger, events events.Events) *MuxSession {
 	jsonRpcTransport := transport.NewJsonRpcTransport(tran, "gomcp - proxy (mux)", logger)
 
 	session := &MuxSession{
-		sessionId:     sessionId,
-		transport:     jsonRpcTransport,
-		logger:        logger,
-		toolsRegistry: toolsRegistry,
-		events:        events,
+		sessionId: sessionId,
+		transport: jsonRpcTransport,
+		logger:    logger,
+		events:    events,
 	}
 
 	return session
