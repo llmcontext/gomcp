@@ -99,21 +99,6 @@ func (c *ProxyMuxClient) Close() {
 	c.muxJsonRpcTransport.Close()
 }
 
-func (c *ProxyMuxClient) SendToolsRegisterRequest(tools []mcp.ToolDescription) {
-	toolsMux := make([]mux.ToolDescription, len(tools))
-	for i, tool := range tools {
-		toolsMux[i] = mux.ToolDescription{
-			Name:        tool.Name,
-			Description: tool.Description,
-			InputSchema: tool.InputSchema,
-		}
-	}
-	params := mux.JsonRpcRequestToolsRegisterParams{
-		Tools: toolsMux,
-	}
-	c.muxJsonRpcTransport.SendRequestWithMethodAndParams(mux.RpcRequestMethodToolsRegister, params, "")
-}
-
 func (c *ProxyMuxClient) SendToolCallResponse(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string) {
 	params := mux.JsonRpcResponseToolsCallResult{
 		Content:  toolsCallResult.Content,
@@ -125,8 +110,10 @@ func (c *ProxyMuxClient) SendToolCallResponse(toolsCallResult *mcp.JsonRpcRespon
 
 func (s *ProxyMuxClient) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
 	s.muxJsonRpcTransport.SendResponse(&jsonrpc.JsonRpcResponse{
-		Id:     id,
-		Result: response,
+		JsonRpcVersion: jsonrpc.JsonRpcVersion,
+		Id:             id,
+		Result:         response,
+		Error:          nil,
 	})
 }
 

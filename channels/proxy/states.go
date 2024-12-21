@@ -79,13 +79,24 @@ func (s *StateManager) EventMcpResponseInitialize(resp *mcp.JsonRpcResponseIniti
 
 }
 
-func (s *StateManager) EventMcpToolsListResponse(resp *mcp.JsonRpcResponseToolsListResult) {
+func (s *StateManager) EventMcpResponseToolsList(resp *mcp.JsonRpcResponseToolsListResult) {
 	s.logger.Info("event mcp tools list response", types.LogArg{
 		"tools": resp.Tools,
 	})
 
-	// we send the "tools/register" request
-	s.muxClient.SendToolsRegisterRequest(resp.Tools)
+	// we send the "tools/register" request to the mux server
+	toolsMux := make([]mux.ToolDescription, len(resp.Tools))
+	for i, tool := range resp.Tools {
+		toolsMux[i] = mux.ToolDescription{
+			Name:        tool.Name,
+			Description: tool.Description,
+			InputSchema: tool.InputSchema,
+		}
+	}
+	params := mux.JsonRpcRequestToolsRegisterParams{
+		Tools: toolsMux,
+	}
+	s.muxClient.SendRequestWithMethodAndParams(mux.RpcRequestMethodToolsRegister, params)
 }
 
 func (s *StateManager) EventMuxResponseProxyRegistered(registerResponse *mux.JsonRpcResponseProxyRegisterResult) {
@@ -123,10 +134,18 @@ func (s *StateManager) EventMuxRequestToolCall(params *mux.JsonRpcRequestToolsCa
 	s.mcpClient.SendRequestWithMethodAndParams(mcp.RpcRequestMethodToolsCall, req, reqId)
 }
 
-func (s *StateManager) EventMcpToolCallResponse(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string) {
+func (s *StateManager) EventMcpResponseToolCall(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string) {
 	s.logger.Info("event mcp tool call response", types.LogArg{
 		"content": toolsCallResult.Content,
 		"isError": toolsCallResult.IsError,
 	})
-	s.muxClient.SendToolCallResponse(toolsCallResult, reqId, mcpReqId)
+	//s.muxClient.SendToolCallResponse(toolsCallResult, reqId, mcpReqId)
+	params := mux.JsonRpcResponseToolsCallResult{
+		Content:  toolsCallResult.Content,
+		IsError:  toolsCallResult.IsError,
+		McpReqId: mcpReqId,
+	}
+	// TODO: not sure about reqId
+	s.muxClient.SendJsonRpcResponse(params, reqId)
+
 }

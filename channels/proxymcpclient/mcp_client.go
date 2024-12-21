@@ -110,8 +110,10 @@ func (c *ProxyMcpClient) SendToolsListRequest() {
 
 func (s *ProxyMcpClient) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
 	s.clientMcpJsonRpcTransport.SendResponse(&jsonrpc.JsonRpcResponse{
-		Id:     id,
-		Result: response,
+		JsonRpcVersion: jsonrpc.JsonRpcVersion,
+		Id:             id,
+		Result:         response,
+		Error:          nil,
 	})
 }
 

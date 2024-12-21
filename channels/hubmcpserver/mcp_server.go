@@ -75,8 +75,10 @@ func (s *MCPServer) logError(message string, err error) {
 
 func (s *MCPServer) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
 	s.transport.SendResponse(&jsonrpc.JsonRpcResponse{
-		Id:     id,
-		Result: response,
+		JsonRpcVersion: jsonrpc.JsonRpcVersion,
+		Id:             id,
+		Result:         response,
+		Error:          nil,
 	})
 }
 

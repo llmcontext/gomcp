@@ -9,10 +9,10 @@ import (
 type Events interface {
 	EventMcpStarted()
 	EventMcpResponseInitialize(initializeResponse *mcp.JsonRpcResponseInitializeResult)
-	EventMcpToolsListResponse(toolsListResponse *mcp.JsonRpcResponseToolsListResult)
+	EventMcpResponseToolsList(toolsListResponse *mcp.JsonRpcResponseToolsListResult)
+	EventMcpResponseToolCall(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string)
 
 	EventMuxRequestToolCall(params *mux.JsonRpcRequestToolsCallParams, mcpReqId *jsonrpc.JsonRpcRequestId)
 
 	EventMuxResponseProxyRegistered(registerResponse *mux.JsonRpcResponseProxyRegisterResult)
-	EventMcpToolCallResponse(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string)
 }
