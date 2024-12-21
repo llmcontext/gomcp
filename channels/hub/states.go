@@ -249,3 +249,43 @@ func (s *StateManager) EventMuxRequestProxyRegister(proxyId string, params *mux.
 	}
 	session.SendJsonRpcResponse(&result, reqId)
 }
+
+func (s *StateManager) EventMuxRequestToolsRegister(proxyId string, params *mux.JsonRpcRequestToolsRegisterParams, reqId *jsonrpc.JsonRpcRequestId) {
+	// we need to store the proxy id in the session
+	session := s.muxServer.GetSessionByProxyId(proxyId)
+	if session == nil {
+		s.logger.Error("session not found", types.LogArg{
+			"proxyId": proxyId,
+		})
+		return
+	}
+
+	toolProvider, err := s.toolsRegistry.RegisterProxyToolProvider(proxyId, session.ProxyName())
+	if err != nil {
+		s.logger.Error("Failed to register proxy tool provider", types.LogArg{
+			"error": err,
+		})
+		return
+	}
+	for _, tool := range params.Tools {
+		err := toolProvider.AddProxyTool(tool.Name, tool.Description, tool.InputSchema)
+		if err != nil {
+			s.logger.Error("Failed to add proxy tool", types.LogArg{
+				"error": err,
+			})
+			return
+		}
+	}
+
+	// we need to prepare the tool provider so that it can be used by the hub
+	err = s.toolsRegistry.PrepareProxyToolProvider(toolProvider)
+	if err != nil {
+		s.logger.Error("Failed to prepare proxy tool provider", types.LogArg{
+			"error": err,
+		})
+		return
+	}
+
+	// TODO: send the notification to the MUX server
+
+}

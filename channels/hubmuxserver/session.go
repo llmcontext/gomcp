@@ -72,6 +72,14 @@ func (s *MuxSession) SessionId() string {
 	return s.sessionId
 }
 
+func (s *MuxSession) ProxyId() string {
+	return s.proxyId
+}
+
+func (s *MuxSession) ProxyName() string {
+	return s.proxyName
+}
+
 func (s *MuxSession) SendRequest(request *jsonrpc.JsonRpcRequest) error {
 	return s.transport.SendRequest(request, "")
 }
@@ -133,13 +141,22 @@ func (s *MuxSession) onJsonRpcRequest(request *jsonrpc.JsonRpcRequest) {
 
 		}
 	case mux.RpcRequestMethodToolsRegister:
-		err := s.handleToolsRegister(request)
-		if err != nil {
-			s.logger.Error("Failed to handle tools register", types.LogArg{
-				"request": request,
-				"method":  request.Method,
-				"error":   err,
+		{
+			params, err := mux.ParseJsonRpcRequestToolsRegisterParams(request)
+			if err != nil {
+				s.logger.Error("Failed to parse request params", types.LogArg{
+					"request": request,
+					"method":  request.Method,
+					"error":   err,
+				})
+				return
+			}
+			s.logger.Info("Tools register", types.LogArg{
+				"tools": params.Tools,
 			})
+
+			// send the event
+			s.events.EventMuxRequestToolsRegister(s.proxyId, params, request.Id)
 		}
 	default:
 		s.logger.Error("Unknown method", types.LogArg{
