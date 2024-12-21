@@ -5,7 +5,6 @@ import (
 
 	"github.com/llmcontext/gomcp/channels/proxy/events"
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 )
@@ -17,9 +16,6 @@ type ProxyMcpClient struct {
 
 	// context for proxy transport
 	transport *transport.JsonRpcTransport
-
-	// tools is the list of tools available for the proxy
-	tools []mcp.ToolDescription
 }
 
 func NewProxyMcpClient(
@@ -32,8 +28,6 @@ func NewProxyMcpClient(
 		events:    events,
 		options:   options,
 		logger:    logger,
-		//serverInfo:            mcp.ServerInfo{},
-		tools: []mcp.ToolDescription{},
 	}
 }
 
