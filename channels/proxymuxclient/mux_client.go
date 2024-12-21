@@ -105,8 +105,8 @@ func (s *ProxyMuxClient) SendJsonRpcResponse(response interface{}, id *jsonrpc.J
 	})
 }
 
-func (s *ProxyMuxClient) SendRequestWithMethodAndParams(method string, params interface{}) {
-	s.transport.SendRequestWithMethodAndParams(method, params, "")
+func (s *ProxyMuxClient) SendRequestWithMethodAndParams(method string, params interface{}) (*jsonrpc.JsonRpcRequestId, error) {
+	return s.transport.SendRequestWithMethodAndParams(method, params)
 }
 
 func (s *ProxyMuxClient) SendError(code int, message string, id *jsonrpc.JsonRpcRequestId) {

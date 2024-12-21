@@ -129,12 +129,15 @@ func (s *StateManager) EventMuxResponseProxyRegistered(registerResponse *mux.Jso
 
 }
 
+// this is a tool call from the hub
 func (s *StateManager) EventMuxRequestToolCall(params *mux.JsonRpcRequestToolsCallParams, reqId *jsonrpc.JsonRpcRequestId) {
 	s.logger.Info("EventMuxRequestToolCall", types.LogArg{
-		"name":     params.Name,
-		"args":     params.Args,
-		"mcpReqId": params.McpReqId,
+		"name": params.Name,
+		"args": params.Args,
 	})
+	// we keep track of the request id coming from the hub
+	// TODO: state management
+	// mcpReqId := jsonrpc.RequestIdToString(reqId)
 
 	req := mcp.JsonRpcRequestToolsCallParams{
 		Name:      params.Name,
@@ -142,9 +145,11 @@ func (s *StateManager) EventMuxRequestToolCall(params *mux.JsonRpcRequestToolsCa
 	}
 
 	// we forward the tool call to the mcp client
+	// keeping track in extra parameter the mcp request id
 	s.mcpClient.SendRequestWithMethodAndParams(mcp.RpcRequestMethodToolsCall, req)
 }
 
+// got the response for the tool call from the mcp client
 func (s *StateManager) EventMcpResponseToolCall(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string) {
 	s.logger.Info("event mcp tool call response", types.LogArg{
 		"content": toolsCallResult.Content,
@@ -152,11 +157,12 @@ func (s *StateManager) EventMcpResponseToolCall(toolsCallResult *mcp.JsonRpcResp
 	})
 	//s.muxClient.SendToolCallResponse(toolsCallResult, reqId, mcpReqId)
 	params := mux.JsonRpcResponseToolsCallResult{
-		Content:  toolsCallResult.Content,
-		IsError:  toolsCallResult.IsError,
-		McpReqId: mcpReqId,
+		Content: toolsCallResult.Content,
+		IsError: toolsCallResult.IsError,
 	}
-	// TODO: not sure about reqId
-	s.muxClient.SendJsonRpcResponse(params, reqId)
+	// we parse the req id is the one coming from the hub
+	// and we send the response to the hub with that id
+	hubReqId := jsonrpc.ReqIdStringToId(mcpReqId)
+	s.muxClient.SendJsonRpcResponse(params, hubReqId)
 
 }

@@ -13,9 +13,8 @@ const (
 )
 
 type JsonRpcRequestToolsCallParams struct {
-	Name     string                 `json:"name"`
-	Args     map[string]interface{} `json:"args"`
-	McpReqId string                 `json:"mcp_req_id"`
+	Name string                 `json:"name"`
+	Args map[string]interface{} `json:"args"`
 }
 
 func ParseJsonRpcRequestToolsCallParams(request *jsonrpc.JsonRpcRequest) (*JsonRpcRequestToolsCallParams, error) {
@@ -47,12 +46,6 @@ func ParseJsonRpcRequestToolsCallParams(request *jsonrpc.JsonRpcRequest) (*JsonR
 	}
 	for key, value := range args {
 		req.Args[key] = value
-	}
-
-	// read mcp_req_id
-	req.McpReqId, err = protocol.GetStringField(namedParams, "mcp_req_id")
-	if err != nil {
-		return nil, fmt.Errorf("missing mcp_req_id")
 	}
 
 	return &req, nil

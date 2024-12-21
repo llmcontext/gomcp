@@ -8,9 +8,8 @@ import (
 )
 
 type JsonRpcResponseToolsCallResult struct {
-	Content  []interface{} `json:"content"`
-	IsError  *bool         `json:"isError,omitempty"`
-	McpReqId string        `json:"mcp_req_id"`
+	Content []interface{} `json:"content"`
+	IsError *bool         `json:"isError,omitempty"`
 }
 
 func ParseJsonRpcResponseToolsCall(response *jsonrpc.JsonRpcResponse) (*JsonRpcResponseToolsCallResult, error) {
@@ -32,15 +31,8 @@ func ParseJsonRpcResponseToolsCall(response *jsonrpc.JsonRpcResponse) (*JsonRpcR
 	// read isError
 	isError := protocol.GetOptionalBoolField(result, "isError")
 
-	// read mcpReqId
-	mcpReqId, err := protocol.GetStringField(result, "mcp_req_id")
-	if err != nil {
-		return nil, err
-	}
-
 	return &JsonRpcResponseToolsCallResult{
-		Content:  content,
-		IsError:  isError,
-		McpReqId: mcpReqId,
+		Content: content,
+		IsError: isError,
 	}, nil
 }

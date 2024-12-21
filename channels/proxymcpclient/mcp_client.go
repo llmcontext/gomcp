@@ -83,7 +83,7 @@ func (c *ProxyMcpClient) SendNotification(method string) {
 		JsonRpcVersion: jsonrpc.JsonRpcVersion,
 		Method:         method,
 	}
-	c.transport.SendRequest(&notification, "")
+	c.transport.SendRequest(&notification)
 }
 
 func (s *ProxyMcpClient) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
@@ -103,8 +103,8 @@ func (s *ProxyMcpClient) SendResponse(response *jsonrpc.JsonRpcResponse) error {
 	return nil
 }
 
-func (s *ProxyMcpClient) SendRequestWithMethodAndParams(method string, params interface{}) {
-	s.transport.SendRequestWithMethodAndParams(method, params, "")
+func (s *ProxyMcpClient) SendRequestWithMethodAndParams(method string, params interface{}) (*jsonrpc.JsonRpcRequestId, error) {
+	return s.transport.SendRequestWithMethodAndParams(method, params)
 }
 
 func (s *ProxyMcpClient) SendError(code int, message string, id *jsonrpc.JsonRpcRequestId) {

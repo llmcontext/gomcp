@@ -85,8 +85,8 @@ func (s *MuxSession) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonR
 	})
 }
 
-func (s *MuxSession) SendRequestWithMethodAndParams(method string, params interface{}, extraParam string) error {
-	return s.transport.SendRequestWithMethodAndParams(method, params, extraParam)
+func (s *MuxSession) SendRequestWithMethodAndParams(method string, params interface{}) (*jsonrpc.JsonRpcRequestId, error) {
+	return s.transport.SendRequestWithMethodAndParams(method, params)
 }
 
 func (s *MuxSession) SendError(code int, message string, id *jsonrpc.JsonRpcRequestId) {

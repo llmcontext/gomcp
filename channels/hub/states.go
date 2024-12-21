@@ -16,6 +16,7 @@ import (
 	"github.com/llmcontext/gomcp/types"
 )
 
+// MCP client information (eg Claude)
 type ClientInfo struct {
 	name    string
 	version string
@@ -29,8 +30,6 @@ type StateManager struct {
 	isClientInitialized bool
 	toolsRegistry       *tools.ToolsRegistry
 	promptsRegistry     *prompts.PromptsRegistry
-
-	// mux related state
 
 	logger    types.Logger
 	mcpServer *hubmcpserver.MCPServer
@@ -123,13 +122,14 @@ func (s *StateManager) EventMcpRequestToolsList(params *mcp.JsonRpcRequestToolsL
 }
 
 func (s *StateManager) EventMcpRequestToolsCall(ctx context.Context, params *mcp.JsonRpcRequestToolsCallParams, reqId *jsonrpc.JsonRpcRequestId) {
+	// we get the tool name and arguments
 	toolName := params.Name
 	toolArgs := params.Arguments
 
-	// let's check if the tool is a proxy
+	// let's check if the tool exists and is a proxy
 	isProxy, proxyId, err := s.toolsRegistry.IsProxyTool(toolName)
 	if err != nil {
-		s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool call failed: %v", err), reqId)
+		s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool not found: %v", err), reqId)
 		return
 	}
 
@@ -140,24 +140,24 @@ func (s *StateManager) EventMcpRequestToolsCall(ctx context.Context, params *mcp
 			s.mcpServer.SendError(jsonrpc.RpcInternalError, "session not found", reqId)
 			return
 		}
-		mcpReqId := jsonrpc.RequestIdToString(reqId)
+		// we send the request to the proxy
 		params := &mux.JsonRpcRequestToolsCallParams{
-			Name:     toolName,
-			Args:     toolArgs,
-			McpReqId: mcpReqId,
+			Name: toolName,
+			Args: toolArgs,
 		}
-		session.SendRequestWithMethodAndParams(mux.RpcRequestMethodCallTool, params, mcpReqId)
-		return
+		// we send the request to the proxy
+		// we keep track of the request id for that tool call in the session extra parameters
+		session.SendRequestWithMethodAndParams(mux.RpcRequestMethodCallTool, params)
+	} else {
+		// this is a direct tool call (SDK built-in tool)
+		// let's call the tool
+		response, err := s.toolsRegistry.CallTool(ctx, toolName, toolArgs)
+		if err != nil {
+			s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool call failed: %v", err), reqId)
+			return
+		}
+		s.mcpServer.SendJsonRpcResponse(&response, reqId)
 	}
-
-	// let's call the tool
-	response, err := s.toolsRegistry.CallTool(ctx, toolName, toolArgs)
-	if err != nil {
-		s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool call failed: %v", err), reqId)
-		return
-	}
-
-	s.mcpServer.SendJsonRpcResponse(&response, reqId)
 }
 
 func (s *StateManager) EventMcpRequestResourcesList(params *mcp.JsonRpcRequestResourcesListParams, reqId *jsonrpc.JsonRpcRequestId) {
