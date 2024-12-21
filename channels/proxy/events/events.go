@@ -8,7 +8,7 @@ import (
 
 type Events interface {
 	EventMcpStarted()
-	EventMcpInitializeResponse(initializeResponse *mcp.JsonRpcResponseInitializeResult)
+	EventMcpResponseInitialize(initializeResponse *mcp.JsonRpcResponseInitializeResult)
 	EventMcpToolsListResponse(toolsListResponse *mcp.JsonRpcResponseToolsListResult)
 
 	EventMuxRequestToolCall(params *mux.JsonRpcRequestToolsCallParams, mcpReqId *jsonrpc.JsonRpcRequestId)

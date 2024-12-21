@@ -37,16 +37,9 @@ func (s *MCPServer) Start(ctx context.Context) error {
 	go func() {
 		// Start the transport
 		err := s.transport.Start(ctx, func(message transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
-			if message.Response != nil {
-				s.logger.Debug("invalid message received message", types.LogArg{
-					"message": message,
-				})
-				s.SendError(jsonrpc.RpcParseError, "invalid message", nil)
-			} else if message.Request != nil {
-				err = s.processRequest(ctx, message.Request)
-				if err != nil {
-					s.logError("failed to process request", err)
-				}
+			err = s.handleIncomingMessage(ctx, message)
+			if err != nil {
+				s.logError("failed to handle incoming message", err)
 			}
 		})
 		if err != nil {

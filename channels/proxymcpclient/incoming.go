@@ -14,7 +14,6 @@ func (c *ProxyMcpClient) handleIncomingMessage(message transport.JsonRpcMessage)
 		if response.Error != nil {
 			c.logger.Error("error in response", types.LogArg{
 				"response":      fmt.Sprintf("%+v", response),
-				"error":         response.Error,
 				"error_message": response.Error.Message,
 				"error_code":    response.Error.Code,
 				"error_data":    response.Error.Data,
@@ -23,7 +22,20 @@ func (c *ProxyMcpClient) handleIncomingMessage(message transport.JsonRpcMessage)
 		}
 		switch message.Method {
 		case mcp.RpcRequestMethodInitialize:
-			c.handleMcpInitializeResponse(response)
+			{
+				initializeResponse, err := mcp.ParseJsonRpcResponseInitialize(response)
+				if err != nil {
+					c.logger.Error("error in handleMcpInitializeResponse", types.LogArg{
+						"error": err,
+					})
+					return nil
+				}
+				c.logger.Info("init response", types.LogArg{
+					"name":    initializeResponse.ServerInfo.Name,
+					"version": initializeResponse.ServerInfo.Version,
+				})
+				c.events.EventMcpResponseInitialize(initializeResponse)
+			}
 		case mcp.RpcRequestMethodToolsList:
 			c.handleMcpToolsListResponse(response)
 		case mcp.RpcRequestMethodToolsCall:

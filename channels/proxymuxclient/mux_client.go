@@ -99,36 +99,6 @@ func (c *ProxyMuxClient) Close() {
 	c.muxJsonRpcTransport.Close()
 }
 
-func (c *ProxyMuxClient) SendProxyRegistrationRequest(
-	serverDescription *transport.ProxiedMcpServerDescription,
-	serverInfo mcp.ServerInfo,
-) {
-	params := mux.JsonRpcRequestProxyRegisterParams{
-		ProtocolVersion: mux.MuxProtocolVersion,
-		Proxy: mux.ProxyDescription{
-			WorkingDirectory: serverDescription.CurrentWorkingDirectory,
-			Command:          serverDescription.ProgramName,
-			Args:             serverDescription.ProgramArgs,
-		},
-		ServerInfo: mux.ServerInfo{
-			Name:    serverInfo.Name,
-			Version: serverInfo.Version,
-		},
-	}
-
-	c.logger.Info("sending proxy registration request", types.LogArg{
-		"params":        params,
-		"transportName": c.muxJsonRpcTransport.Name(),
-	})
-	err := c.muxJsonRpcTransport.SendRequestWithMethodAndParams(mux.RpcRequestMethodProxyRegister, params, "")
-	if err != nil {
-		c.logger.Error("error sending proxy registration request", types.LogArg{
-			"error":         err,
-			"transportName": c.muxJsonRpcTransport.Name(),
-		})
-	}
-}
-
 func (c *ProxyMuxClient) SendToolsRegisterRequest(tools []mcp.ToolDescription) {
 	toolsMux := make([]mux.ToolDescription, len(tools))
 	for i, tool := range tools {
@@ -151,4 +121,37 @@ func (c *ProxyMuxClient) SendToolCallResponse(toolsCallResult *mcp.JsonRpcRespon
 		McpReqId: mcpReqId,
 	}
 	c.muxJsonRpcTransport.SendResponseWithResults(reqId, params)
+}
+
+func (s *ProxyMuxClient) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
+	s.muxJsonRpcTransport.SendResponse(&jsonrpc.JsonRpcResponse{
+		Id:     id,
+		Result: response,
+	})
+}
+
+func (s *ProxyMuxClient) SendResponse(response *jsonrpc.JsonRpcResponse) error {
+	s.logger.Debug("JsonRpcResponse", types.LogArg{
+		"response": response,
+	})
+	s.muxJsonRpcTransport.SendResponse(response)
+	return nil
+}
+
+func (s *ProxyMuxClient) SendRequestWithMethodAndParams(method string, params interface{}) {
+	s.muxJsonRpcTransport.SendRequestWithMethodAndParams(method, params, "")
+}
+
+func (s *ProxyMuxClient) SendError(code int, message string, id *jsonrpc.JsonRpcRequestId) {
+	s.logger.Debug("JsonRpcError", types.LogArg{
+		"code":    code,
+		"message": message,
+		"id":      id,
+	})
+	err := s.muxJsonRpcTransport.SendError(code, message, id)
+	if err != nil {
+		s.logger.Error("failed to send error", types.LogArg{
+			"error": err,
+		})
+	}
 }

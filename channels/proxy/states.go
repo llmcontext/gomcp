@@ -51,7 +51,7 @@ func (s *StateManager) EventMcpStarted() {
 	s.mcpClient.SendInitializeRequest()
 }
 
-func (s *StateManager) EventMcpInitializeResponse(resp *mcp.JsonRpcResponseInitializeResult) {
+func (s *StateManager) EventMcpResponseInitialize(resp *mcp.JsonRpcResponseInitializeResult) {
 	s.logger.Info("event mcp initialize response", types.LogArg{
 		"name":    resp.ServerInfo.Name,
 		"version": resp.ServerInfo.Version,
@@ -61,8 +61,21 @@ func (s *StateManager) EventMcpInitializeResponse(resp *mcp.JsonRpcResponseIniti
 	s.serverInfo.Name = resp.ServerInfo.Name
 	s.serverInfo.Version = resp.ServerInfo.Version
 
+	params := mux.JsonRpcRequestProxyRegisterParams{
+		ProtocolVersion: mux.MuxProtocolVersion,
+		Proxy: mux.ProxyDescription{
+			WorkingDirectory: s.options.CurrentWorkingDirectory,
+			Command:          s.options.ProgramName,
+			Args:             s.options.ProgramArgs,
+		},
+		ServerInfo: mux.ServerInfo{
+			Name:    resp.ServerInfo.Name,
+			Version: resp.ServerInfo.Version,
+		},
+	}
+
 	// we can now report the tools list to the mux server
-	s.muxClient.SendProxyRegistrationRequest(s.options, s.serverInfo)
+	s.muxClient.SendRequestWithMethodAndParams(mux.RpcRequestMethodProxyRegister, params)
 
 }
 
