@@ -84,14 +84,6 @@ func (s *MCPServer) logError(message string, err error) {
 	}
 }
 
-// func (s *MCPServer) OnNewProxyTools() {
-// 	// TODO: implement
-// 	tools := s.toolsRegistry.GetListOfTools()
-// 	s.logger.Info("OnNewProxyTools", types.LogArg{
-// 		"tools": tools,
-// 	})
-// }
-
 func (s *MCPServer) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
 	s.transport.SendResponse(&jsonrpc.JsonRpcResponse{
 		Id:     id,

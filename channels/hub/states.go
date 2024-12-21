@@ -228,3 +228,24 @@ func (s *StateManager) EventNewProxyTools() {
 func (s *StateManager) EventMcpError(code int, message string, data *json.RawMessage, id *jsonrpc.JsonRpcRequestId) {
 	s.mcpServer.SendError(code, message, id)
 }
+
+func (s *StateManager) EventMuxRequestProxyRegister(proxyId string, params *mux.JsonRpcRequestProxyRegisterParams, reqId *jsonrpc.JsonRpcRequestId) {
+	// we need to store the proxy id in the session
+	session := s.muxServer.GetSessionByProxyId(proxyId)
+	if session == nil {
+		s.logger.Error("session not found", types.LogArg{
+			"proxyId": proxyId,
+		})
+		return
+	}
+	session.SetSessionInformation(proxyId, params.ServerInfo.Name)
+
+	// for now we accept all requests
+	result := mux.JsonRpcResponseProxyRegisterResult{
+		SessionId:  session.SessionId(),
+		ProxyId:    proxyId,
+		Persistent: params.Persistent,
+		Denied:     false,
+	}
+	session.SendJsonRpcResponse(&result, reqId)
+}

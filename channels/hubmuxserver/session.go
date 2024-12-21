@@ -3,6 +3,7 @@ package hubmuxserver
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/llmcontext/gomcp/channels/hub/events"
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mux"
@@ -62,12 +63,28 @@ func (s *MuxSession) Start(ctx context.Context) error {
 	}
 }
 
+func (s *MuxSession) SetSessionInformation(proxyId string, serverName string) {
+	s.proxyId = proxyId
+	s.proxyName = serverName
+}
+
+func (s *MuxSession) SessionId() string {
+	return s.sessionId
+}
+
 func (s *MuxSession) SendRequest(request *jsonrpc.JsonRpcRequest) error {
 	return s.transport.SendRequest(request, "")
 }
 
 func (s *MuxSession) SendRequestWithExtraParam(request *jsonrpc.JsonRpcRequest, extraParam string) error {
 	return s.transport.SendRequest(request, extraParam)
+}
+
+func (s *MuxSession) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
+	s.transport.SendResponse(&jsonrpc.JsonRpcResponse{
+		Id:     id,
+		Result: response,
+	})
 }
 
 func (s *MuxSession) SendResponse(response *jsonrpc.JsonRpcResponse) error {
@@ -90,14 +107,30 @@ func (s *MuxSession) onJsonRpcRequest(request *jsonrpc.JsonRpcRequest) {
 	})
 	switch request.Method {
 	case mux.RpcRequestMethodProxyRegister:
-		err := s.handleProxyRegister(request)
-		if err != nil {
-			s.logger.Error("Failed to handle proxy register", types.LogArg{
-				"request": request,
-				"method":  request.Method,
-				"error":   err,
-			})
-			return
+		{
+			params, err := mux.ParseJsonRpcRequestProxyRegisterParams(request)
+			if err != nil {
+				s.logger.Error("Failed to parse request params", types.LogArg{
+					"request": request,
+					"method":  request.Method,
+					"error":   err,
+				})
+				return
+			}
+			// set the session information, required to
+			// send the event to a specific proxy
+			// TODO: store in database
+			proxyId := params.ProxyId
+			if proxyId == "" {
+				// we need to generate a new proxy id
+				proxyId = uuid.New().String()
+			}
+			s.proxyId = proxyId
+			s.proxyName = params.ServerInfo.Name
+
+			// send the event
+			s.events.EventMuxRequestProxyRegister(s.proxyId, params, request.Id)
+
 		}
 	case mux.RpcRequestMethodToolsRegister:
 		err := s.handleToolsRegister(request)
@@ -121,8 +154,4 @@ func (s *MuxSession) Close() {
 		s.transport.Close()
 		s.transport = nil
 	}
-}
-
-func (s *MuxSession) SessionId() string {
-	return s.sessionId
 }

@@ -40,7 +40,7 @@ func (s *MuxSession) handleToolsRegister(request *jsonrpc.JsonRpcRequest) error 
 		return err
 	}
 
-	s.events.EventNewProxyTools()
+	// s.events.EventNewProxyTools()
 
 	return nil
 }
