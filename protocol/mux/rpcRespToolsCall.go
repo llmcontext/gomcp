@@ -23,7 +23,7 @@ func ParseJsonRpcResponseToolsCall(response *jsonrpc.JsonRpcResponse) (*JsonRpcR
 	}
 
 	// read content
-	content, err := protocol.CheckIsArray(result, "content")
+	content, err := protocol.CheckIsArray(result["content"], "content")
 	if err != nil {
 		return nil, err
 	}

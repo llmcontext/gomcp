@@ -23,9 +23,23 @@ func (s *MuxSession) handleIncomingMessage(message transport.JsonRpcMessage) err
 			return nil
 		}
 		switch message.Method {
+		case mux.RpcRequestMethodCallTool:
+			{
+				toolsCallResult, err := mux.ParseJsonRpcResponseToolsCall(response)
+				if err != nil {
+					s.logger.Error("Failed to parse response", types.LogArg{
+						"response": fmt.Sprintf("%+v", response),
+						"error":    err,
+					})
+					return err
+				}
+				s.events.EventMuxResponseToolCall(toolsCallResult, response.Id)
+			}
 		default:
-			s.logger.Error("received message with unexpected method", types.LogArg{
-				"method": message.Method,
+			s.logger.Error("received response message with unexpected method", types.LogArg{
+				"method":   message.Method,
+				"response": fmt.Sprintf("%+v", response),
+				"id":       response.Id,
 			})
 		}
 	} else if message.Request != nil {
@@ -75,6 +89,7 @@ func (s *MuxSession) handleIncomingMessage(message transport.JsonRpcMessage) err
 				// send the event
 				s.events.EventMuxRequestToolsRegister(s.proxyId, params, request.Id)
 			}
+
 		default:
 			s.SendError(jsonrpc.RpcMethodNotFound, fmt.Sprintf("unknown method: %s", request.Method), request.Id)
 		}

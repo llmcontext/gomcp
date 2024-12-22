@@ -158,7 +158,7 @@ func (s *StateManager) EventMuxRequestToolCall(params *mux.JsonRpcRequestToolsCa
 }
 
 // got the response for the tool call from the mcp client
-func (s *StateManager) EventMcpResponseToolCall(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, mcpReqId string) {
+func (s *StateManager) EventMcpResponseToolCall(toolsCallResult *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId) {
 	s.logger.Info("event mcp tool call response", types.LogArg{
 		"content": toolsCallResult.Content,
 		"isError": toolsCallResult.IsError,

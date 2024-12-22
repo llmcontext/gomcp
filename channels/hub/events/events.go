@@ -42,4 +42,7 @@ type Events interface {
 
 	// EventMuxRequestToolsRegister
 	EventMuxRequestToolsRegister(proxyId string, params *mux.JsonRpcRequestToolsRegisterParams, reqId *jsonrpc.JsonRpcRequestId)
+
+	// EventMuxResponseToolCall
+	EventMuxResponseToolCall(toolsCallResult *mux.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId)
 }

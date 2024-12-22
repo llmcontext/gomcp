@@ -295,3 +295,19 @@ func (s *StateManager) EventMuxRequestToolsRegister(proxyId string, params *mux.
 	// TODO: send the notification to the MUX server
 
 }
+
+func (s *StateManager) EventMuxResponseToolCall(toolsCallResult *mux.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId) {
+	// we need to find the mcp request id for the given mux request id
+	mcpReqId := s.reqIdMapping.GetMapping(reqId)
+	// we send the response to the mcp client
+	s.logger.Info("EventMuxResponseToolCall", types.LogArg{
+		"mcpReqId": mcpReqId,
+		"reqId":    reqId,
+		"result":   toolsCallResult,
+	})
+	mcpResponse := &mcp.JsonRpcResponseToolsCallResult{
+		Content: toolsCallResult.Content,
+		IsError: toolsCallResult.IsError,
+	}
+	s.mcpServer.SendJsonRpcResponse(mcpResponse, mcpReqId)
+}

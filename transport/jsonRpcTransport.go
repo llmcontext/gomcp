@@ -25,10 +25,9 @@ type JsonRpcTransport struct {
 }
 
 type JsonRpcMessage struct {
-	Method     string
-	Request    *jsonrpc.JsonRpcRequest
-	Response   *jsonrpc.JsonRpcResponse
-	ExtraParam string
+	Method   string
+	Request  *jsonrpc.JsonRpcRequest
+	Response *jsonrpc.JsonRpcResponse
 }
 
 func (m *JsonRpcMessage) IsRequest() bool {

@@ -60,13 +60,12 @@ func (c *ProxyMcpClient) handleIncomingMessage(message transport.JsonRpcMessage)
 				}
 
 				c.logger.Info("tools call result", types.LogArg{
-					"content":    toolsCallResult.Content,
-					"isError":    toolsCallResult.IsError,
-					"extraParam": message.ExtraParam,
+					"content": toolsCallResult.Content,
+					"isError": toolsCallResult.IsError,
 				})
 
 				// we forward the response to the hubmux server
-				c.events.EventMcpResponseToolCall(toolsCallResult, response.Id, message.ExtraParam)
+				c.events.EventMcpResponseToolCall(toolsCallResult, response.Id)
 			}
 		default:
 			c.logger.Error("received message with unexpected method", types.LogArg{
