@@ -31,9 +31,10 @@ type StateManager struct {
 	toolsRegistry       *tools.ToolsRegistry
 	promptsRegistry     *prompts.PromptsRegistry
 
-	logger    types.Logger
-	mcpServer *hubmcpserver.MCPServer
-	muxServer *hubmuxserver.MuxServer
+	logger       types.Logger
+	mcpServer    *hubmcpserver.MCPServer
+	muxServer    *hubmuxserver.MuxServer
+	reqIdMapping *jsonrpc.ReqIdMapping
 }
 
 func NewStateManager(
@@ -50,6 +51,7 @@ func NewStateManager(
 		toolsRegistry:       toolsRegistry,
 		promptsRegistry:     promptsRegistry,
 		logger:              logger,
+		reqIdMapping:        jsonrpc.NewReqIdMapping(),
 	}
 }
 
@@ -147,7 +149,14 @@ func (s *StateManager) EventMcpRequestToolsCall(ctx context.Context, params *mcp
 		}
 		// we send the request to the proxy
 		// we keep track of the request id for that tool call in the session extra parameters
-		session.SendRequestWithMethodAndParams(mux.RpcRequestMethodCallTool, params)
+		muxReqId, err := session.SendRequestWithMethodAndParams(mux.RpcRequestMethodCallTool, params)
+		if err != nil {
+			s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("failed to send request to proxy: %v", err), reqId)
+			return
+		}
+		// we keep track of the mapping between the mcp request id
+		// and the mux request id
+		s.reqIdMapping.AddMapping(muxReqId, reqId)
 	} else {
 		// this is a direct tool call (SDK built-in tool)
 		// let's call the tool
