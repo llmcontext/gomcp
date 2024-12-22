@@ -13,7 +13,7 @@ build:
 	@echo "Building binaries..."
 	@for binary in $(BINARIES); do \
 		echo "Building $$binary..."; \
-		go build -o $(BUILD_DIR)/$$binary cmd/$$binary/main.go; \
+		go build -o $(BUILD_DIR)/$$binary cmd/$$binary/*.go; \
 	done
 
 # Install binaries to /usr/local/bin

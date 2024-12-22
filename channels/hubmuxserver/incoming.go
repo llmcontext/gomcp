@@ -3,7 +3,6 @@ package hubmuxserver
 import (
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mux"
 	"github.com/llmcontext/gomcp/transport"
@@ -61,8 +60,11 @@ func (s *MuxSession) handleIncomingMessage(message transport.JsonRpcMessage) err
 				// TODO: store in database
 				proxyId := params.ProxyId
 				if proxyId == "" {
-					// we need to generate a new proxy id
-					proxyId = uuid.New().String()
+					s.logger.Error("missing proxy id", types.LogArg{
+						"request": request,
+						"method":  request.Method,
+					})
+					return fmt.Errorf("missing proxy id")
 				}
 				s.proxyId = proxyId
 				s.proxyName = params.ServerInfo.Name

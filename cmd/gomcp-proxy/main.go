@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/llmcontext/gomcp/channels/proxy"
 	"github.com/llmcontext/gomcp/defaults"
 	"github.com/llmcontext/gomcp/logger"
@@ -50,6 +51,44 @@ var (
 				os.Exit(1)
 			}
 
+			// read the config file
+			configPath := currentWorkingDirectory + "/" + defaults.DefaultProxyConfigPath
+			proxyConfig, err := LoadProxyConfig(configPath)
+			if err != nil {
+				logger.Error("Failed to load proxy configuration file",
+					types.LogArg{"error": err, "configPath": configPath})
+				os.Exit(1)
+			}
+
+			if proxyConfig == nil {
+				logger.Info("creating proxy configuration file", types.LogArg{"configPath": configPath})
+				proxyConfig = &ProxyConfig{
+					MuxAddress:  muxAddress,
+					ProgramName: programName,
+					ProgramArgs: args,
+				}
+			}
+
+			// update the proxy config with the current values
+			proxyConfig.MuxAddress = muxAddress
+			proxyConfig.ProgramName = programName
+			proxyConfig.ProgramArgs = args
+			proxyConfig.WhatIsThat = defaults.DefaultProxyWhatIsThat
+			proxyConfig.MoreInformation = defaults.DefaultProxyMoreInfo
+
+			if proxyConfig.ProxyId == "" {
+				proxyConfig.ProxyId = uuid.New().String()
+				logger.Info("generated new proxy id", types.LogArg{"proxyId": proxyConfig.ProxyId})
+			}
+
+			// save the proxy config to the file
+			err = SaveProxyConfig(configPath, proxyConfig)
+			if err != nil {
+				logger.Error("Failed to save proxy configuration file",
+					types.LogArg{"error": err, "configPath": configPath})
+				os.Exit(1)
+			}
+
 			proxyInformation := proxy.ProxyInformation{
 				MuxAddress:              muxAddress,
 				CurrentWorkingDirectory: currentWorkingDirectory,
@@ -64,7 +103,7 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&muxAddress, "address", "a", fmt.Sprintf(":%d", defaults.DefaultMultiplexerPort), "TCP address for the MCP multiplexer server (host:port)")
+	rootCmd.Flags().StringVarP(&muxAddress, "mux", "x", fmt.Sprintf(":%d", defaults.DefaultMultiplexerPort), "TCP address for the MCP multiplexer server (host:port)")
 }
 
 func main() {

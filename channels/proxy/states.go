@@ -137,9 +137,6 @@ func (s *StateManager) EventMuxRequestToolCall(params *mux.JsonRpcRequestToolsCa
 		"name": params.Name,
 		"args": params.Args,
 	})
-	// we keep track of the request id coming from the hub
-	// TODO: state management
-	// mcpReqId := jsonrpc.RequestIdToString(reqId)
 
 	req := mcp.JsonRpcRequestToolsCallParams{
 		Name:      params.Name,
