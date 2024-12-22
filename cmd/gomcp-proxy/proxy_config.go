@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"time"
 )
 
 // configuration for the proxy
@@ -13,10 +14,12 @@ type ProxyConfig struct {
 	MuxAddress      string   `json:"mux_address"`
 	ProgramName     string   `json:"program_name"`
 	ProgramArgs     []string `json:"program_args"`
+	LastStarted     string   `json:"last_started"`
 }
 
 // SaveProxyConfig saves the proxy configuration to the file
 func SaveProxyConfig(configPath string, proxyConfig *ProxyConfig) error {
+	proxyConfig.LastStarted = time.Now().Format(time.RFC3339)
 	json, err := json.MarshalIndent(proxyConfig, "", "  ")
 	if err != nil {
 		return err

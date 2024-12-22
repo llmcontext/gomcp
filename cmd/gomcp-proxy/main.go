@@ -25,26 +25,13 @@ var (
 			// banner
 			logger.Header(fmt.Sprintf("%s - %s", proxy.GomcpProxyClientName, version.Version))
 
-			if len(args) == 0 {
-				logger.Error("Please provide a program name as the first argument", types.LogArg{"args": args})
-				os.Exit(1)
-			}
-
-			programName := args[0]
-			args = args[1:]
-
-			logger.Info("MCP Proxy is starting", types.LogArg{
-				"address":     muxAddress,
-				"programName": programName,
-				"args":        args,
-			})
-
 			// check if address is valid
 			if _, err := net.ResolveTCPAddr("tcp", muxAddress); err != nil {
 				logger.Error("Invalid address for MCP Proxy", types.LogArg{"address": muxAddress, "error": err})
 				os.Exit(1)
 			}
 
+			// get the current working directory
 			currentWorkingDirectory, err := os.Getwd()
 			if err != nil {
 				logger.Error("Failed to get current working directory", types.LogArg{"error": err})
@@ -60,19 +47,45 @@ var (
 				os.Exit(1)
 			}
 
+			var invalidArgs bool
+			var programName string
+			var programArgs []string
+
+			if len(args) == 0 {
+				// that's ok if we have a config file
+				if proxyConfig == nil {
+					invalidArgs = true
+				} else {
+					programName = proxyConfig.ProgramName
+					programArgs = proxyConfig.ProgramArgs
+					invalidArgs = false
+				}
+			} else {
+				programName = args[0]
+				programArgs = args[1:]
+				invalidArgs = false
+			}
+
+			if invalidArgs {
+				logger.Error("Please provide a program name as the first argument, and optionally arguments", types.LogArg{"args": args})
+				os.Exit(1)
+			}
+
+			logger.Info("MCP Proxy is starting", types.LogArg{
+				"address":     muxAddress,
+				"programName": programName,
+				"programArgs": programArgs,
+			})
+
 			if proxyConfig == nil {
 				logger.Info("creating proxy configuration file", types.LogArg{"configPath": configPath})
-				proxyConfig = &ProxyConfig{
-					MuxAddress:  muxAddress,
-					ProgramName: programName,
-					ProgramArgs: args,
-				}
+				proxyConfig = &ProxyConfig{}
 			}
 
 			// update the proxy config with the current values
 			proxyConfig.MuxAddress = muxAddress
 			proxyConfig.ProgramName = programName
-			proxyConfig.ProgramArgs = args
+			proxyConfig.ProgramArgs = programArgs
 			proxyConfig.WhatIsThat = defaults.DefaultProxyWhatIsThat
 			proxyConfig.MoreInformation = defaults.DefaultProxyMoreInfo
 
@@ -93,7 +106,7 @@ var (
 				MuxAddress:              muxAddress,
 				CurrentWorkingDirectory: currentWorkingDirectory,
 				ProgramName:             programName,
-				Args:                    args,
+				Args:                    programArgs,
 			}
 
 			client := proxy.NewProxyClient(proxyInformation, logger)
