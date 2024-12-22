@@ -1,5 +1,6 @@
 package mcp
 
 const (
-	RpcNotificationMethodInitialized = "notifications/initialized"
+	RpcNotificationMethodInitialized      = "notifications/initialized"
+	RpcNotificationMethodToolsListChanged = "notifications/tools/list_changed"
 )

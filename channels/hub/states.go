@@ -85,10 +85,10 @@ func (s *StateManager) EventMcpRequestInitialize(params *mcp.JsonRpcRequestIniti
 		ProtocolVersion: mcp.ProtocolVersion,
 		Capabilities: mcp.ServerCapabilities{
 			Tools: &mcp.ServerCapabilitiesTools{
-				ListChanged: jsonrpc.BoolPtr(false),
+				ListChanged: jsonrpc.BoolPtr(true),
 			},
 			Prompts: &mcp.ServerCapabilitiesPrompts{
-				ListChanged: jsonrpc.BoolPtr(false),
+				ListChanged: jsonrpc.BoolPtr(true),
 			},
 		},
 		ServerInfo: mcp.ServerInfo{Name: s.serverName, Version: s.serverVersion},
@@ -292,7 +292,9 @@ func (s *StateManager) EventMuxRequestToolsRegister(proxyId string, params *mux.
 		return
 	}
 
-	// TODO: send the notification to the MUX server
+	// send the notification to the MCP client
+	// so that it will refresh the tools list
+	s.mcpServer.SendNotification(mcp.RpcNotificationMethodToolsListChanged)
 
 }
 

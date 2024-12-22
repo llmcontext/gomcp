@@ -97,3 +97,11 @@ func (s *MCPServer) SendError(code int, message string, id *jsonrpc.JsonRpcReque
 		s.logError("failed to send error", err)
 	}
 }
+
+func (c *MCPServer) SendNotification(method string) {
+	notification := jsonrpc.JsonRpcRequest{
+		JsonRpcVersion: jsonrpc.JsonRpcVersion,
+		Method:         method,
+	}
+	c.transport.SendRequest(&notification)
+}

@@ -15,7 +15,7 @@ type RawJsonRpcRequestMessage struct {
 	JsonRpcVersion string      `json:"jsonrpc"`
 	Method         string      `json:"method"`
 	Params         interface{} `json:"params,omitempty"`
-	Id             interface{} `json:"id"`
+	Id             interface{} `json:"id,omitempty"`
 }
 
 type JsonRequestParseResponse struct {
