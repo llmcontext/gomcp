@@ -139,7 +139,9 @@ func (t *StdioTransport) readLoop(ctx context.Context, errChan chan error) {
 			t.logger.Error("error reading from stdin", types.LogArg{"error": err})
 			errChan <- fmt.Errorf("error reading from stdin: %w", err)
 		}
-		t.logger.Info("@@ stdio transport - readLoop() done", types.LogArg{})
+		// we reach that when the MCP client (eg Claude) closes the connection
+		t.logger.Info("stdio transport - readLoop() done", types.LogArg{})
+		errChan <- fmt.Errorf("MCP client closed the connection")
 	}()
 }
 

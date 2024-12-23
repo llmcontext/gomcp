@@ -44,7 +44,7 @@ func (s *MuxSession) Start(ctx context.Context) error {
 			}
 		})
 		if err != nil {
-			s.logger.Error("Failed to start JSON-RPC transport", types.LogArg{
+			s.logger.Error("End of MuxSession", types.LogArg{
 				"error": err,
 			})
 		}
