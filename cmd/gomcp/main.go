@@ -23,7 +23,11 @@ var (
 
 			// start the server
 			transport := mcp.StdioTransport()
-			mcp.Start(transport)
+			err = mcp.Start(transport)
+			if err != nil {
+				fmt.Println("Error starting MCP server:", err)
+				os.Exit(1)
+			}
 		},
 	}
 )

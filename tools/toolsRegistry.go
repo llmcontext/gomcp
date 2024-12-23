@@ -23,12 +23,18 @@ type ToolsRegistry struct {
 	logger        types.Logger
 }
 
-func NewToolsRegistry(logger types.Logger) *ToolsRegistry {
-	return &ToolsRegistry{
+func NewToolsRegistry(loadProxyTools bool, logger types.Logger) *ToolsRegistry {
+	toolsRegistry := &ToolsRegistry{
 		ToolProviders: []*ToolProvider{},
 		Tools:         make(map[string]*toolProviderPrepared),
 		logger:        logger,
 	}
+	// check if we need to load proxy tools
+	if loadProxyTools {
+		proxyTools := NewProxyTools()
+		proxyTools.RegisterProxyTools(toolsRegistry)
+	}
+	return toolsRegistry
 }
 
 func (r *ToolsRegistry) RegisterToolProvider(toolProvider *ToolProvider) error {
@@ -64,6 +70,10 @@ func (r *ToolsRegistry) PrepareProxyToolProvider(toolProvider *ToolProvider) err
 func (r *ToolsRegistry) checkConfiguration(toolConfigs []config.ToolConfig) error {
 	// we go through all the tool providers and check if the configuration is valid
 	for _, toolProvider := range r.ToolProviders {
+		// if the tool provider is a proxy, we don't need to check the configuration
+		if toolProvider.proxyId != "" {
+			continue
+		}
 		if toolProvider.configSchema != nil {
 			r.logger.Info("checking config schema for tool provider", types.LogArg{
 				"tool": toolProvider.toolName,
@@ -154,6 +164,11 @@ func (r *ToolsRegistry) Prepare(ctx context.Context, toolConfigs []config.ToolCo
 	// let's prepare the different functions for each tool provider
 	for _, toolProvider := range r.ToolProviders {
 		if toolProvider.isDisabled {
+			continue
+		}
+		// if the tool provider is a proxy, we don't need to prepare it
+		// because it is already prepared by the proxy tools registry
+		if toolProvider.proxyId != "" {
 			continue
 		}
 		// for each tool definition, we prepare the function

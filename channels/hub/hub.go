@@ -41,6 +41,7 @@ func newModelContextProtocolServer(
 	promptsConfig *config.PromptConfig,
 	inspectorConfig *config.InspectorInfo,
 	toolsConfig []config.ToolConfig,
+	loadProxyTools bool,
 	proxyConfig *config.ServerProxyConfig) (*ModelContextProtocolImpl, error) {
 	// we initialize the logger
 	logger, err := logger.NewLogger(logging, false)
@@ -49,7 +50,7 @@ func newModelContextProtocolServer(
 	}
 
 	// Initialize tools registry
-	toolsRegistry := tools.NewToolsRegistry(logger)
+	toolsRegistry := tools.NewToolsRegistry(loadProxyTools, logger)
 
 	// Initialize prompts registry
 	promptsRegistry := prompts.NewEmptyPromptsRegistry()
@@ -114,6 +115,7 @@ func NewHubModelContextProtocolServer(debug bool) (*ModelContextProtocolImpl, er
 		conf.Prompts,
 		conf.Inspector,
 		tools,
+		true,
 		conf.Proxy,
 	)
 }
@@ -131,6 +133,7 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 		conf.Prompts,
 		conf.Inspector,
 		conf.Tools,
+		false,
 		nil,
 	)
 
