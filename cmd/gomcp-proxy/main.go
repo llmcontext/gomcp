@@ -15,12 +15,12 @@ import (
 )
 
 var (
-	// muxAddress string
+	debug   bool
 	rootCmd = &cobra.Command{
 		Use:   "gomcp-proxy",
 		Short: "A proxy server for MCP connections",
 		Run: func(cmd *cobra.Command, args []string) {
-			logger := logger.NewTermLogger()
+			logger := logger.NewTermLogger(debug)
 
 			// banner
 			logger.Header(fmt.Sprintf("%s - %s", proxy.GomcpProxyClientName, version.Version))
@@ -113,20 +113,21 @@ var (
 			}
 
 			proxyInformation := proxy.ProxyInformation{
+				ProxyId:                 proxyConfig.ProxyId,
 				MuxAddress:              hubConfig.Proxy.ListenAddress,
 				CurrentWorkingDirectory: currentWorkingDirectory,
 				ProgramName:             programName,
 				Args:                    programArgs,
 			}
 
-			client := proxy.NewProxyClient(proxyInformation, logger)
+			client := proxy.NewProxyClient(proxyInformation, debug, logger)
 			client.Start()
 		},
 	}
 )
 
 func init() {
-	// rootCmd.Flags().StringVarP(&muxAddress, "mux", "x", fmt.Sprintf(":%d", defaults.DefaultMultiplexerPort), "TCP address for the MCP multiplexer server (host:port)")
+	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
 }
 
 func main() {

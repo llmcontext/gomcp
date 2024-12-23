@@ -41,7 +41,7 @@ func (c *ProxyMcpClient) Start(ctx context.Context) error {
 	clientMcpJsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, "proxy - mcpclient", c.logger)
 	c.transport = clientMcpJsonRpcTransport
 
-	// First message to send is always an initialize request
+	// we report that the MCP server is started
 	c.transport.OnStarted(func() {
 		c.events.EventMcpStarted()
 	})

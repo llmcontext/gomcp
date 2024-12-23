@@ -9,14 +9,18 @@ type ProxyLogger struct {
 	logger *pterm.Logger
 }
 
-func NewTermLogger() types.TermLogger {
+func NewTermLogger(debug bool) types.TermLogger {
 	pterm.Debug.Prefix = pterm.Prefix{
 		Text:  "DEBUG",
 		Style: pterm.NewStyle(pterm.BgLightGreen, pterm.FgBlack),
 	}
 	pterm.Debug.MessageStyle = pterm.NewStyle(pterm.FgLightGreen)
 
-	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelInfo)
+	if debug {
+		logger = logger.WithLevel(pterm.LogLevelDebug)
+	}
+
 	return &ProxyLogger{
 		logger: logger,
 	}

@@ -24,6 +24,7 @@ type ProxyClient struct {
 }
 
 type ProxyInformation struct {
+	ProxyId                 string
 	MuxAddress              string
 	CurrentWorkingDirectory string
 	ProgramName             string
@@ -34,7 +35,7 @@ const (
 	GomcpProxyClientName = "gomcp-proxy"
 )
 
-func NewProxyClient(proxyInformation ProxyInformation, logger types.Logger) *ProxyClient {
+func NewProxyClient(proxyInformation ProxyInformation, debug bool, logger types.Logger) *ProxyClient {
 	options := transport.ProxiedMcpServerDescription{
 		ProxyName:               GomcpProxyClientName,
 		CurrentWorkingDirectory: proxyInformation.CurrentWorkingDirectory,

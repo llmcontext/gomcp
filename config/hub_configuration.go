@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/invopop/jsonschema"
+	"github.com/llmcontext/gomcp/defaults"
 	"github.com/llmcontext/gomcp/utils"
 )
 
@@ -24,7 +25,7 @@ type ServerProxyConfig struct {
 	ListenAddress string `json:"listenAddress"`
 }
 
-var defaultHubConfigurationPath = filepath.Join(os.Getenv("HOME"), ".gomcp", "hub.json")
+var defaultHubConfigurationPath = filepath.Join(defaults.DefaultHubConfigurationDirectory, "hub.json")
 
 func GetDefaultHubConfigurationPath() string {
 	return defaultHubConfigurationPath

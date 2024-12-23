@@ -51,6 +51,7 @@ func (s *StateManager) AsEvents() events.Events {
 }
 
 func (s *StateManager) EventMcpStarted() {
+	// as soon as the MCP server is started, we send an initialize request
 	params := mcp.JsonRpcRequestInitializeParams{
 		ProtocolVersion: mcp.ProtocolVersion,
 		Capabilities:    mcp.ClientCapabilities{},
@@ -64,7 +65,7 @@ func (s *StateManager) EventMcpStarted() {
 }
 
 func (s *StateManager) EventMcpResponseInitialize(resp *mcp.JsonRpcResponseInitializeResult) {
-	s.logger.Info("event mcp initialize response", types.LogArg{
+	s.logger.Debug("event mcp initialize response", types.LogArg{
 		"name":    resp.ServerInfo.Name,
 		"version": resp.ServerInfo.Version,
 	})
