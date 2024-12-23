@@ -24,25 +24,26 @@ import (
 )
 
 type ModelContextProtocolImpl struct {
-	config          *config.Config
+	logging         *config.LoggingInfo
 	toolsRegistry   *tools.ToolsRegistry
 	promptsRegistry *prompts.PromptsRegistry
 	inspector       *hubinspector.Inspector
 	muxServer       *hubmuxserver.MuxServer
+	tools           []config.ToolConfig
 	stateManager    *StateManager
 	events          events.Events
 	logger          types.Logger
 }
 
-func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocolImpl, error) {
-	// we load the config file
-	config, err := config.LoadConfig(configFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config file %s: %v", configFilePath, err)
-	}
-
+func newModelContextProtocolServer(
+	serverInfo *config.ServerInfo,
+	logging config.LoggingInfo,
+	promptsConfig *config.PromptConfig,
+	inspectorConfig *config.InspectorInfo,
+	toolsConfig []config.ToolConfig,
+	proxyConfig *config.ServerProxyConfig) (*ModelContextProtocolImpl, error) {
 	// we initialize the logger
-	logger, err := logger.NewLogger(config.Logging, false)
+	logger, err := logger.NewLogger(logging, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize logger: %v", err)
 	}
@@ -52,8 +53,8 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 
 	// Initialize prompts registry
 	promptsRegistry := prompts.NewEmptyPromptsRegistry()
-	if config.Prompts != nil {
-		promptsRegistry, err = prompts.NewPromptsRegistry(config.Prompts.File)
+	if promptsConfig != nil {
+		promptsRegistry, err = prompts.NewPromptsRegistry(promptsConfig.File)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize prompts registry: %v", err)
 		}
@@ -61,8 +62,8 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 
 	// initialize the state manager
 	stateManager := NewStateManager(
-		config.ServerInfo.Name,
-		config.ServerInfo.Version,
+		serverInfo.Name,
+		serverInfo.Version,
 		toolsRegistry,
 		promptsRegistry,
 		logger,
@@ -71,40 +72,81 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 
 	// Start inspector if enabled
 	var inspectorInstance *hubinspector.Inspector = nil
-	if config.Inspector != nil && config.Inspector.Enabled {
-		inspectorInstance = hubinspector.NewInspector(config.Inspector, logger)
+	if inspectorConfig != nil && inspectorConfig.Enabled {
+		inspectorInstance = hubinspector.NewInspector(inspectorConfig, logger)
 	}
 
 	// Start multiplexer if enabled
 	var muxServerInstance *hubmuxserver.MuxServer = nil
-	if config.Proxy != nil && config.Proxy.Enabled {
-		muxServerInstance = hubmuxserver.NewMuxServer(config.Proxy, events, logger)
-		stateManager.SetMuxServer(muxServerInstance)
+	if proxyConfig != nil && proxyConfig.Enabled {
+		muxServerInstance = hubmuxserver.NewMuxServer(proxyConfig.ListenAddress, events, logger)
 	}
 
 	return &ModelContextProtocolImpl{
-		config:          config,
+		logging:         &logging,
 		toolsRegistry:   toolsRegistry,
 		promptsRegistry: promptsRegistry,
 		inspector:       inspectorInstance,
 		muxServer:       muxServerInstance,
 		stateManager:    stateManager,
+		tools:           toolsConfig,
 		events:          events,
 		logger:          logger,
 	}, nil
+
+}
+
+func NewHubModelContextProtocolServer(debug bool) (*ModelContextProtocolImpl, error) {
+	conf, err := config.LoadHubConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load hub configuration: %v", err)
+	}
+
+	if debug {
+		conf.Logging.WithStderr = true
+	}
+
+	tools := []config.ToolConfig{}
+
+	return newModelContextProtocolServer(
+		&conf.ServerInfo,
+		conf.Logging,
+		conf.Prompts,
+		conf.Inspector,
+		tools,
+		conf.Proxy,
+	)
+}
+
+func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocolImpl, error) {
+	// we load the conf file
+	conf, err := config.LoadServerConfig(configFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config file %s: %v", configFilePath, err)
+	}
+
+	return newModelContextProtocolServer(
+		&conf.ServerInfo,
+		conf.Logging,
+		conf.Prompts,
+		conf.Inspector,
+		conf.Tools,
+		nil,
+	)
+
 }
 
 func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
 	// delete the protocol debug file if it exists
-	if mcp.config.Logging.ProtocolDebugFile != "" {
-		if _, err := os.Stat(mcp.config.Logging.ProtocolDebugFile); err == nil {
-			os.Remove(mcp.config.Logging.ProtocolDebugFile)
+	if mcp.logging.ProtocolDebugFile != "" {
+		if _, err := os.Stat(mcp.logging.ProtocolDebugFile); err == nil {
+			os.Remove(mcp.logging.ProtocolDebugFile)
 		}
 	}
 
 	// we create the transport
 	transport := transport.NewStdioTransport(
-		mcp.config.Logging.ProtocolDebugFile,
+		mcp.logging.ProtocolDebugFile,
 		mcp.inspector,
 		mcp.logger)
 
@@ -131,7 +173,7 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 
 	// All the tools are initialized, we can prepare the tools registry
 	// so that it can be used by the server
-	err := mcp.toolsRegistry.Prepare(ctx, mcp.config.Tools)
+	err := mcp.toolsRegistry.Prepare(ctx, mcp.tools)
 	if err != nil {
 		return fmt.Errorf("error preparing tools registry: %s", err)
 	}

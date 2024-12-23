@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"os"
 
 	"github.com/google/uuid"
 	"github.com/llmcontext/gomcp/channels/proxy"
+	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/defaults"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/types"
@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	muxAddress string
-	rootCmd    = &cobra.Command{
+	// muxAddress string
+	rootCmd = &cobra.Command{
 		Use:   "gomcp-proxy",
 		Short: "A proxy server for MCP connections",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -24,12 +24,6 @@ var (
 
 			// banner
 			logger.Header(fmt.Sprintf("%s - %s", proxy.GomcpProxyClientName, version.Version))
-
-			// check if address is valid
-			if _, err := net.ResolveTCPAddr("tcp", muxAddress); err != nil {
-				logger.Error("Invalid address for MCP Proxy", types.LogArg{"address": muxAddress, "error": err})
-				os.Exit(1)
-			}
 
 			// get the current working directory
 			currentWorkingDirectory, err := os.Getwd()
@@ -39,11 +33,10 @@ var (
 			}
 
 			// read the config file
-			configPath := currentWorkingDirectory + "/" + defaults.DefaultProxyConfigPath
-			proxyConfig, err := LoadProxyConfig(configPath)
+			proxyConfig, err := config.LoadProxyConfiguration(currentWorkingDirectory)
 			if err != nil {
 				logger.Error("Failed to load proxy configuration file",
-					types.LogArg{"error": err, "configPath": configPath})
+					types.LogArg{"error": err, "configPath": proxyConfig.ConfigurationFilePath})
 				os.Exit(1)
 			}
 
@@ -71,19 +64,36 @@ var (
 				os.Exit(1)
 			}
 
+			// load the hub configuration
+			hubConfig, err := config.LoadHubConfiguration()
+			if err != nil {
+				logger.Error("Failed to load hub configuration file",
+					types.LogArg{
+						"error":      err,
+						"configPath": config.GetDefaultHubConfigurationPath(),
+					})
+				os.Exit(1)
+			}
+
+			// check if we have a proxy configuration
+			if hubConfig.Proxy == nil || !hubConfig.Proxy.Enabled {
+				logger.Info("proxy is not enabled in the hub configuration",
+					types.LogArg{"configPath": config.GetDefaultHubConfigurationPath()})
+				os.Exit(0)
+			}
+
 			logger.Info("MCP Proxy is starting", types.LogArg{
-				"address":     muxAddress,
+				"address":     hubConfig.Proxy.ListenAddress,
 				"programName": programName,
 				"programArgs": programArgs,
 			})
 
 			if proxyConfig == nil {
-				logger.Info("creating proxy configuration file", types.LogArg{"configPath": configPath})
-				proxyConfig = &ProxyConfig{}
+				logger.Info("creating proxy configuration file", types.LogArg{"configPath": proxyConfig.ConfigurationFilePath})
+				proxyConfig = &config.ProxyConfiguration{}
 			}
 
 			// update the proxy config with the current values
-			proxyConfig.MuxAddress = muxAddress
 			proxyConfig.ProgramName = programName
 			proxyConfig.ProgramArgs = programArgs
 			proxyConfig.WhatIsThat = defaults.DefaultProxyWhatIsThat
@@ -95,15 +105,15 @@ var (
 			}
 
 			// save the proxy config to the file
-			err = SaveProxyConfig(configPath, proxyConfig)
+			err = config.SaveProxyConfiguration(proxyConfig)
 			if err != nil {
 				logger.Error("Failed to save proxy configuration file",
-					types.LogArg{"error": err, "configPath": configPath})
+					types.LogArg{"error": err, "configPath": proxyConfig.ConfigurationFilePath})
 				os.Exit(1)
 			}
 
 			proxyInformation := proxy.ProxyInformation{
-				MuxAddress:              muxAddress,
+				MuxAddress:              hubConfig.Proxy.ListenAddress,
 				CurrentWorkingDirectory: currentWorkingDirectory,
 				ProgramName:             programName,
 				Args:                    programArgs,
@@ -116,7 +126,7 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&muxAddress, "mux", "x", fmt.Sprintf(":%d", defaults.DefaultMultiplexerPort), "TCP address for the MCP multiplexer server (host:port)")
+	// rootCmd.Flags().StringVarP(&muxAddress, "mux", "x", fmt.Sprintf(":%d", defaults.DefaultMultiplexerPort), "TCP address for the MCP multiplexer server (host:port)")
 }
 
 func main() {

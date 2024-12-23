@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	"github.com/llmcontext/gomcp/channels/hub/events"
-	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/transport/socket"
 	"github.com/llmcontext/gomcp/types"
 )
@@ -21,9 +20,9 @@ type MuxServer struct {
 }
 
 // server inside the mcp server in charge of multiplexing multiple proxy clients
-func NewMuxServer(config *config.ProxyConfig, events events.Events, logger types.Logger) *MuxServer {
+func NewMuxServer(listenAddress string, events events.Events, logger types.Logger) *MuxServer {
 	return &MuxServer{
-		listenAddress: config.ListenAddress,
+		listenAddress: listenAddress,
 		socketServer:  nil,
 		sessions:      []*MuxSession{},
 		sessionCount:  0,

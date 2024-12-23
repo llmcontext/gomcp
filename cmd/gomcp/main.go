@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/llmcontext/gomcp"
+	"github.com/llmcontext/gomcp/channels/hub"
 	"github.com/spf13/cobra"
 )
 
 var (
-	configFile string
-	rootCmd    = &cobra.Command{
+	debug   bool
+	rootCmd = &cobra.Command{
 		Use:   "gomcp",
 		Short: "A MCP multiplexer server that enables multiple MCP proxy client connections",
 		Run: func(cmd *cobra.Command, args []string) {
 			// we create the MCP server
-			mcp, err := gomcp.NewModelContextProtocolServer(configFile)
+			mcp, err := hub.NewHubModelContextProtocolServer(debug)
 			if err != nil {
 				fmt.Println("Error creating MCP server:", err)
 				os.Exit(1)
@@ -29,8 +29,7 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&configFile, "configFile", "f", "", "Path to configuration file")
-	rootCmd.MarkFlagRequired("configFile")
+	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
 }
 
 func main() {
