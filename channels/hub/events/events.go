@@ -45,4 +45,7 @@ type Events interface {
 
 	// EventMuxResponseToolCall
 	EventMuxResponseToolCall(toolsCallResult *mux.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId)
+
+	// EventMuxResponseToolCallError
+	EventMuxResponseToolCallError(error *jsonrpc.JsonRpcError, reqId *jsonrpc.JsonRpcRequestId)
 }

@@ -146,6 +146,23 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 					Response: response,
 					Method:   pendingRequestMethod,
 				}, t)
+			case jsonrpc.MessageNatureNotification:
+				t.logger.Info("notification received", types.LogArg{
+					"name": t.name,
+				})
+				request, _, rpcErr := jsonrpc.ParseJsonRpcRequest(jsonRpcRawMessage)
+				if rpcErr != nil {
+					t.logger.Error("error parsing notification", types.LogArg{
+						"error": rpcErr,
+						"name":  t.name,
+					})
+					return
+				}
+				onMessage(JsonRpcMessage{
+					Request:  request,
+					Method:   request.Method,
+					Response: nil,
+				}, t)
 			default:
 				t.logger.Error("invalid message nature", types.LogArg{
 					"nature": nature,

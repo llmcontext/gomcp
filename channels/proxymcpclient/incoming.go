@@ -13,11 +13,18 @@ func (c *ProxyMcpClient) handleIncomingMessage(message transport.JsonRpcMessage)
 		response := message.Response
 		if response.Error != nil {
 			c.logger.Error("error in response", types.LogArg{
+				"method":        message.Method,
 				"response":      fmt.Sprintf("%+v", response),
 				"error_message": response.Error.Message,
 				"error_code":    response.Error.Code,
 				"error_data":    response.Error.Data,
 			})
+
+			switch message.Method {
+			case mcp.RpcRequestMethodToolsCall:
+				// we forward the response to the hubmux server
+				c.events.EventMcpResponseToolCallError(response.Error, response.Id)
+			}
 			return nil
 		}
 		switch message.Method {

@@ -191,3 +191,10 @@ func (s *StateManager) EventMcpResponseToolCall(toolsCallResult *mcp.JsonRpcResp
 	muxReqId := s.reqIdMapping.GetMapping(reqId)
 	s.muxClient.SendJsonRpcResponse(params, muxReqId)
 }
+
+func (s *StateManager) EventMcpResponseToolCallError(error *jsonrpc.JsonRpcError, reqId *jsonrpc.JsonRpcRequestId) {
+	// we parse the req id is the one coming from the hub
+	// and we send the response to the hub with that id
+	muxReqId := s.reqIdMapping.GetMapping(reqId)
+	s.muxClient.SendError(error.Code, error.Message, muxReqId)
+}

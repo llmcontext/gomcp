@@ -19,6 +19,10 @@ func (s *MuxSession) handleIncomingMessage(message transport.JsonRpcMessage) err
 				"error_code":    response.Error.Code,
 				"error_data":    response.Error.Data,
 			})
+			switch message.Method {
+			case mux.RpcRequestMethodCallTool:
+				s.events.EventMuxResponseToolCallError(response.Error, response.Id)
+			}
 			return nil
 		}
 		switch message.Method {

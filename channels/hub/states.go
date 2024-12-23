@@ -317,3 +317,9 @@ func (s *StateManager) EventMuxResponseToolCall(toolsCallResult *mux.JsonRpcResp
 	}
 	s.mcpServer.SendJsonRpcResponse(mcpResponse, mcpReqId)
 }
+
+func (s *StateManager) EventMuxResponseToolCallError(error *jsonrpc.JsonRpcError, reqId *jsonrpc.JsonRpcRequestId) {
+	// we need to find the mcp request id for the given mux request id
+	mcpReqId := s.reqIdMapping.GetMapping(reqId)
+	s.mcpServer.SendError(error.Code, error.Message, mcpReqId)
+}
