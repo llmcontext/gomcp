@@ -10,6 +10,7 @@ import (
 	"github.com/llmcontext/gomcp/channels/proxy/events"
 	"github.com/llmcontext/gomcp/channels/proxymcpclient"
 	"github.com/llmcontext/gomcp/channels/proxymuxclient"
+	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 	"golang.org/x/sync/errgroup"
@@ -41,8 +42,9 @@ func NewProxyClient(proxyInformation ProxyInformation, debug bool, logger types.
 		CurrentWorkingDirectory: proxyInformation.CurrentWorkingDirectory,
 		ProgramName:             proxyInformation.ProgramName,
 		ProgramArgs:             proxyInformation.Args,
+		ProxyId:                 proxyInformation.ProxyId,
 	}
-	stateManager := NewStateManager(&options, logger)
+	stateManager := NewStateManager(&options, tools.NewProxyToolsRegistry(), logger)
 	events := stateManager.AsEvents()
 
 	return &ProxyClient{

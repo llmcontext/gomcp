@@ -57,7 +57,6 @@ func (s *MuxSession) handleIncomingMessage(message transport.JsonRpcMessage) err
 				}
 				// set the session information, required to
 				// send the event to a specific proxy
-				// TODO: store in database
 				proxyId := params.ProxyId
 				if proxyId == "" {
 					s.logger.Error("missing proxy id", types.LogArg{
@@ -66,8 +65,14 @@ func (s *MuxSession) handleIncomingMessage(message transport.JsonRpcMessage) err
 					})
 					return fmt.Errorf("missing proxy id")
 				}
+				// we store the proxy id in the session
 				s.proxyId = proxyId
 				s.proxyName = params.ServerInfo.Name
+
+				s.logger.Info("@@ Proxy register", types.LogArg{
+					"proxyId":   s.proxyId,
+					"proxyName": s.proxyName,
+				})
 
 				// send the event
 				s.events.EventMuxRequestProxyRegister(s.proxyId, params, request.Id)

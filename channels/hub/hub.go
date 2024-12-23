@@ -252,6 +252,8 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 	if mcp.muxServer != nil {
 		eg.Go(func() error {
 			mcp.logger.Info("Starting mux server", types.LogArg{})
+			mcp.stateManager.SetMuxServer(mcp.muxServer)
+
 			err := mcp.muxServer.Start(egCtx)
 			if err != nil {
 				// check if the error is because the context was cancelled

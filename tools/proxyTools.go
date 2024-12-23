@@ -40,17 +40,6 @@ func NewProxyTools() *ProxyTools {
 	}
 }
 
-// called by the proxy to register a new proxy definition
-func (t *ProxyTools) AddProxyDefinition(def *ProxyDefinition) error {
-	toolPath := filepath.Join(t.baseDirectory, fmt.Sprintf("%s.json", def.ProxyId))
-
-	json, err := json.MarshalIndent(def, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(toolPath, json, 0644)
-}
-
 func (t *ProxyTools) RegisterProxyTools(toolsRegistry *ToolsRegistry) error {
 	// load all the proxy definitions
 	files, err := os.ReadDir(t.baseDirectory)
@@ -104,6 +93,11 @@ func (t *ProxyTools) RegisterProxyTools(toolsRegistry *ToolsRegistry) error {
 			if err != nil {
 				return err
 			}
+		}
+		// we need to prepare the tool provider so that it can be used by the hub
+		err = toolsRegistry.PrepareProxyToolProvider(toolProvider)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

@@ -7,6 +7,7 @@ import (
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/protocol/mux"
+	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 	"github.com/llmcontext/gomcp/version"
@@ -17,20 +18,20 @@ type StateManager struct {
 	options   *transport.ProxiedMcpServerDescription
 	muxClient *proxymuxclient.ProxyMuxClient
 	mcpClient *proxymcpclient.ProxyMcpClient
-
+	registry  *tools.ProxyToolsRegistry
 	// serverInfo is the info about the MCP server we are connected to
 	serverInfo   mcp.ServerInfo
-	proxyId      string
 	reqIdMapping *jsonrpc.ReqIdMapping
 }
 
-func NewStateManager(options *transport.ProxiedMcpServerDescription, logger types.Logger) *StateManager {
+func NewStateManager(options *transport.ProxiedMcpServerDescription,
+	registry *tools.ProxyToolsRegistry, logger types.Logger) *StateManager {
 	return &StateManager{
 		options:      options,
 		logger:       logger,
 		serverInfo:   mcp.ServerInfo{},
-		proxyId:      "",
 		reqIdMapping: jsonrpc.NewReqIdMapping(),
+		registry:     registry,
 	}
 }
 
@@ -76,6 +77,7 @@ func (s *StateManager) EventMcpResponseInitialize(resp *mcp.JsonRpcResponseIniti
 
 	params := mux.JsonRpcRequestProxyRegisterParams{
 		ProtocolVersion: mux.MuxProtocolVersion,
+		ProxyId:         s.options.ProxyId,
 		Proxy: mux.ProxyDescription{
 			WorkingDirectory: s.options.CurrentWorkingDirectory,
 			Command:          s.options.ProgramName,
@@ -96,6 +98,27 @@ func (s *StateManager) EventMcpResponseToolsList(resp *mcp.JsonRpcResponseToolsL
 	s.logger.Info("event mcp tools list response", types.LogArg{
 		"tools": resp.Tools,
 	})
+
+	// we register the tools in the registry
+	proxyToolsDefinition := tools.ProxyDefinition{
+		ProxyId:          s.options.ProxyId,
+		WorkingDirectory: s.options.CurrentWorkingDirectory,
+		ProxyName:        s.options.ProxyName,
+		ProgramName:      s.options.ProgramName,
+		ProgramArguments: s.options.ProgramArgs,
+		Tools:            []tools.ProxyToolDefinition{},
+	}
+	for _, tool := range resp.Tools {
+		proxyToolsDefinition.Tools = append(proxyToolsDefinition.Tools, tools.ProxyToolDefinition{
+			Name:        tool.Name,
+			Description: tool.Description,
+			InputSchema: tool.InputSchema,
+		})
+	}
+	err := s.registry.AddProxyDefinition(&proxyToolsDefinition)
+	if err != nil {
+		s.logger.Error("failed to add proxy definition", types.LogArg{"error": err})
+	}
 
 	// we send the "tools/register" request to the mux server
 	toolsMux := make([]mux.ToolDescription, len(resp.Tools))
@@ -119,9 +142,6 @@ func (s *StateManager) EventMuxResponseProxyRegistered(registerResponse *mux.Jso
 		"persistent": registerResponse.Persistent,
 		"denied":     registerResponse.Denied,
 	})
-
-	// we store the proxy id
-	s.proxyId = registerResponse.ProxyId
 
 	// we send the "notifications/initialized" notification
 	s.mcpClient.SendNotification(mcp.RpcNotificationMethodInitialized)

@@ -93,6 +93,12 @@ func (m *MuxServer) Close() {
 }
 
 func (m *MuxServer) GetSessionByProxyId(proxyId string) *MuxSession {
+	m.logger.Info("@@ GetSessionByProxyId", types.LogArg{
+		"proxyId": proxyId,
+	})
+	if m.sessions == nil {
+		return nil
+	}
 	for _, session := range m.sessions {
 		if session.proxyId == proxyId {
 			return session

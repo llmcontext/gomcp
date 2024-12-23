@@ -12,6 +12,7 @@ import (
 )
 
 type ProxiedMcpServerDescription struct {
+	ProxyId                 string
 	ProxyName               string
 	CurrentWorkingDirectory string
 	ProgramName             string

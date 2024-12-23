@@ -237,6 +237,10 @@ func (s *StateManager) EventMcpError(code int, message string, data *json.RawMes
 
 func (s *StateManager) EventMuxRequestProxyRegister(proxyId string, params *mux.JsonRpcRequestProxyRegisterParams, reqId *jsonrpc.JsonRpcRequestId) {
 	// we need to store the proxy id in the session
+	s.logger.Info("@@ EventMuxRequestProxyRegister", types.LogArg{
+		"proxyId":     proxyId,
+		"s.muxServer": s.muxServer == nil,
+	})
 	session := s.muxServer.GetSessionByProxyId(proxyId)
 	if session == nil {
 		s.logger.Error("session not found", types.LogArg{
