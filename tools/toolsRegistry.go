@@ -49,6 +49,13 @@ func (r *ToolsRegistry) RegisterToolProvider(toolProvider *ToolProvider) error {
 }
 
 func (r *ToolsRegistry) RegisterProxyToolProvider(proxyId string, proxyName string) (*ToolProvider, error) {
+	// check if the proxy tool provider is already registered
+	for _, toolProvider := range r.ToolProviders {
+		if toolProvider.proxyId == proxyId {
+			return toolProvider, nil
+		}
+	}
+
 	provider, err := newProxyToolProvider(proxyId, proxyName)
 	if err != nil {
 		return nil, err
@@ -61,7 +68,7 @@ func (r *ToolsRegistry) PrepareProxyToolProvider(toolProvider *ToolProvider) err
 	for _, toolDefinition := range toolProvider.toolDefinitions {
 		r.Tools[toolDefinition.ToolName] = &toolProviderPrepared{
 			ToolProvider:   toolProvider,
-			ToolDefinition: &toolDefinition,
+			ToolDefinition: toolDefinition,
 		}
 	}
 	return nil
@@ -179,7 +186,7 @@ func (r *ToolsRegistry) Prepare(ctx context.Context, toolConfigs []config.ToolCo
 			}
 			toolProviderPrepared := &toolProviderPrepared{
 				ToolProvider:   toolProvider,
-				ToolDefinition: &toolDefinition,
+				ToolDefinition: toolDefinition,
 			}
 			r.Tools[toolDefinition.ToolName] = toolProviderPrepared
 		}
