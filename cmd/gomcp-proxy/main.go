@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/llmcontext/gomcp/channels/proxy"
@@ -78,6 +76,7 @@ var (
 			}
 
 			// load the hub configuration
+			// to find the mux address
 			hubConfig, err := config.LoadHubConfiguration()
 			if err != nil {
 				logger.Error("Failed to load hub configuration file",
@@ -112,6 +111,7 @@ var (
 			proxyConfig.WhatIsThat = DefaultProxyWhatIsThat
 			proxyConfig.MoreInformation = DefaultProxyMoreInfo
 
+			// generate a new proxy id if it is not set
 			if proxyConfig.ProxyId == "" {
 				proxyConfig.ProxyId = uuid.New().String()
 				logger.Info("generated new proxy id", types.LogArg{"proxyId": proxyConfig.ProxyId})
@@ -122,12 +122,6 @@ var (
 			if err != nil {
 				logger.Error("Failed to save proxy configuration file",
 					types.LogArg{"error": err, "configPath": proxyConfig.ConfigurationFilePath})
-				os.Exit(1)
-			}
-
-			// let's wait for the hub to be ready
-			if !isMuxServerReady(hubConfig.Proxy.ListenAddress, logger) {
-				logger.Error("mux server is not ready", types.LogArg{"address": hubConfig.Proxy.ListenAddress})
 				os.Exit(1)
 			}
 
@@ -147,23 +141,6 @@ var (
 
 func init() {
 	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
-}
-
-func isMuxServerReady(muxAddress string, logger types.Logger) bool {
-	var maxAttempts = 60
-	for i := 0; i < maxAttempts; i++ {
-		logger.Info("waiting for mux server to be ready", types.LogArg{"attempts": i})
-		conn, err := net.DialTimeout("tcp", muxAddress, 5*time.Second)
-		if conn != nil {
-			conn.Close()
-		}
-		if err == nil {
-			return true
-		}
-		time.Sleep(2 * time.Second)
-	}
-	logger.Error("mux server is not ready", types.LogArg{"attempts": maxAttempts})
-	return false
 }
 
 func loadEnvFile(filename string) error {

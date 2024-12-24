@@ -191,7 +191,6 @@ func (t *JsonRpcTransport) Start(ctx context.Context, onMessage func(message Jso
 			t.onStarted()
 		}
 	})
-
 	errChan := make(chan error, 1)
 	go func() {
 		// Start the transport

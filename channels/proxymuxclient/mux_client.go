@@ -3,6 +3,8 @@ package proxymuxclient
 import (
 	"context"
 	"fmt"
+	"net"
+	"time"
 
 	"github.com/llmcontext/gomcp/channels/proxy/events"
 	"github.com/llmcontext/gomcp/jsonrpc"
@@ -35,6 +37,13 @@ func (c *ProxyMuxClient) Start(ctx context.Context) error {
 	var err error
 	errMuxChan := make(chan error, 1)
 
+	isMuxServerReady := isMuxServerReady(c.muxAddress, c.logger)
+	if !isMuxServerReady {
+		return fmt.Errorf("mux server is not ready")
+	}
+
+	c.logger.Info("@@@ mux server is ready", types.LogArg{"step": 1})
+
 	// start the mux client
 	// create a transport for the mux client
 	muxClientSocket := socket.NewSocketClient(c.muxAddress)
@@ -57,6 +66,11 @@ func (c *ProxyMuxClient) Start(ctx context.Context) error {
 	muxJsonRpcTransport := transport.NewJsonRpcTransport(muxClientTransport, "proxy client - gomcp (mux)", c.logger)
 
 	c.transport = muxJsonRpcTransport
+
+	// for that specific transport, we send the event that the mux client is started
+	// because the socket connection is already established
+	c.events.EventMuxStarted()
+
 	go func() {
 		err = c.transport.Start(ctx, func(msg transport.JsonRpcMessage, jsonRpcTransport *transport.JsonRpcTransport) {
 			c.logger.Debug("received message from mux", types.LogArg{
@@ -121,4 +135,21 @@ func (s *ProxyMuxClient) SendError(code int, message string, id *jsonrpc.JsonRpc
 			"error": err,
 		})
 	}
+}
+
+func isMuxServerReady(muxAddress string, logger types.Logger) bool {
+	var maxAttempts = 60
+	for i := 0; i < maxAttempts; i++ {
+		logger.Info("waiting for mux server to be ready", types.LogArg{"attempts": i})
+		conn, err := net.DialTimeout("tcp", muxAddress, 5*time.Second)
+		if conn != nil {
+			conn.Close()
+		}
+		if err == nil {
+			return true
+		}
+		time.Sleep(2 * time.Second)
+	}
+	logger.Error("mux server is not ready", types.LogArg{"attempts": maxAttempts})
+	return false
 }

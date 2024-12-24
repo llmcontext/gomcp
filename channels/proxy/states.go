@@ -53,6 +53,7 @@ func (s *StateManager) AsEvents() events.Events {
 
 func (s *StateManager) EventMcpStarted() {
 	// as soon as the MCP server is started, we send an initialize request
+	// to the MCP server
 	params := mcp.JsonRpcRequestInitializeParams{
 		ProtocolVersion: mcp.ProtocolVersion,
 		Capabilities:    mcp.ClientCapabilities{},
@@ -66,7 +67,7 @@ func (s *StateManager) EventMcpStarted() {
 }
 
 func (s *StateManager) EventMcpResponseInitialize(resp *mcp.JsonRpcResponseInitializeResult) {
-	s.logger.Debug("event mcp initialize response", types.LogArg{
+	s.logger.Debug("MCP Server initialized", types.LogArg{
 		"name":    resp.ServerInfo.Name,
 		"version": resp.ServerInfo.Version,
 	})
@@ -75,23 +76,12 @@ func (s *StateManager) EventMcpResponseInitialize(resp *mcp.JsonRpcResponseIniti
 	s.serverInfo.Name = resp.ServerInfo.Name
 	s.serverInfo.Version = resp.ServerInfo.Version
 
-	params := mux.JsonRpcRequestProxyRegisterParams{
-		ProtocolVersion: mux.MuxProtocolVersion,
-		ProxyId:         s.options.ProxyId,
-		Proxy: mux.ProxyDescription{
-			WorkingDirectory: s.options.CurrentWorkingDirectory,
-			Command:          s.options.ProgramName,
-			Args:             s.options.ProgramArgs,
-		},
-		ServerInfo: mux.ServerInfo{
-			Name:    resp.ServerInfo.Name,
-			Version: resp.ServerInfo.Version,
-		},
-	}
+	// we send the "notifications/initialized" notification
+	s.mcpClient.SendNotification(mcp.RpcNotificationMethodInitialized)
 
-	// we can now report the tools list to the mux server
-	s.muxClient.SendRequestWithMethodAndParams(mux.RpcRequestMethodProxyRegister, params)
-
+	// we send the "tools/list" request
+	s.mcpClient.SendRequestWithMethodAndParams(
+		mcp.RpcRequestMethodToolsList, mcp.JsonRpcRequestToolsListParams{})
 }
 
 func (s *StateManager) EventMcpResponseToolsList(resp *mcp.JsonRpcResponseToolsListResult) {
@@ -120,19 +110,41 @@ func (s *StateManager) EventMcpResponseToolsList(resp *mcp.JsonRpcResponseToolsL
 		s.logger.Error("failed to add proxy definition", types.LogArg{"error": err})
 	}
 
-	// we send the "tools/register" request to the mux server
-	toolsMux := make([]mux.ToolDescription, len(resp.Tools))
-	for i, tool := range resp.Tools {
-		toolsMux[i] = mux.ToolDescription{
-			Name:        tool.Name,
-			Description: tool.Description,
-			InputSchema: tool.InputSchema,
-		}
+	// update on 2024/12/25 , we don't need send the tools/register
+	// to the server as the tools are already registered in the registry
+	// // we send the "tools/register" request to the mux server
+	// toolsMux := make([]mux.ToolDescription, len(resp.Tools))
+	// for i, tool := range resp.Tools {
+	// 	toolsMux[i] = mux.ToolDescription{
+	// 		Name:        tool.Name,
+	// 		Description: tool.Description,
+	// 		InputSchema: tool.InputSchema,
+	// 	}
+	// }
+	// params := mux.JsonRpcRequestToolsRegisterParams{
+	// 	Tools: toolsMux,
+	// }
+	// s.muxClient.SendRequestWithMethodAndParams(mux.RpcRequestMethodToolsRegister, params)
+}
+
+func (s *StateManager) EventMuxStarted() {
+	s.logger.Debug("Mux Server started", types.LogArg{})
+	params := mux.JsonRpcRequestProxyRegisterParams{
+		ProtocolVersion: mux.MuxProtocolVersion,
+		ProxyId:         s.options.ProxyId,
+		Proxy: mux.ProxyDescription{
+			WorkingDirectory: s.options.CurrentWorkingDirectory,
+			Command:          s.options.ProgramName,
+			Args:             s.options.ProgramArgs,
+		},
+		ServerInfo: mux.ServerInfo{
+			Name:    s.serverInfo.Name,
+			Version: s.serverInfo.Version,
+		},
 	}
-	params := mux.JsonRpcRequestToolsRegisterParams{
-		Tools: toolsMux,
-	}
-	s.muxClient.SendRequestWithMethodAndParams(mux.RpcRequestMethodToolsRegister, params)
+
+	// we register the proxy to the mux server
+	s.muxClient.SendRequestWithMethodAndParams(mux.RpcRequestMethodProxyRegister, params)
 }
 
 func (s *StateManager) EventMuxResponseProxyRegistered(registerResponse *mux.JsonRpcResponseProxyRegisterResult) {
@@ -142,13 +154,6 @@ func (s *StateManager) EventMuxResponseProxyRegistered(registerResponse *mux.Jso
 		"persistent": registerResponse.Persistent,
 		"denied":     registerResponse.Denied,
 	})
-
-	// we send the "notifications/initialized" notification
-	s.mcpClient.SendNotification(mcp.RpcNotificationMethodInitialized)
-
-	// we send the "tools/list" request
-	s.mcpClient.SendRequestWithMethodAndParams(
-		mcp.RpcRequestMethodToolsList, mcp.JsonRpcRequestToolsListParams{})
 
 }
 
