@@ -12,7 +12,7 @@ import (
 type ServerConfiguration struct {
 	ConfigVersion int            `json:"v"`
 	ServerInfo    ServerInfo     `json:"serverInfo"`
-	Logging       LoggingInfo    `json:"logging,omitempty"`
+	Logging       *LoggingInfo   `json:"logging,omitempty"`
 	Inspector     *InspectorInfo `json:"inspector,omitempty"`
 	Tools         []ToolConfig   `json:"tools,omitempty"`
 	Prompts       *PromptConfig  `json:"prompts,omitempty"`
@@ -46,5 +46,11 @@ func LoadServerConfig(configFilePath string) (*ServerConfiguration, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// update the file path to be absolute
+	if config.Logging != nil {
+		config.Logging.UpdateFilePaths()
+	}
+
 	return &config, nil
 }

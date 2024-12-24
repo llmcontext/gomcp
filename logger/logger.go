@@ -14,7 +14,7 @@ type LoggerImpl struct {
 	zapLog *zap.Logger
 }
 
-func NewLogger(config config.LoggingInfo, debug bool) (types.Logger, error) {
+func NewLogger(config *config.LoggingInfo, debug bool) (types.Logger, error) {
 	cfg := zap.NewProductionConfig()
 
 	// Configure encoder to use ISO 8601 timestamp format
@@ -22,6 +22,8 @@ func NewLogger(config config.LoggingInfo, debug bool) (types.Logger, error) {
 	// disable caller to avoid extra noise in the logs (always logger.go anyway)
 	cfg.DisableCaller = true
 
+	// if file path is not absolute, we assume it is a relative path
+	// to the default hub configuration directory
 	// delete output file if present
 	if config.File != "" {
 		if _, err := os.Stat(config.File); err == nil {

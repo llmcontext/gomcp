@@ -37,7 +37,7 @@ type ModelContextProtocolImpl struct {
 
 func newModelContextProtocolServer(
 	serverInfo *config.ServerInfo,
-	logging config.LoggingInfo,
+	logging *config.LoggingInfo,
 	promptsConfig *config.PromptConfig,
 	inspectorConfig *config.InspectorInfo,
 	toolsConfig []config.ToolConfig,
@@ -84,7 +84,7 @@ func newModelContextProtocolServer(
 	}
 
 	return &ModelContextProtocolImpl{
-		logging:         &logging,
+		logging:         logging,
 		toolsRegistry:   toolsRegistry,
 		promptsRegistry: promptsRegistry,
 		inspector:       inspectorInstance,
