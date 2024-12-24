@@ -94,6 +94,11 @@ func (t *StdioProxyClientTransport) readLoop(ctx context.Context, errChan chan e
 	}()
 
 	scanner := bufio.NewScanner(r)
+	// Increase buffer size to handle larger lines
+	const maxScanTokenSize = 1024 * 1024 * 10 // 10MB buffer
+	buf := make([]byte, maxScanTokenSize)
+	scanner.Buffer(buf, maxScanTokenSize)
+
 	readCh := make(chan struct{})
 
 	if t.onStarted != nil {

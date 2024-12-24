@@ -27,6 +27,7 @@ func (s *MCPServer) handleIncomingMessage(ctx context.Context, message transport
 		default:
 			s.logger.Error("received message with unexpected method", types.LogArg{
 				"method": message.Method,
+				"c":      "p11h",
 			})
 		}
 	} else if message.Request != nil {

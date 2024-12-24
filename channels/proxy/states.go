@@ -203,3 +203,13 @@ func (s *StateManager) EventMcpResponseToolCallError(error *jsonrpc.JsonRpcError
 	muxReqId := s.reqIdMapping.GetMapping(reqId)
 	s.muxClient.SendError(error.Code, error.Message, muxReqId)
 }
+
+func (s *StateManager) EventMcpNotificationResourcesListChanged() {
+	s.logger.Info("event mcp notification resources list changed", types.LogArg{})
+}
+
+func (s *StateManager) EventMcpNotificationResourcesUpdated(resourcesUpdated *mcp.JsonRpcNotificationResourcesUpdatedParams) {
+	s.logger.Info("event mcp notification resources updated", types.LogArg{
+		"uri": resourcesUpdated.Uri,
+	})
+}

@@ -74,18 +74,36 @@ func (c *ProxyMcpClient) handleIncomingMessage(message transport.JsonRpcMessage)
 				// we forward the response to the hubmux server
 				c.events.EventMcpResponseToolCall(toolsCallResult, response.Id)
 			}
+
 		default:
 			c.logger.Error("received message with unexpected method", types.LogArg{
 				"method": message.Method,
+				"c":      "4cdu",
 			})
 		}
 	} else if message.Request != nil {
 		request := message.Request
 		switch message.Method {
+		case mcp.RpcNotificationMethodResourcesUpdated:
+			{
+				resourcesUpdated, err := mcp.ParseJsonRpcNotificationResourcesUpdatedParams(request.Params)
+				if err != nil {
+					c.logger.Error("error parsing resources updated", types.LogArg{
+						"error": err,
+					})
+					return nil
+				}
+				c.events.EventMcpNotificationResourcesUpdated(resourcesUpdated)
+			}
+		case mcp.RpcNotificationMethodResourcesListChanged:
+			{
+				c.events.EventMcpNotificationResourcesListChanged()
+			}
 		default:
 			c.logger.Error("received message with unexpected method", types.LogArg{
 				"method":  message.Method,
 				"request": request,
+				"c":       "cjp1",
 			})
 		}
 	} else {

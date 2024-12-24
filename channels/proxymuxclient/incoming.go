@@ -26,6 +26,7 @@ func (c *ProxyMuxClient) handleIncomingMessage(message transport.JsonRpcMessage)
 			c.logger.Error("received message with unexpected method", types.LogArg{
 				"method":   message.Method,
 				"response": message.Response,
+				"c":        "6thr",
 			})
 		}
 	} else if message.Request != nil {
@@ -46,6 +47,7 @@ func (c *ProxyMuxClient) handleIncomingMessage(message transport.JsonRpcMessage)
 			c.logger.Error("received message with unexpected method", types.LogArg{
 				"method":  message.Method,
 				"request": message.Request,
+				"c":       "ty4t",
 			})
 		}
 	}
