@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -38,12 +40,17 @@ var (
 				os.Exit(1)
 			}
 
+			// read .env file
+			envFile := filepath.Join(currentWorkingDirectory, ".env")
+			if _, err := os.Stat(envFile); err == nil {
+				loadEnvFile(envFile)
+			}
+
 			// read the config file
 			proxyConfig, err := config.LoadProxyConfiguration(currentWorkingDirectory)
 			if err != nil {
-				logger.Error("Failed to load proxy configuration file",
+				logger.Debug("Cannot load proxy configuration file",
 					types.LogArg{"error": err, "configPath": proxyConfig.ConfigurationFilePath})
-				os.Exit(1)
 			}
 
 			var invalidArgs bool
@@ -157,6 +164,35 @@ func isMuxServerReady(muxAddress string, logger types.Logger) bool {
 	}
 	logger.Error("mux server is not ready", types.LogArg{"attempts": maxAttempts})
 	return false
+}
+
+func loadEnvFile(filename string) error {
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		// Skip empty lines and comments
+		if line = strings.TrimSpace(line); line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		// Remove quotes if present
+		value = strings.Trim(value, `"'`)
+
+		os.Setenv(key, value)
+	}
+	return nil
 }
 
 func main() {
