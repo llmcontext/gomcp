@@ -37,7 +37,7 @@ func (c *ProxyMuxClient) Start(ctx context.Context) error {
 	var err error
 	errMuxChan := make(chan error, 1)
 
-	isMuxServerReady := isMuxServerReady(c.muxAddress, c.logger)
+	isMuxServerReady := isMuxServerReady(ctx, c.muxAddress, c.logger)
 	if !isMuxServerReady {
 		return fmt.Errorf("mux server is not ready")
 	}
@@ -137,11 +137,22 @@ func (s *ProxyMuxClient) SendError(code int, message string, id *jsonrpc.JsonRpc
 	}
 }
 
-func isMuxServerReady(muxAddress string, logger types.Logger) bool {
+func isMuxServerReady(ctx context.Context, muxAddress string, logger types.Logger) bool {
 	var maxAttempts = 60
 	for i := 0; i < maxAttempts; i++ {
+		// Check if context is canceled
+		select {
+		case <-ctx.Done():
+			logger.Info("context canceled while waiting for mux server", types.LogArg{
+				"error": ctx.Err(),
+			})
+			return false
+		default:
+			// Continue with the connection attempt
+		}
 		logger.Info("waiting for mux server to be ready", types.LogArg{"attempts": i})
 		conn, err := net.DialTimeout("tcp", muxAddress, 5*time.Second)
+
 		if conn != nil {
 			conn.Close()
 		}
