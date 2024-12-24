@@ -31,7 +31,7 @@ type ProxyToolDefinition struct {
 }
 
 func NewProxyTools() *ProxyTools {
-	var baseDirectory = filepath.Join(defaults.DefaultHubConfigurationDirectory, "proxy_tools")
+	var baseDirectory = filepath.Join(defaults.DefaultHubConfigurationDirectory, defaults.DefaultProxyToolsDirectory)
 	if _, err := os.Stat(baseDirectory); os.IsNotExist(err) {
 		os.MkdirAll(baseDirectory, 0755)
 	}

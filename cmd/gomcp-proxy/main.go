@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/llmcontext/gomcp/channels/proxy"
 	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/defaults"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/types"
 	"github.com/llmcontext/gomcp/version"
@@ -22,6 +23,7 @@ const (
 
 var (
 	debug   bool
+	delete  bool
 	rootCmd = &cobra.Command{
 		Use:   "gomcp-proxy",
 		Short: "A proxy server for MCP connections",
@@ -68,6 +70,24 @@ var (
 				programName = args[0]
 				programArgs = args[1:]
 				invalidArgs = false
+			}
+
+			if delete {
+				logger.Info("# deleting proxy configuration file", types.LogArg{"configPath": proxyConfig.ConfigurationFilePath})
+				// if the configuration file exists, we delete it
+				if _, err := os.Stat(proxyConfig.ConfigurationFilePath); err == nil {
+					logger.Info("# proxy delete file", types.LogArg{"configPath": proxyConfig.ConfigurationFilePath})
+					os.Remove(proxyConfig.ConfigurationFilePath)
+				}
+				if proxyConfig.ProxyId != "" {
+					var proxyDefinition = filepath.Join(defaults.DefaultHubConfigurationDirectory, defaults.DefaultProxyToolsDirectory, fmt.Sprintf("%s.json", proxyConfig.ProxyId))
+					if _, err := os.Stat(proxyDefinition); err == nil {
+						logger.Info("# proxy delete file", types.LogArg{"toolsFilePath": proxyDefinition})
+						os.Remove(proxyDefinition)
+					}
+				}
+				logger.Info("# proxy delete", types.LogArg{})
+				os.Exit(0)
 			}
 
 			if invalidArgs {
@@ -141,6 +161,7 @@ var (
 
 func init() {
 	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
+	rootCmd.Flags().BoolVarP(&delete, "delete", "x", false, "Delete the proxy setup")
 }
 
 func loadEnvFile(filename string) error {
