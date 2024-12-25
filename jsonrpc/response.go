@@ -3,6 +3,7 @@ package jsonrpc
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 type RawJsonRpcResponseMessage struct {
@@ -59,10 +60,98 @@ func MarshalJsonRpcResponse(response *JsonRpcResponse) ([]byte, error) {
 		})
 	}
 
+	// we marshal the result to a json.RawMessage
+	result, err := json.Marshal(response.Result)
+	if err != nil {
+		return nil, err
+	}
+	rawResult := json.RawMessage(result)
+
 	// we have a result message
 	return json.Marshal(RawJsonRpcResponseMessage{
 		JsonRpcVersion: JsonRpcVersion,
-		Result:         response.Result,
+		Result:         &rawResult,
 		Id:             responseId,
 	})
+}
+
+func ParseJsonRpcResponse(rawMessage JsonRpcRawMessage) (*JsonRpcResponse, *JsonRpcRequestId, *JsonRpcError) {
+	// we initialize the request with default values
+	requestId := extractId(rawMessage)
+	jsonRpcResponse := &JsonRpcResponse{
+		JsonRpcVersion: "",
+		Result:         nil,
+		Error:          nil,
+		Id:             requestId,
+	}
+
+	// we iterate through all the keys in the JSON object
+	// and check if they are valid
+	for key, value := range rawMessage {
+		switch key {
+		case "jsonrpc":
+			// we assert that the value is a string
+			version, ok := value.(string)
+			if !ok {
+				return nil, requestId, &JsonRpcError{
+					Code:    RpcParseError,
+					Message: "invalid JSON-RPC version",
+				}
+			}
+			jsonRpcResponse.JsonRpcVersion = version
+
+		case "result":
+			jsonRpcResponse.Result = value
+
+		case "error":
+			// we check that this is a map[string]interface{}
+			error, ok := value.(map[string]interface{})
+			if !ok {
+				return nil, requestId, &JsonRpcError{
+					Code:    RpcParseError,
+					Message: "invalid error",
+				}
+			}
+			jsonRpcResponse.Error = parseJsonRpcError(error)
+
+		case "id":
+			// already parsed
+
+		default:
+			return nil, requestId, &JsonRpcError{
+				Code:    RpcInvalidRequest,
+				Message: fmt.Sprintf("invalid key: %s", key),
+			}
+
+		}
+	}
+
+	return jsonRpcResponse, requestId, nil
+
+}
+
+// no strict parsing of the error
+func parseJsonRpcError(error map[string]interface{}) *JsonRpcError {
+	jsonRpcError := &JsonRpcError{
+		Code:    0,
+		Message: "",
+	}
+
+	for key, value := range error {
+		switch key {
+		case "code":
+			code, ok := value.(float64)
+			if !ok {
+				return nil
+			}
+			jsonRpcError.Code = int(code)
+		case "message":
+			message, ok := value.(string)
+			if !ok {
+				return nil
+			}
+			jsonRpcError.Message = message
+		}
+	}
+	return jsonRpcError
 }

@@ -1,14 +1,31 @@
 package jsonrpc
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 const (
 	JsonRpcVersion = "2.0"
 )
 
+const (
+	// JSON-RPC 2.0 Specification
+	// https://www.jsonrpc.org/specification#error_object
+	RpcParseError     = -32700
+	RpcInvalidRequest = -32600
+	RpcMethodNotFound = -32601
+	RpcInvalidParams  = -32602
+	RpcInternalError  = -32603
+)
+
+// most generic type for a JsonRpc message that is not a batch request
+type JsonRpcRawMessage map[string]interface{}
+
 type JsonRpcError struct {
 	Code    int
 	Message string
+	Data    *json.RawMessage
 }
 
 type JsonRpcRequestId struct {
@@ -29,6 +46,13 @@ func (p *JsonRpcParams) IsNamed() bool {
 	return p.NamedParams != nil
 }
 
+func (p *JsonRpcParams) String() string {
+	if p.IsPositional() {
+		return fmt.Sprintf("%v", p.PositionalParams)
+	}
+	return fmt.Sprintf("%v", p.NamedParams)
+}
+
 type JsonRpcRequest struct {
 	JsonRpcVersion string
 	Method         string
@@ -37,7 +61,8 @@ type JsonRpcRequest struct {
 }
 
 type JsonRpcResponse struct {
-	Result *json.RawMessage
-	Error  *JsonRpcError
-	Id     *JsonRpcRequestId
+	JsonRpcVersion string
+	Result         interface{}
+	Error          *JsonRpcError
+	Id             *JsonRpcRequestId
 }

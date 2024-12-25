@@ -31,7 +31,7 @@ func TestParseSimpleRequest(t *testing.T) {
 				JsonRpcVersion: "2.0",
 				Method:         "subtract",
 				Params:         &JsonRpcParams{NamedParams: map[string]interface{}{"minuend": float64(42), "subtrahend": float64(23)}},
-				Id:             &JsonRpcRequestId{String: strPtr("1")},
+				Id:             &JsonRpcRequestId{String: stringPtr("1")},
 			},
 			wantError: nil,
 		},
@@ -103,25 +103,64 @@ func TestParseSimpleRequest(t *testing.T) {
 				// we skip the test if we expect an error
 				t.Skip()
 			}
-			gotRequest, _, gotError := ParseSimpleRequest(rawJson)
+			gotRequest, _, gotError := ParseJsonRpcRequest(rawJson)
 
 			if !reflect.DeepEqual(gotError, tt.wantError) {
-				t.Errorf("ParseRequest() error = %v, wantError %v", gotError, tt.wantError)
+				t.Errorf("ParseRequest() error = %#v, wantError %#v", gotError, tt.wantError)
 				return
 			}
 
 			if !reflect.DeepEqual(gotRequest, tt.wantRequest) {
-				t.Errorf("ParseRequest() = %v, want %v", gotRequest, tt.wantRequest)
+				t.Errorf("ParseRequest() = %#v, want %#v", gotRequest, tt.wantRequest)
 			}
 		})
 	}
 }
 
-// Helper functions to create pointers
-func intPtr(i int) *int {
-	return &i
-}
+// TODO: we should convert to json object for comparison
+// string comparison is not a good idea as the order of the keys is not guaranteed
 
-func strPtr(s string) *string {
-	return &s
+func TestMarshalJsonRpcRequest(t *testing.T) {
+	tests := []struct {
+		name      string
+		request   *JsonRpcRequest
+		wantJson  string
+		wantError bool
+	}{
+		{
+			name: "valid request with positional params",
+			request: &JsonRpcRequest{
+				JsonRpcVersion: "2.0",
+				Method:         "subtract",
+				Params:         &JsonRpcParams{PositionalParams: []interface{}{float64(42), float64(23)}},
+				Id:             &JsonRpcRequestId{Number: intPtr(1)},
+			},
+			wantJson:  `{"jsonrpc":"2.0","method":"subtract","params":[42,23],"id":1}`,
+			wantError: false,
+		},
+		{
+			name: "valid request with named params",
+			request: &JsonRpcRequest{
+				JsonRpcVersion: "2.0",
+				Method:         "subtract",
+				Params:         &JsonRpcParams{NamedParams: map[string]interface{}{"minuend": float64(42), "subtrahend": float64(23)}},
+				Id:             &JsonRpcRequestId{String: stringPtr("1")},
+			},
+			wantJson:  `{"jsonrpc":"2.0","method":"subtract","params":{"minuend":42,"subtrahend":23},"id":"1"}`,
+			wantError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotJson, err := MarshalJsonRpcRequest(tt.request)
+			if (err != nil) != tt.wantError {
+				t.Errorf("MarshalJsonRpcRequest() error = %v, wantError %v", err, tt.wantError)
+				return
+			}
+			if string(gotJson) != tt.wantJson {
+				t.Errorf("MarshalJsonRpcRequest() = %s, want %s", string(gotJson), tt.wantJson)
+			}
+		})
+	}
 }

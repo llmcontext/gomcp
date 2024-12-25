@@ -3,19 +3,18 @@ package logger
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"syscall"
 
 	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/types"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-var zapLog *zap.Logger
+type LoggerImpl struct {
+	zapLog *zap.Logger
+}
 
-type Arg map[string]interface{}
-
-func InitLogger(config config.LoggingInfo, debug bool) error {
+func NewLogger(config *config.LoggingInfo, debug bool) (types.Logger, error) {
 	cfg := zap.NewProductionConfig()
 
 	// Configure encoder to use ISO 8601 timestamp format
@@ -23,8 +22,10 @@ func InitLogger(config config.LoggingInfo, debug bool) error {
 	// disable caller to avoid extra noise in the logs (always logger.go anyway)
 	cfg.DisableCaller = true
 
+	// if file path is not absolute, we assume it is a relative path
+	// to the default hub configuration directory
 	// delete output file if present
-	if config.File != "" && !config.IsFifo {
+	if config.File != "" {
 		if _, err := os.Stat(config.File); err == nil {
 			os.Remove(config.File)
 		}
@@ -35,18 +36,12 @@ func InitLogger(config config.LoggingInfo, debug bool) error {
 	} else if config.Level != "" {
 		level, err := zapcore.ParseLevel(config.Level)
 		if err != nil {
-			return fmt.Errorf("failed to parse logging level: %v", err)
+			return nil, fmt.Errorf("failed to parse logging level: %v", err)
 		}
 		cfg.Level = zap.NewAtomicLevelAt(level)
 	}
 
 	if config.File != "" {
-		// special case for fifo
-		if config.IsFifo {
-			if err := createFifoIfNotExists(config.File); err != nil {
-				return fmt.Errorf("failed to create FIFO: %v", err)
-			}
-		}
 		cfg.OutputPaths = []string{
 			config.File,
 		}
@@ -57,57 +52,42 @@ func InitLogger(config config.LoggingInfo, debug bool) error {
 		cfg.OutputPaths = append(cfg.OutputPaths, "stderr")
 	}
 
-	zapLog = zap.Must(cfg.Build())
+	zapLog := zap.Must(cfg.Build())
 	defer zapLog.Sync()
 
-	return nil
+	return &LoggerImpl{
+		zapLog: zapLog,
+	}, nil
 }
 
-func Info(message string, fields Arg) {
+func (l *LoggerImpl) Info(message string, fields types.LogArg) {
 	zapFields := []zap.Field{}
 	for key, value := range fields {
 		zapFields = append(zapFields, zap.Any(key, value))
 	}
-	zapLog.Info(message, zapFields...)
+	l.zapLog.Info(message, zapFields...)
 }
 
-func Debug(message string, fields Arg) {
+func (l *LoggerImpl) Debug(message string, fields types.LogArg) {
 	zapFields := []zap.Field{}
 	for key, value := range fields {
 		zapFields = append(zapFields, zap.Any(key, value))
 	}
-	zapLog.Debug(message, zapFields...)
+	l.zapLog.Debug(message, zapFields...)
 }
 
-func Error(message string, fields Arg) {
+func (l *LoggerImpl) Error(message string, fields types.LogArg) {
 	zapFields := []zap.Field{}
 	for key, value := range fields {
 		zapFields = append(zapFields, zap.Any(key, value))
 	}
-	zapLog.Error(message, zapFields...)
+	l.zapLog.Error(message, zapFields...)
 }
 
-func Fatal(message string, fields Arg) {
+func (l *LoggerImpl) Fatal(message string, fields types.LogArg) {
 	zapFields := []zap.Field{}
 	for key, value := range fields {
 		zapFields = append(zapFields, zap.Any(key, value))
 	}
-	zapLog.Fatal(message, zapFields...)
-}
-
-func createFifoIfNotExists(path string) error {
-	// Check if file exists
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		// Create parent directories if they don't exist
-		dir := filepath.Dir(path)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create parent directories: %w", err)
-		}
-
-		// Create the FIFO file
-		if err := syscall.Mkfifo(path, 0666); err != nil {
-			return fmt.Errorf("failed to create FIFO: %w", err)
-		}
-	}
-	return nil
+	l.zapLog.Fatal(message, zapFields...)
 }
