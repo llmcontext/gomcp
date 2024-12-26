@@ -51,6 +51,9 @@ func LoadServerConfig(configFilePath string) (*ServerConfiguration, error) {
 	if config.Logging != nil {
 		config.Logging.UpdateFilePaths()
 	}
+	if config.Inspector != nil {
+		config.Inspector.UpdateFilePaths()
+	}
 
 	return &config, nil
 }

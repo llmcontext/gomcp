@@ -17,6 +17,7 @@ import (
 	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/prompts"
+	"github.com/llmcontext/gomcp/servers/mcp_server_time"
 	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
@@ -24,7 +25,7 @@ import (
 )
 
 type ModelContextProtocolImpl struct {
-	logging         *config.LoggingInfo
+	logger          types.Logger
 	toolsRegistry   *tools.ToolsRegistry
 	promptsRegistry *prompts.PromptsRegistry
 	inspector       *hubinspector.Inspector
@@ -32,25 +33,22 @@ type ModelContextProtocolImpl struct {
 	tools           []config.ToolConfig
 	stateManager    *StateManager
 	events          events.Events
-	logger          types.Logger
 }
 
 func newModelContextProtocolServer(
 	serverInfo *config.ServerInfo,
-	logging *config.LoggingInfo,
+	logger types.Logger,
 	promptsConfig *config.PromptConfig,
 	inspectorConfig *config.InspectorInfo,
+	toolsRegistry *tools.ToolsRegistry,
 	toolsConfig []config.ToolConfig,
-	loadProxyTools bool,
 	proxyConfig *config.ServerProxyConfig) (*ModelContextProtocolImpl, error) {
 	// we initialize the logger
-	logger, err := logger.NewLogger(logging, false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize logger: %v", err)
-	}
-
-	// Initialize tools registry
-	toolsRegistry := tools.NewToolsRegistry(loadProxyTools, logger)
+	// logger, err := logger.NewLogger(logging, false)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to initialize logger: %v", err)
+	// }
+	var err error
 
 	// Initialize prompts registry
 	promptsRegistry := prompts.NewEmptyPromptsRegistry()
@@ -84,7 +82,7 @@ func newModelContextProtocolServer(
 	}
 
 	return &ModelContextProtocolImpl{
-		logging:         logging,
+		logger:          logger,
 		toolsRegistry:   toolsRegistry,
 		promptsRegistry: promptsRegistry,
 		inspector:       inspectorInstance,
@@ -92,7 +90,6 @@ func newModelContextProtocolServer(
 		stateManager:    stateManager,
 		tools:           toolsConfig,
 		events:          events,
-		logger:          logger,
 	}, nil
 
 }
@@ -107,17 +104,53 @@ func NewHubModelContextProtocolServer(debug bool) (*ModelContextProtocolImpl, er
 		conf.Logging.WithStderr = true
 	}
 
-	tools := []config.ToolConfig{}
+	// we initialize the logger
+	logger, err := logger.NewLogger(conf.Logging, debug)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize logger: %v", err)
+	}
+
+	toolsRegistry := tools.NewToolsRegistry(true, logger)
+
+	// tools := []config.ToolConfig{}
+
+	// // check if we have "preset" tools in the config
+	// if conf.Tools != nil {
+	// 	for _, tool := range conf.Tools {
+	// 		switch tool.Name {
+	// 		case "gomcp_server_time":
+	// 			if !tool.IsDisabled {
+	// 				mcp_server_time.RegisterTools(toolsRegistry)
+	// 			}
+	// 			tools = append(tools, tool)
+	// 		}
+	// 	}
+	// }
 
 	return newModelContextProtocolServer(
 		&conf.ServerInfo,
-		conf.Logging,
+		logger,
 		conf.Prompts,
 		conf.Inspector,
-		tools,
-		true,
+		toolsRegistry,
+		conf.Tools,
 		conf.Proxy,
 	)
+}
+
+func (mcp *ModelContextProtocolImpl) LoadPresetTools() error {
+	toolRegistry := mcp.GetToolRegistry()
+
+	for _, tool := range mcp.tools {
+		if tool.IsDisabled {
+			continue
+		}
+		switch tool.Name {
+		case "gomcp_server_time":
+			mcp_server_time.RegisterTools(toolRegistry)
+		}
+	}
+	return nil
 }
 
 func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocolImpl, error) {
@@ -127,29 +160,29 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 		return nil, fmt.Errorf("failed to load config file %s: %v", configFilePath, err)
 	}
 
+	// we initialize the logger
+	logger, err := logger.NewLogger(conf.Logging, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize logger: %v", err)
+	}
+
+	toolsRegistry := tools.NewToolsRegistry(false, logger)
+
 	return newModelContextProtocolServer(
 		&conf.ServerInfo,
-		conf.Logging,
+		logger,
 		conf.Prompts,
 		conf.Inspector,
+		toolsRegistry,
 		conf.Tools,
-		false,
 		nil,
 	)
 
 }
 
 func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
-	// delete the protocol debug file if it exists
-	if mcp.logging.ProtocolDebugFile != "" {
-		if _, err := os.Stat(mcp.logging.ProtocolDebugFile); err == nil {
-			os.Remove(mcp.logging.ProtocolDebugFile)
-		}
-	}
-
 	// we create the transport
 	transport := transport.NewStdioTransport(
-		mcp.logging.ProtocolDebugFile,
 		mcp.inspector,
 		mcp.logger)
 
