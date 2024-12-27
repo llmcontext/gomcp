@@ -147,7 +147,12 @@ func (mcp *ModelContextProtocolImpl) LoadPresetTools() error {
 		}
 		switch tool.Name {
 		case "gomcp_server_time":
-			mcp_server_time.RegisterTools(toolRegistry)
+			err := mcp_server_time.RegisterTools(toolRegistry)
+			if err != nil {
+				mcp.logger.Error("failed to register tools: %v", types.LogArg{
+					"error": err,
+				})
+			}
 		}
 	}
 	return nil
