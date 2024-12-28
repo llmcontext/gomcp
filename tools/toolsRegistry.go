@@ -13,19 +13,19 @@ import (
 type ToolRpcHandler func(input json.RawMessage) (json.RawMessage, error)
 
 type toolProviderPrepared struct {
-	ToolProvider   *ToolProvider
-	ToolDefinition *ToolDefinition
+	ToolProvider   *SdkToolProvider
+	ToolDefinition *SdkToolDefinition
 }
 
 type ToolsRegistry struct {
-	ToolProviders []*ToolProvider
+	ToolProviders []*SdkToolProvider
 	Tools         map[string]*toolProviderPrepared
 	logger        types.Logger
 }
 
 func NewToolsRegistry(loadProxyTools bool, logger types.Logger) *ToolsRegistry {
 	toolsRegistry := &ToolsRegistry{
-		ToolProviders: []*ToolProvider{},
+		ToolProviders: []*SdkToolProvider{},
 		Tools:         make(map[string]*toolProviderPrepared),
 		logger:        logger,
 	}
@@ -37,7 +37,7 @@ func NewToolsRegistry(loadProxyTools bool, logger types.Logger) *ToolsRegistry {
 	return toolsRegistry
 }
 
-func (r *ToolsRegistry) RegisterToolProvider(toolProvider *ToolProvider) error {
+func (r *ToolsRegistry) RegisterToolProvider(toolProvider *SdkToolProvider) error {
 	r.ToolProviders = append(r.ToolProviders, toolProvider)
 	r.logger.Info("registered tool provider", types.LogArg{
 		"tool":            toolProvider.toolName,
@@ -48,7 +48,7 @@ func (r *ToolsRegistry) RegisterToolProvider(toolProvider *ToolProvider) error {
 	return nil
 }
 
-func (r *ToolsRegistry) RegisterProxyToolProvider(proxyId string, proxyName string) (*ToolProvider, error) {
+func (r *ToolsRegistry) RegisterProxyToolProvider(proxyId string, proxyName string) (*SdkToolProvider, error) {
 	// check if the proxy tool provider is already registered
 	for _, toolProvider := range r.ToolProviders {
 		if toolProvider.proxyId == proxyId {
@@ -64,7 +64,7 @@ func (r *ToolsRegistry) RegisterProxyToolProvider(proxyId string, proxyName stri
 	return provider, nil
 }
 
-func (r *ToolsRegistry) PrepareProxyToolProvider(toolProvider *ToolProvider) error {
+func (r *ToolsRegistry) PrepareProxyToolProvider(toolProvider *SdkToolProvider) error {
 	for _, toolDefinition := range toolProvider.toolDefinitions {
 		r.Tools[toolDefinition.ToolName] = &toolProviderPrepared{
 			ToolProvider:   toolProvider,
@@ -201,15 +201,15 @@ func (r *ToolsRegistry) Prepare(ctx context.Context, toolConfigs []config.ToolCo
 	return nil
 }
 
-func (r *ToolsRegistry) GetListOfTools() []*ToolDefinition {
-	tools := make([]*ToolDefinition, 0, len(r.Tools))
+func (r *ToolsRegistry) GetListOfTools() []*SdkToolDefinition {
+	tools := make([]*SdkToolDefinition, 0, len(r.Tools))
 	for _, tool := range r.Tools {
 		tools = append(tools, tool.ToolDefinition)
 	}
 	return tools
 }
 
-func (r *ToolsRegistry) getTool(toolName string) (*ToolDefinition, *ToolProvider, error) {
+func (r *ToolsRegistry) getTool(toolName string) (*SdkToolDefinition, *SdkToolProvider, error) {
 	tool, ok := r.Tools[toolName]
 	if !ok {
 		return nil, nil, fmt.Errorf("tool %s not found", toolName)

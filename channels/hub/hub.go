@@ -17,6 +17,7 @@ import (
 	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/prompts"
+	"github.com/llmcontext/gomcp/sdk"
 	"github.com/llmcontext/gomcp/servers/mcp_server_time"
 	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
@@ -139,7 +140,7 @@ func NewHubModelContextProtocolServer(debug bool) (*ModelContextProtocolImpl, er
 }
 
 func (mcp *ModelContextProtocolImpl) LoadPresetTools() error {
-	toolRegistry := mcp.GetToolRegistry()
+	toolRegistry := mcp.getToolRegistry()
 
 	for _, tool := range mcp.tools {
 		if tool.IsDisabled {
@@ -158,11 +159,22 @@ func (mcp *ModelContextProtocolImpl) LoadPresetTools() error {
 	return nil
 }
 
-func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocolImpl, error) {
-	// we load the conf file
-	conf, err := config.LoadServerConfig(configFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config file %s: %v", configFilePath, err)
+func NewModelContextProtocolServer(configuration types.McpServerDefinition) (*ModelContextProtocolImpl, error) {
+	// Add type assertion check
+	sdkConfiguration, ok := configuration.(*sdk.SdkServerDefinition)
+	if !ok {
+		return nil, fmt.Errorf("invalid configuration type: expected *sdk.SdkServerDefinition, got %T", configuration)
+	}
+
+	// we build the configuration data
+	conf := config.ServerConfiguration{
+		ServerInfo: config.ServerInfo{
+			Name:    sdkConfiguration.ServerName(),
+			Version: sdkConfiguration.ServerVersion(),
+		},
+		Logging: &config.LoggingInfo{
+			WithStderr: true,
+		},
 	}
 
 	// we initialize the logger
@@ -172,6 +184,12 @@ func NewModelContextProtocolServer(configFilePath string) (*ModelContextProtocol
 	}
 
 	toolsRegistry := tools.NewToolsRegistry(false, logger)
+
+	// first step is to check that the MCP server definition is valid
+	err = sdkConfiguration.CheckConfiguration(toolsRegistry)
+	if err != nil {
+		return nil, err
+	}
 
 	return newModelContextProtocolServer(
 		&conf.ServerInfo,
@@ -195,7 +213,7 @@ func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
 	return transport
 }
 
-func (mcp *ModelContextProtocolImpl) DeclareToolProvider(toolName string, toolInitFunction interface{}) (types.ToolProvider, error) {
+func (mcp *ModelContextProtocolImpl) DeclareToolProvider(toolName string, toolInitFunction interface{}) (tools.ToolProvider, error) {
 	toolProvider, err := tools.DeclareToolProvider(toolName, toolInitFunction)
 	if err != nil {
 		return nil, fmt.Errorf("failed to declare tool provider %s: %v", toolName, err)
@@ -203,6 +221,10 @@ func (mcp *ModelContextProtocolImpl) DeclareToolProvider(toolName string, toolIn
 	// we keep track of the tool providers added
 	mcp.toolsRegistry.RegisterToolProvider(toolProvider)
 	return toolProvider, nil
+}
+
+func (mcp *ModelContextProtocolImpl) getToolRegistry() tools.ToolRegistry {
+	return mcp
 }
 
 // Start starts the server and the inspector
@@ -359,10 +381,6 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 	}
 	mcp.logger.Info("Hub server stopped", types.LogArg{})
 	return nil
-}
-
-func (mcp *ModelContextProtocolImpl) GetToolRegistry() types.ToolRegistry {
-	return mcp
 }
 
 func logGoroutineStacks(logger types.Logger) {

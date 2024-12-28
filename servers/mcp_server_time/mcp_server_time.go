@@ -3,7 +3,7 @@ package mcp_server_time
 import (
 	"context"
 
-	"github.com/llmcontext/gomcp/types"
+	"github.com/llmcontext/gomcp/tools"
 )
 
 type ToolConfiguration struct {
@@ -18,7 +18,7 @@ func ToolInit(ctx context.Context, config *ToolConfiguration) (*ToolContext, err
 	return &ToolContext{}, nil
 }
 
-func RegisterTools(toolRegistry types.ToolRegistry) error {
+func RegisterTools(toolRegistry tools.ToolRegistry) error {
 	toolProvider, err := toolRegistry.DeclareToolProvider("gomcp_server_time", ToolInit)
 	if err != nil {
 		return err

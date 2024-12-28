@@ -11,7 +11,7 @@ import (
 	"github.com/llmcontext/gomcp/utils"
 )
 
-type ToolDefinition struct {
+type SdkToolDefinition struct {
 	ToolName            string
 	ToolHandlerFunction interface{}
 	Description         string
@@ -21,7 +21,7 @@ type ToolDefinition struct {
 	ToolProxyId string
 }
 
-type ToolProvider struct {
+type SdkToolProvider struct {
 	toolName         string
 	isDisabled       bool
 	configSchema     *jsonschema.Schema
@@ -30,16 +30,16 @@ type ToolProvider struct {
 	toolInitFunction interface{}
 	contextType      reflect.Type
 	contextTypeName  string
-	toolDefinitions  []*ToolDefinition
+	toolDefinitions  []*SdkToolDefinition
 	// the tool context retrieve from the tool init function
 	toolContext interface{}
 	// proxy id for proxy tool provider
 	proxyId string
 }
 
-func DeclareToolProvider(toolName string, toolInitFunction interface{}) (*ToolProvider, error) {
+func DeclareToolProvider(toolName string, toolInitFunction interface{}) (*SdkToolProvider, error) {
 	// we initialize the tool provider with nil values
-	toolProvider := &ToolProvider{
+	toolProvider := &SdkToolProvider{
 		toolName:         toolName,
 		isDisabled:       false,
 		configSchema:     nil,
@@ -48,7 +48,7 @@ func DeclareToolProvider(toolName string, toolInitFunction interface{}) (*ToolPr
 		toolInitFunction: toolInitFunction,
 		contextType:      nil,
 		contextTypeName:  "",
-		toolDefinitions:  []*ToolDefinition{},
+		toolDefinitions:  []*SdkToolDefinition{},
 		proxyId:          "",
 	}
 
@@ -114,8 +114,8 @@ func DeclareToolProvider(toolName string, toolInitFunction interface{}) (*ToolPr
 	return toolProvider, nil
 }
 
-func newProxyToolProvider(proxyId string, proxyName string) (*ToolProvider, error) {
-	toolProvider := &ToolProvider{
+func newProxyToolProvider(proxyId string, proxyName string) (*SdkToolProvider, error) {
+	toolProvider := &SdkToolProvider{
 		toolName:         proxyName,
 		isDisabled:       false,
 		configSchema:     nil,
@@ -124,13 +124,13 @@ func newProxyToolProvider(proxyId string, proxyName string) (*ToolProvider, erro
 		toolInitFunction: nil,
 		contextType:      nil,
 		contextTypeName:  "",
-		toolDefinitions:  []*ToolDefinition{},
+		toolDefinitions:  []*SdkToolDefinition{},
 		proxyId:          proxyId,
 	}
 	return toolProvider, nil
 }
 
-func (tp *ToolProvider) AddTool(toolName string, description string, toolHandler interface{}) error {
+func (tp *SdkToolProvider) AddTool(toolName string, description string, toolHandler interface{}) error {
 	// Validate that toolHandler is a function
 	fnType := reflect.TypeOf(toolHandler)
 	if fnType.Kind() != reflect.Func {
@@ -179,7 +179,7 @@ func (tp *ToolProvider) AddTool(toolName string, description string, toolHandler
 	}
 
 	// Store the function for later use
-	tp.toolDefinitions = append(tp.toolDefinitions, &ToolDefinition{
+	tp.toolDefinitions = append(tp.toolDefinitions, &SdkToolDefinition{
 		ToolName:            toolName,
 		Description:         description,
 		ToolHandlerFunction: toolHandler,
@@ -190,7 +190,7 @@ func (tp *ToolProvider) AddTool(toolName string, description string, toolHandler
 	return nil
 }
 
-func (tp *ToolProvider) AddProxyTool(toolName string, description string, inputSchema interface{}) error {
+func (tp *SdkToolProvider) AddProxyTool(toolName string, description string, inputSchema interface{}) error {
 	// Convert the interface{} to *jsonschema.Schema
 	var schema *jsonschema.Schema
 	switch s := inputSchema.(type) {
@@ -218,7 +218,7 @@ func (tp *ToolProvider) AddProxyTool(toolName string, description string, inputS
 	}
 
 	// we create a new tool definition
-	tp.toolDefinitions = append(tp.toolDefinitions, &ToolDefinition{
+	tp.toolDefinitions = append(tp.toolDefinitions, &SdkToolDefinition{
 		ToolName:    toolName,
 		Description: description,
 		ToolProxyId: tp.proxyId,
