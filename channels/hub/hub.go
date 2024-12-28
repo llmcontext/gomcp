@@ -110,21 +110,6 @@ func NewHubModelContextProtocolServer(debug bool) (*ModelContextProtocolImpl, er
 
 	toolsRegistry := tools.NewToolsRegistry(true, logger)
 
-	// tools := []config.ToolConfig{}
-
-	// // check if we have "preset" tools in the config
-	// if conf.Tools != nil {
-	// 	for _, tool := range conf.Tools {
-	// 		switch tool.Name {
-	// 		case "gomcp_server_time":
-	// 			if !tool.IsDisabled {
-	// 				mcp_server_time.RegisterTools(toolsRegistry)
-	// 			}
-	// 			tools = append(tools, tool)
-	// 		}
-	// 	}
-	// }
-
 	return newModelContextProtocolServer(
 		&conf.ServerInfo,
 		logger,
@@ -209,17 +194,6 @@ func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
 	// we return the transport
 	return transport
 }
-
-// XXX
-// func (mcp *ModelContextProtocolImpl) DeclareToolProvider(toolName string, toolInitFunction interface{}) (tools.ToolProvider, error) {
-// 	toolProvider, err := tools.DeclareToolProvider(toolName, toolInitFunction)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to declare tool provider %s: %v", toolName, err)
-// 	}
-// 	// we keep track of the tool providers added
-// 	mcp.toolsRegistry.RegisterToolProvider(toolProvider)
-// 	return toolProvider, nil
-// }
 
 // Start starts the server and the inspector
 func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
