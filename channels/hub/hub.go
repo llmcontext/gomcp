@@ -31,7 +31,6 @@ type ModelContextProtocolImpl struct {
 	promptsRegistry *prompts.PromptsRegistry
 	inspector       *hubinspector.Inspector
 	muxServer       *hubmuxserver.MuxServer
-	tools           []config.ToolConfig
 	stateManager    *StateManager
 	events          events.Events
 }
@@ -42,7 +41,6 @@ func newModelContextProtocolServer(
 	promptsConfig *config.PromptConfig,
 	inspectorConfig *config.InspectorInfo,
 	toolsRegistry *tools.ToolsRegistry,
-	toolsConfig []config.ToolConfig,
 	proxyConfig *config.ServerProxyConfig) (*ModelContextProtocolImpl, error) {
 	// we initialize the logger
 	// logger, err := logger.NewLogger(logging, false)
@@ -89,7 +87,6 @@ func newModelContextProtocolServer(
 		inspector:       inspectorInstance,
 		muxServer:       muxServerInstance,
 		stateManager:    stateManager,
-		tools:           toolsConfig,
 		events:          events,
 	}, nil
 
@@ -134,21 +131,20 @@ func NewHubModelContextProtocolServer(debug bool) (*ModelContextProtocolImpl, er
 		conf.Prompts,
 		conf.Inspector,
 		toolsRegistry,
-		conf.Tools,
 		conf.Proxy,
 	)
 }
 
 func (mcp *ModelContextProtocolImpl) LoadPresetTools() error {
-	toolRegistry := mcp.getToolRegistry()
+	presetToolsNames := []string{
+		"gomcp_server_time",
+	}
 
-	for _, tool := range mcp.tools {
-		if tool.IsDisabled {
-			continue
-		}
-		switch tool.Name {
+	// TODO: add mechanism to disable some preset tools
+	for _, toolName := range presetToolsNames {
+		switch toolName {
 		case "gomcp_server_time":
-			err := mcp_server_time.RegisterTools(toolRegistry)
+			err := mcp_server_time.RegisterTools(mcp.toolsRegistry)
 			if err != nil {
 				mcp.logger.Error("failed to register tools: %v", types.LogArg{
 					"error": err,
@@ -197,7 +193,6 @@ func NewModelContextProtocolServer(configuration types.McpServerDefinition) (*Mo
 		conf.Prompts,
 		conf.Inspector,
 		toolsRegistry,
-		conf.Tools,
 		nil,
 	)
 
@@ -213,19 +208,16 @@ func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
 	return transport
 }
 
-func (mcp *ModelContextProtocolImpl) DeclareToolProvider(toolName string, toolInitFunction interface{}) (tools.ToolProvider, error) {
-	toolProvider, err := tools.DeclareToolProvider(toolName, toolInitFunction)
-	if err != nil {
-		return nil, fmt.Errorf("failed to declare tool provider %s: %v", toolName, err)
-	}
-	// we keep track of the tool providers added
-	mcp.toolsRegistry.RegisterToolProvider(toolProvider)
-	return toolProvider, nil
-}
-
-func (mcp *ModelContextProtocolImpl) getToolRegistry() tools.ToolRegistry {
-	return mcp
-}
+// XXX
+// func (mcp *ModelContextProtocolImpl) DeclareToolProvider(toolName string, toolInitFunction interface{}) (tools.ToolProvider, error) {
+// 	toolProvider, err := tools.DeclareToolProvider(toolName, toolInitFunction)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to declare tool provider %s: %v", toolName, err)
+// 	}
+// 	// we keep track of the tool providers added
+// 	mcp.toolsRegistry.RegisterToolProvider(toolProvider)
+// 	return toolProvider, nil
+// }
 
 // Start starts the server and the inspector
 func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
@@ -236,7 +228,7 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 
 	// All the tools are initialized, we can prepare the tools registry
 	// so that it can be used by the server
-	err := mcp.toolsRegistry.Prepare(ctx, mcp.tools)
+	err := mcp.toolsRegistry.Prepare(ctx)
 	if err != nil {
 		return fmt.Errorf("error preparing tools registry: %s", err)
 	}

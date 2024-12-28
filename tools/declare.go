@@ -22,35 +22,36 @@ type SdkToolDefinition struct {
 }
 
 type SdkToolProvider struct {
-	toolName         string
-	isDisabled       bool
-	configSchema     *jsonschema.Schema
-	configTypeName   string
-	configType       reflect.Type
-	toolInitFunction interface{}
-	contextType      reflect.Type
-	contextTypeName  string
-	toolDefinitions  []*SdkToolDefinition
+	toolName              string
+	isDisabled            bool
+	toolInitFunction      interface{}
+	toolConfigurationData interface{}
+	contextType           reflect.Type
+	contextTypeName       string
+	toolDefinitions       []*SdkToolDefinition
 	// the tool context retrieve from the tool init function
 	toolContext interface{}
 	// proxy id for proxy tool provider
 	proxyId string
 }
 
-func DeclareToolProvider(toolName string, toolInitFunction interface{}) (*SdkToolProvider, error) {
+func DeclareToolProvider(toolName string, toolInitFunction interface{}, configurationData interface{}) (*SdkToolProvider, error) {
 	// we initialize the tool provider with nil values
 	toolProvider := &SdkToolProvider{
-		toolName:         toolName,
-		isDisabled:       false,
-		configSchema:     nil,
-		configTypeName:   "",
-		configType:       nil,
-		toolInitFunction: toolInitFunction,
-		contextType:      nil,
-		contextTypeName:  "",
-		toolDefinitions:  []*SdkToolDefinition{},
-		proxyId:          "",
+		toolName:              toolName,
+		isDisabled:            false,
+		toolInitFunction:      toolInitFunction,
+		toolConfigurationData: configurationData,
+		contextType:           nil,
+		contextTypeName:       "",
+		toolDefinitions:       []*SdkToolDefinition{},
+		proxyId:               "",
 	}
+
+	// get the type of the configuration
+	configurationType := reflect.TypeOf(configurationData)
+
+	fmt.Println("@@@ configurationType", configurationType)
 
 	// Validate that toolHandler is a function
 	fnType := reflect.TypeOf(toolInitFunction)
@@ -77,14 +78,10 @@ func DeclareToolProvider(toolName string, toolInitFunction interface{}) (*SdkToo
 			return nil, fmt.Errorf("toolInitFunctiom argument must be a pointer to a struct")
 		}
 		configType = fnType.In(1)
-		configSchema, configTypeName, err := utils.GetSchemaFromType(configType)
-		if err != nil {
-			return nil, fmt.Errorf("error generating schema for toolInitFunctiom argument")
+		// check if the type is the same as the configuration type
+		if configType != configurationType {
+			return nil, fmt.Errorf("toolInitFunctiom argument must be a pointer to a struct of type %s", configurationType.String())
 		}
-		// we store the config schema, type name and type
-		toolProvider.configSchema = configSchema
-		toolProvider.configTypeName = configTypeName
-		toolProvider.configType = configType
 	}
 
 	// the function must return a tool context, error
@@ -118,9 +115,6 @@ func newProxyToolProvider(proxyId string, proxyName string) (*SdkToolProvider, e
 	toolProvider := &SdkToolProvider{
 		toolName:         proxyName,
 		isDisabled:       false,
-		configSchema:     nil,
-		configTypeName:   "",
-		configType:       nil,
 		toolInitFunction: nil,
 		contextType:      nil,
 		contextTypeName:  "",

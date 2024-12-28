@@ -18,8 +18,8 @@ func ToolInit(ctx context.Context, config *ToolConfiguration) (*ToolContext, err
 	return &ToolContext{}, nil
 }
 
-func RegisterTools(toolRegistry tools.ToolRegistry) error {
-	toolProvider, err := toolRegistry.DeclareToolProvider("gomcp_server_time", ToolInit)
+func RegisterTools(toolsRegistry *tools.ToolsRegistry) error {
+	toolProvider, err := tools.DeclareToolProvider("gomcp_server_time", ToolInit, nil)
 	if err != nil {
 		return err
 	}
@@ -37,6 +37,8 @@ func RegisterTools(toolRegistry tools.ToolRegistry) error {
 	if err != nil {
 		return err
 	}
+
+	toolsRegistry.RegisterToolProvider(toolProvider)
 
 	return nil
 }

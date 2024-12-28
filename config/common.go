@@ -27,13 +27,6 @@ type PromptConfig struct {
 	File string `json:"file"`
 }
 
-type ToolConfig struct {
-	Name          string      `json:"name"`
-	IsDisabled    bool        `json:"isDisabled,omitempty"`
-	Description   string      `json:"description,omitempty"`
-	Configuration interface{} `json:"configuration"`
-}
-
 func updateFilePath(path string) string {
 	if path == "" {
 		return path

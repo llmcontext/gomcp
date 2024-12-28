@@ -14,7 +14,6 @@ type ServerConfiguration struct {
 	ServerInfo    ServerInfo     `json:"serverInfo"`
 	Logging       *LoggingInfo   `json:"logging,omitempty"`
 	Inspector     *InspectorInfo `json:"inspector,omitempty"`
-	Tools         []ToolConfig   `json:"tools,omitempty"`
 	Prompts       *PromptConfig  `json:"prompts,omitempty"`
 }
 

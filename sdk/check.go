@@ -13,7 +13,8 @@ func (s *SdkServerDefinition) CheckConfiguration(toolsRegistry *tools.ToolsRegis
 	}
 
 	// declare the tool provider
-	toolProvider, err := tools.DeclareToolProvider(s.ServerName(), s.toolsInitFunction)
+	// get the type of the configuration
+	toolProvider, err := tools.DeclareToolProvider(s.ServerName(), s.toolsInitFunction, s.configuration)
 	if err != nil {
 		return err
 	}
