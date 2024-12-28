@@ -9,7 +9,13 @@ type ProxyLogger struct {
 	logger *pterm.Logger
 }
 
-func NewTermLogger(debug bool) types.TermLogger {
+// special logger for the terminal
+type TermLogger interface {
+	types.Logger
+	Header(message string)
+}
+
+func NewTermLogger(debug bool) TermLogger {
 	pterm.Debug.Prefix = pterm.Prefix{
 		Text:  "DEBUG",
 		Style: pterm.NewStyle(pterm.BgLightGreen, pterm.FgBlack),

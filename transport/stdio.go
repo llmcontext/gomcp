@@ -13,24 +13,20 @@ import (
 )
 
 type StdioTransport struct {
-	debug             bool
-	isClosed          bool
-	protocolDebugFile string
-	inspector         *hubinspector.Inspector
-	logger            types.Logger
-	onStarted         func()
-	onMessage         func(json.RawMessage)
-	onClose           func()
-	onError           func(error)
+	isClosed  bool
+	inspector *hubinspector.Inspector
+	logger    types.Logger
+	onStarted func()
+	onMessage func(json.RawMessage)
+	onClose   func()
+	onError   func(error)
 }
 
-func NewStdioTransport(protocolDebugFile string, inspector *hubinspector.Inspector, logger types.Logger) types.Transport {
+func NewStdioTransport(inspector *hubinspector.Inspector, logger types.Logger) types.Transport {
 	return &StdioTransport{
-		debug:             protocolDebugFile != "",
-		protocolDebugFile: protocolDebugFile,
-		inspector:         inspector,
-		logger:            logger,
-		isClosed:          false,
+		inspector: inspector,
+		logger:    logger,
+		isClosed:  false,
 	}
 }
 
@@ -53,9 +49,6 @@ func (t *StdioTransport) Start(ctx context.Context) error {
 
 func (t *StdioTransport) Send(message json.RawMessage) error {
 	// Write message followed by newline to stdout
-	if t.debug {
-		t.logProtocolMessages(string(message), "sending")
-	}
 
 	if t.inspector != nil {
 		t.inspector.EnqueueMessage(hubinspector.MessageInfo{
@@ -120,10 +113,6 @@ func (t *StdioTransport) readLoop(ctx context.Context, errChan chan error) {
 			default:
 				line := scanner.Text()
 				if t.onMessage != nil {
-					if t.debug {
-						t.logProtocolMessages(line, "receiving")
-					}
-
 					if t.inspector != nil {
 						t.inspector.EnqueueMessage(hubinspector.MessageInfo{
 							Timestamp: time.Now().Format(time.RFC3339),
@@ -145,32 +134,32 @@ func (t *StdioTransport) readLoop(ctx context.Context, errChan chan error) {
 	}()
 }
 
-func (t *StdioTransport) logProtocolMessages(rawMessage string, direction string) {
-	// open log file and append
-	file, err := os.OpenFile(t.protocolDebugFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		t.logger.Error("error opening protocol debug file", types.LogArg{"error": err})
-	}
-	defer file.Close()
+// func (t *StdioTransport) logProtocolMessages(rawMessage string, direction string) {
+// 	// open log file and append
+// 	file, err := os.OpenFile(t.protocolDebugFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+// 	if err != nil {
+// 		t.logger.Error("error opening protocol debug file", types.LogArg{"error": err})
+// 	}
+// 	defer file.Close()
 
-	// write to file
-	_, err = file.WriteString(fmt.Sprintf(":%s: %s\n", direction, rawMessage))
-	if err != nil {
-		t.logger.Error("error writing to protocol debug file", types.LogArg{"error": err})
-	}
+// 	// write to file
+// 	_, err = file.WriteString(fmt.Sprintf(":%s: %s\n", direction, rawMessage))
+// 	if err != nil {
+// 		t.logger.Error("error writing to protocol debug file", types.LogArg{"error": err})
+// 	}
 
-	// try to parse the message as JSON
-	var jsonMessage json.RawMessage
-	err = json.Unmarshal([]byte(rawMessage), &jsonMessage)
-	if err != nil {
-		file.WriteString(fmt.Sprintf("!error parsing message as JSON: %s\n", err))
-	} else {
-		// pretty print the JSON message
-		prettyJSON, err := json.MarshalIndent(jsonMessage, "", "  ")
-		if err != nil {
-			file.WriteString(fmt.Sprintf("!error formatting json message: %s\n", err))
-		} else {
-			file.WriteString(fmt.Sprintf("%s\n", string(prettyJSON)))
-		}
-	}
-}
+// 	// try to parse the message as JSON
+// 	var jsonMessage json.RawMessage
+// 	err = json.Unmarshal([]byte(rawMessage), &jsonMessage)
+// 	if err != nil {
+// 		file.WriteString(fmt.Sprintf("!error parsing message as JSON: %s\n", err))
+// 	} else {
+// 		// pretty print the JSON message
+// 		prettyJSON, err := json.MarshalIndent(jsonMessage, "", "  ")
+// 		if err != nil {
+// 			file.WriteString(fmt.Sprintf("!error formatting json message: %s\n", err))
+// 		} else {
+// 			file.WriteString(fmt.Sprintf("%s\n", string(prettyJSON)))
+// 		}
+// 	}
+// }

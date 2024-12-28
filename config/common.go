@@ -12,15 +12,15 @@ type ServerInfo struct {
 }
 
 type LoggingInfo struct {
-	File              string `json:"file,omitempty"`
-	Level             string `json:"level,omitempty"`
-	WithStderr        bool   `json:"withStderr,omitempty"`
-	ProtocolDebugFile string `json:"protocolDebugFile,omitempty"`
+	File       string `json:"file,omitempty"`
+	Level      string `json:"level,omitempty"`
+	WithStderr bool   `json:"withStderr,omitempty"`
 }
 
 type InspectorInfo struct {
-	Enabled       bool   `json:"enabled"`
-	ListenAddress string `json:"listenAddress"`
+	Enabled           bool   `json:"enabled"`
+	ListenAddress     string `json:"listenAddress"`
+	ProtocolDebugFile string `json:"protocolDebugFile,omitempty"`
 }
 
 type PromptConfig struct {
@@ -46,5 +46,8 @@ func updateFilePath(path string) string {
 
 func (c *LoggingInfo) UpdateFilePaths() {
 	c.File = updateFilePath(c.File)
+}
+
+func (c *InspectorInfo) UpdateFilePaths() {
 	c.ProtocolDebugFile = updateFilePath(c.ProtocolDebugFile)
 }

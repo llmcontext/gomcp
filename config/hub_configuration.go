@@ -16,6 +16,7 @@ type HubConfiguration struct {
 	ServerInfo    ServerInfo         `json:"serverInfo"`
 	Logging       *LoggingInfo       `json:"logging,omitempty"`
 	Inspector     *InspectorInfo     `json:"inspector,omitempty"`
+	Tools         []ToolConfig       `json:"tools,omitempty"`
 	Prompts       *PromptConfig      `json:"prompts,omitempty"`
 	Proxy         *ServerProxyConfig `json:"proxy,omitempty"`
 }
@@ -65,6 +66,9 @@ func LoadHubConfiguration() (*HubConfiguration, error) {
 	// update the file path to be absolute
 	if config.Logging != nil {
 		config.Logging.UpdateFilePaths()
+	}
+	if config.Inspector != nil {
+		config.Inspector.UpdateFilePaths()
 	}
 
 	return &config, nil
