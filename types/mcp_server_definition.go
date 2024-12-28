@@ -5,5 +5,6 @@ type ToolsDefinition interface {
 }
 
 type McpServerDefinition interface {
+	SetDebugLevel(debugLevel string, debugFile string)
 	WithTools(configuration interface{}, toolsInitFunction interface{}) ToolsDefinition
 }

@@ -25,7 +25,7 @@ func ValidateJsonSchemaWithBytes(schema *jsonschema.Schema, data []byte) error {
 		for _, desc := range result.Errors() {
 			errorMessages = append(errorMessages, desc.String())
 		}
-		return fmt.Errorf("config validation failed: %v", errorMessages)
+		return fmt.Errorf("schema validation failed: %v", errorMessages)
 	}
 	return nil
 }

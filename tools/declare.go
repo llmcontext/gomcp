@@ -51,8 +51,6 @@ func DeclareToolProvider(toolName string, toolInitFunction interface{}, configur
 	// get the type of the configuration
 	configurationType := reflect.TypeOf(configurationData)
 
-	fmt.Println("@@@ configurationType", configurationType)
-
 	// Validate that toolHandler is a function
 	fnType := reflect.TypeOf(toolInitFunction)
 	if fnType.Kind() != reflect.Func {

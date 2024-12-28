@@ -169,7 +169,9 @@ func NewModelContextProtocolServer(configuration types.McpServerDefinition) (*Mo
 			Version: sdkConfiguration.ServerVersion(),
 		},
 		Logging: &config.LoggingInfo{
-			WithStderr: true,
+			Level:      sdkConfiguration.DebugLevel(),
+			File:       sdkConfiguration.DebugFile(),
+			WithStderr: false,
 		},
 	}
 
