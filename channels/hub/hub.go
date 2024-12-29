@@ -19,7 +19,7 @@ import (
 	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/registry"
 	"github.com/llmcontext/gomcp/sdk"
-	"github.com/llmcontext/gomcp/servers"
+	"github.com/llmcontext/gomcp/servers/presets"
 	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
@@ -157,8 +157,8 @@ func NewModelContextProtocolServer(serverDefinition types.McpServerDefinition) (
 
 	toolsRegistry := tools.NewToolsRegistry(false, logger)
 
-	// Register preset servers
-	servers.RegisterPresetServers(sdkServerDefinition, logger)
+	// Registe	r preset servers
+	presets.RegisterPresetServers(sdkServerDefinition, logger)
 
 	// Setup the SDK based MCP servers
 	err = sdkServerDefinition.RegisterSdkMcpServer(mcpServerRegistry)

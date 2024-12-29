@@ -1,7 +1,7 @@
-package servers
+package presets
 
 import (
-	"github.com/llmcontext/gomcp/servers/mcp_server_time"
+	"github.com/llmcontext/gomcp/servers/presets/mcp_server_time"
 	"github.com/llmcontext/gomcp/types"
 )
 
