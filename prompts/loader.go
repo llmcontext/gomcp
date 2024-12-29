@@ -6,7 +6,7 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/llmcontext/gomcp/utils"
+	"github.com/llmcontext/gomcp/jsonschema"
 	"gopkg.in/yaml.v3"
 )
 
@@ -36,7 +36,7 @@ func loadPrompts(filepath string) (*PromptConfig, error) {
 	}
 
 	// retrieve the schema for the PromptConfig struct
-	configSchema, _, err := utils.GetFullSchemaFromInterface(reflect.TypeOf(&PromptConfig{}))
+	configSchema, _, err := jsonschema.GetFullSchemaFromInterface(reflect.TypeOf(&PromptConfig{}))
 	if err != nil {
 		return nil, fmt.Errorf("error generating schema for toolInitFunctiom argument")
 	}
@@ -54,7 +54,7 @@ func loadPrompts(filepath string) (*PromptConfig, error) {
 	}
 
 	// validate the json data against the schema
-	err = utils.ValidateJsonSchemaWithBytes(configSchema, jsonData)
+	err = jsonschema.ValidateJsonSchemaWithBytes(configSchema, jsonData)
 	if err != nil {
 		return nil, err
 	}

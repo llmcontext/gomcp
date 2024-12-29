@@ -7,9 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/invopop/jsonschema"
 	"github.com/llmcontext/gomcp/defaults"
-	"github.com/llmcontext/gomcp/utils"
+	"github.com/llmcontext/gomcp/jsonschema"
 )
 
 // configuration for the proxy
@@ -40,9 +39,9 @@ func LoadProxyConfiguration(localDirectory string) (*ProxyConfiguration, error) 
 	}
 
 	// let's generate the schema from the config struct
-	configSchema := jsonschema.Reflect(&ProxyConfiguration{})
-	if configSchema == nil {
-		return proxyConfig, fmt.Errorf("failed to generate schema from config struct")
+	configSchema, err := jsonschema.GetSchemaFromAny(&ProxyConfiguration{})
+	if err != nil {
+		return proxyConfig, fmt.Errorf("failed to generate schema from config struct: %v", err)
 	}
 	// let's check that the file is a valid json file
 	jsonBytes, err := os.ReadFile(configPath)
@@ -50,7 +49,7 @@ func LoadProxyConfiguration(localDirectory string) (*ProxyConfiguration, error) 
 		return proxyConfig, err
 	}
 
-	err = utils.ValidateJsonSchemaWithBytes(configSchema, jsonBytes)
+	err = jsonschema.ValidateJsonSchemaWithBytes(configSchema, jsonBytes)
 	if err != nil {
 		return proxyConfig, err
 	}

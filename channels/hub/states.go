@@ -160,12 +160,15 @@ func (s *StateManager) EventMcpRequestToolsCall(ctx context.Context, params *mcp
 	} else {
 		// this is a direct tool call (SDK built-in tool)
 		// let's call the tool
-		response, err := s.toolsRegistry.CallTool(ctx, toolName, toolArgs)
-		if err != nil {
-			s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool call failed: %v", err), reqId)
-			return
-		}
-		s.mcpServer.SendJsonRpcResponse(&response, reqId)
+		//
+		// TODO:XXX: we need to call the tool
+		//
+		// response, err := s.toolsRegistry.CallTool(ctx, toolName, toolArgs)
+		// if err != nil {
+		// 	s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool call failed: %v", err), reqId)
+		// 	return
+		// }
+		// s.mcpServer.SendJsonRpcResponse(&response, reqId)
 	}
 }
 

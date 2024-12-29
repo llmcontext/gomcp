@@ -2,13 +2,11 @@ package tools
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/invopop/jsonschema"
 	"github.com/llmcontext/gomcp/defaults"
-	"github.com/llmcontext/gomcp/utils"
+	"github.com/llmcontext/gomcp/jsonschema"
 )
 
 type ProxyTools struct {
@@ -48,9 +46,9 @@ func (t *ProxyTools) RegisterProxyTools(toolsRegistry *ToolsRegistry) error {
 	}
 
 	// let's generate the schema from the config struct
-	proxySchema := jsonschema.Reflect(&ProxyDefinition{})
-	if proxySchema == nil {
-		return fmt.Errorf("failed to generate schema from config struct")
+	proxySchema, err := jsonschema.GetSchemaFromAny(&ProxyDefinition{})
+	if err != nil {
+		return err
 	}
 
 	for _, file := range files {
@@ -71,7 +69,7 @@ func (t *ProxyTools) RegisterProxyTools(toolsRegistry *ToolsRegistry) error {
 		if err != nil {
 			return err
 		}
-		err = utils.ValidateJsonSchemaWithBytes(proxySchema, jsonBytes)
+		err = jsonschema.ValidateJsonSchemaWithBytes(proxySchema, jsonBytes)
 		if err != nil {
 			return err
 		}

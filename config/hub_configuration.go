@@ -6,9 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/invopop/jsonschema"
 	"github.com/llmcontext/gomcp/defaults"
-	"github.com/llmcontext/gomcp/utils"
+	"github.com/llmcontext/gomcp/jsonschema"
 )
 
 type HubConfiguration struct {
@@ -41,9 +40,9 @@ func LoadHubConfiguration() (*HubConfiguration, error) {
 	}
 
 	// let's generate the schema from the config struct
-	configSchema := jsonschema.Reflect(&HubConfiguration{})
-	if configSchema == nil {
-		return nil, fmt.Errorf("failed to generate schema from config struct")
+	configSchema, err := jsonschema.GetSchemaFromAny(&HubConfiguration{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate schema from config struct: %v", err)
 	}
 	// let's check that the file is a valid json file
 	jsonBytes, err := os.ReadFile(configFilePath)
@@ -51,7 +50,7 @@ func LoadHubConfiguration() (*HubConfiguration, error) {
 		return nil, err
 	}
 
-	err = utils.ValidateJsonSchemaWithBytes(configSchema, jsonBytes)
+	err = jsonschema.ValidateJsonSchemaWithBytes(configSchema, jsonBytes)
 	if err != nil {
 		return nil, err
 	}

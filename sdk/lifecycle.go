@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
+	"github.com/llmcontext/gomcp/jsonschema"
 	"github.com/llmcontext/gomcp/registry"
 	"github.com/llmcontext/gomcp/types"
-	"github.com/llmcontext/gomcp/utils"
 )
 
 func (s *SdkServerDefinition) serverInitFunction(ctx context.Context, logger types.Logger) error {
@@ -15,9 +15,9 @@ func (s *SdkServerDefinition) serverInitFunction(ctx context.Context, logger typ
 
 	// check if we have a tool configuration data
 	if s.toolConfigurationData != nil {
-		result, callErr, err = utils.CallFunction(s.toolsInitFunction, ctx, s.toolConfigurationData)
+		result, callErr, err = callFunction(s.toolsInitFunction, ctx, s.toolConfigurationData)
 	} else {
-		result, callErr, err = utils.CallFunction(s.toolsInitFunction, ctx)
+		result, callErr, err = callFunction(s.toolsInitFunction, ctx)
 	}
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (t *SdkToolDefinition) toolProcessFunction(
 ) error {
 
 	// let's check if the arguments match the schema
-	err := utils.ValidateJsonSchemaWithObject(t.inputSchema, toolArgs)
+	err := jsonschema.ValidateJsonSchemaWithObject(t.inputSchema, toolArgs)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (t *SdkToolDefinition) toolProcessFunction(
 	output := registry.NewToolCallResult()
 
 	go func() {
-		_, callErr, err := utils.CallFunction(t.toolHandlerFunction, goCtx, t.toolContext, toolArgs, output)
+		_, callErr, err := callFunction(t.toolHandlerFunction, goCtx, t.toolContext, toolArgs, output)
 		if err != nil {
 			errChan <- &jsonrpc.JsonRpcError{
 				Code:    jsonrpc.RpcInternalError,

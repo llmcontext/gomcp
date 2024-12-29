@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/llmcontext/gomcp/jsonschema"
 	"github.com/llmcontext/gomcp/registry"
 	"github.com/llmcontext/gomcp/types"
-	"github.com/llmcontext/gomcp/utils"
 )
 
 func (s *SdkServerDefinition) RegisterSdkMcpServer(
@@ -140,7 +140,7 @@ func (tool *SdkToolDefinition) setupTool(serverDefinition *SdkServerDefinition) 
 		return nil, fmt.Errorf("toolHandler for %s third argument must be a pointer to a struct", tool.toolName)
 	}
 	// we need to get the schema of the third argument
-	inputSchema, inputTypeName, err := utils.GetSchemaFromType(fnType.In(2))
+	inputSchema, inputTypeName, err := jsonschema.GetSchemaFromType(fnType.In(2))
 	if err != nil {
 		return nil, fmt.Errorf("error generating schema for toolHandler for %s third argument", tool.toolName)
 	}

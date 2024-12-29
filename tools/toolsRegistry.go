@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/llmcontext/gomcp/registry"
 	"github.com/llmcontext/gomcp/types"
-	"github.com/llmcontext/gomcp/utils"
 )
 
 type ToolRpcHandler func(input json.RawMessage) (json.RawMessage, error)
@@ -130,36 +128,4 @@ func (r *ToolsRegistry) IsProxyTool(toolName string) (bool, string, error) {
 		return false, "", err
 	}
 	return toolProvider.proxyId != "", toolProvider.proxyId, nil
-}
-
-func (r *ToolsRegistry) CallTool(ctx context.Context, toolName string, toolArgs map[string]interface{}) (interface{}, error) {
-	toolDefinition, toolProvider, err := r.getTool(toolName)
-	if err != nil {
-		return nil, err
-	}
-
-	// let's check if the arguments patch the schema
-	err = utils.ValidateJsonSchemaWithObject(toolDefinition.InputSchema, toolArgs)
-	if err != nil {
-		return nil, err
-	}
-
-	// let's call the tool
-	logger := types.NewSubLogger(r.logger, types.LogArg{
-		"tool": toolProvider.toolName,
-	})
-	goCtx := types.ContextWithLogger(ctx, logger)
-
-	// let's create the output
-	output := registry.NewToolCallResult()
-
-	_, callErr, err := utils.CallFunction(toolDefinition.ToolHandlerFunction, goCtx, toolProvider.toolContext, toolArgs, output)
-	if err != nil {
-		return nil, err
-	}
-	if callErr != nil {
-		return nil, callErr
-	}
-
-	return output, nil
 }
