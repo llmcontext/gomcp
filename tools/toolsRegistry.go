@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/llmcontext/gomcp/registry"
 	"github.com/llmcontext/gomcp/types"
 	"github.com/llmcontext/gomcp/utils"
 )
@@ -36,6 +37,7 @@ func NewToolsRegistry(loadProxyTools bool, logger types.Logger) *ToolsRegistry {
 	return toolsRegistry
 }
 
+// TODO: need that?
 func (r *ToolsRegistry) RegisterToolProvider(toolProvider *SdkToolProvider) error {
 	r.ToolProviders = append(r.ToolProviders, toolProvider)
 	r.logger.Info("registered tool provider", types.LogArg{
@@ -72,46 +74,6 @@ func (r *ToolsRegistry) PrepareProxyToolProvider(toolProvider *SdkToolProvider) 
 	return nil
 }
 
-func (r *ToolsRegistry) initializeProviders(ctx context.Context) error {
-	for _, toolProvider := range r.ToolProviders {
-		if toolProvider.isDisabled {
-			continue
-		}
-
-		// if the tool provider is a proxy, we don't need to initialize it
-		if toolProvider.proxyId != "" {
-			continue
-		}
-
-		// we found the tool configuration
-		// let's initialize the tool provider
-		logger := types.NewSubLogger(r.logger, types.LogArg{
-			"tool": toolProvider.toolName,
-		})
-		ctx := makeContextWithLogger(ctx, logger)
-		var result interface{}
-		var callErr, err error
-
-		if toolProvider.toolConfigurationData != nil {
-			result, callErr, err = utils.CallFunction(toolProvider.toolInitFunction, ctx, toolProvider.toolConfigurationData)
-		} else {
-			result, callErr, err = utils.CallFunction(toolProvider.toolInitFunction, ctx)
-		}
-		if err != nil {
-			return err
-		}
-		if callErr != nil {
-			return callErr
-		}
-		logger.Info("tool provider initialized", types.LogArg{
-			"result": result,
-		})
-		// we store the tool context
-		toolProvider.toolContext = result
-	}
-	return nil
-}
-
 func (r *ToolsRegistry) Prepare(ctx context.Context) error {
 	// let's prepare the different functions for each tool provider
 	for _, toolProvider := range r.ToolProviders {
@@ -138,10 +100,10 @@ func (r *ToolsRegistry) Prepare(ctx context.Context) error {
 	}
 
 	// now, we can initialize the tool providers with their configuration
-	err := r.initializeProviders(ctx)
-	if err != nil {
-		return fmt.Errorf("error initializing tool providers: %w", err)
-	}
+	// err := r.initializeProviders(ctx)
+	// if err != nil {
+	// 	return fmt.Errorf("error initializing tool providers: %w", err)
+	// }
 
 	return nil
 }
@@ -186,10 +148,10 @@ func (r *ToolsRegistry) CallTool(ctx context.Context, toolName string, toolArgs 
 	logger := types.NewSubLogger(r.logger, types.LogArg{
 		"tool": toolProvider.toolName,
 	})
-	goCtx := makeContextWithLogger(ctx, logger)
+	goCtx := types.ContextWithLogger(ctx, logger)
 
 	// let's create the output
-	output := NewToolCallResult()
+	output := registry.NewToolCallResult()
 
 	_, callErr, err := utils.CallFunction(toolDefinition.ToolHandlerFunction, goCtx, toolProvider.toolContext, toolArgs, output)
 	if err != nil {

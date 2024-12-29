@@ -17,8 +17,9 @@ import (
 	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/prompts"
+	"github.com/llmcontext/gomcp/registry"
 	"github.com/llmcontext/gomcp/sdk"
-	"github.com/llmcontext/gomcp/servers/mcp_server_time"
+	"github.com/llmcontext/gomcp/servers"
 	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
@@ -120,45 +121,30 @@ func NewHubModelContextProtocolServer(debug bool) (*ModelContextProtocolImpl, er
 	)
 }
 
-func (mcp *ModelContextProtocolImpl) LoadPresetTools() error {
-	presetToolsNames := []string{
-		"gomcp_server_time",
-	}
-
-	// TODO: add mechanism to disable some preset tools
-	for _, toolName := range presetToolsNames {
-		switch toolName {
-		case "gomcp_server_time":
-			err := mcp_server_time.RegisterTools(mcp.toolsRegistry)
-			if err != nil {
-				mcp.logger.Error("failed to register tools: %v", types.LogArg{
-					"error": err,
-				})
-			}
-		}
-	}
-	return nil
-}
-
-func NewModelContextProtocolServer(configuration types.McpServerDefinition) (*ModelContextProtocolImpl, error) {
-	// Add type assertion check
-	sdkConfiguration, ok := configuration.(*sdk.SdkServerDefinition)
+func NewModelContextProtocolServer(serverDefinition types.McpServerDefinition) (*ModelContextProtocolImpl, error) {
+	// We get the concrete type of the server definition
+	sdkServerDefinition, ok := serverDefinition.(*sdk.SdkServerDefinition)
 	if !ok {
-		return nil, fmt.Errorf("invalid configuration type: expected *sdk.SdkServerDefinition, got %T", configuration)
+		return nil, fmt.Errorf("invalid configuration type: expected *sdk.SdkServerDefinition, got %T", serverDefinition)
+	}
+
+	// check that the server name and version are not empty
+	if sdkServerDefinition.ServerName() == "" || sdkServerDefinition.ServerVersion() == "" {
+		return nil, fmt.Errorf("invalid MCP server definition: server name or version is empty")
 	}
 
 	// create the McpServerRegistry
-	mcpServerRegistry := NewMcpServerRegistry()
+	mcpServerRegistry := registry.NewMcpServerRegistry()
 
 	// we build the configuration data
 	conf := config.ServerConfiguration{
 		ServerInfo: config.ServerInfo{
-			Name:    sdkConfiguration.ServerName(),
-			Version: sdkConfiguration.ServerVersion(),
+			Name:    sdkServerDefinition.ServerName(),
+			Version: sdkServerDefinition.ServerVersion(),
 		},
 		Logging: &config.LoggingInfo{
-			Level:      sdkConfiguration.DebugLevel(),
-			File:       sdkConfiguration.DebugFile(),
+			Level:      sdkServerDefinition.DebugLevel(),
+			File:       sdkServerDefinition.DebugFile(),
 			WithStderr: false,
 		},
 	}
@@ -171,8 +157,11 @@ func NewModelContextProtocolServer(configuration types.McpServerDefinition) (*Mo
 
 	toolsRegistry := tools.NewToolsRegistry(false, logger)
 
+	// Register preset servers
+	servers.RegisterPresetServers(sdkServerDefinition, logger)
+
 	// Setup the SDK based MCP servers
-	err = sdkConfiguration.SetupMcpServer(toolsRegistry, mcpServerRegistry)
+	err = sdkServerDefinition.RegisterSdkMcpServer(mcpServerRegistry)
 	if err != nil {
 		return nil, err
 	}

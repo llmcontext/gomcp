@@ -21,13 +21,6 @@ var (
 				os.Exit(1)
 			}
 
-			// register the preset tools
-			err = mcp.LoadPresetTools()
-			if err != nil {
-				fmt.Println("Error loading preset tools:", err)
-				os.Exit(1)
-			}
-
 			// start the server
 			transport := mcp.StdioTransport()
 			err = mcp.Start(transport)

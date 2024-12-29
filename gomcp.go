@@ -1,12 +1,10 @@
 package gomcp
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/llmcontext/gomcp/channels/hub"
 	"github.com/llmcontext/gomcp/sdk"
-	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -20,8 +18,4 @@ func NewModelContextProtocolServer(definition types.McpServerDefinition) (types.
 		return nil, fmt.Errorf("failed to create model context protocol server: %v", err)
 	}
 	return mcp, nil
-}
-
-func GetLogger(ctx context.Context) types.Logger {
-	return tools.GetLogger(ctx)
 }

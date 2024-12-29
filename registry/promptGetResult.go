@@ -1,4 +1,4 @@
-package prompts
+package registry
 
 import (
 	"encoding/json"

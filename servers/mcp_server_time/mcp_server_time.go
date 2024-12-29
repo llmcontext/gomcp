@@ -3,7 +3,7 @@ package mcp_server_time
 import (
 	"context"
 
-	"github.com/llmcontext/gomcp/tools"
+	"github.com/llmcontext/gomcp/types"
 )
 
 type ToolConfiguration struct {
@@ -18,27 +18,21 @@ func ToolInit(ctx context.Context, config *ToolConfiguration) (*ToolContext, err
 	return &ToolContext{}, nil
 }
 
-func RegisterTools(toolsRegistry *tools.ToolsRegistry) error {
-	toolProvider, err := tools.DeclareToolProvider("gomcp_server_time", ToolInit, nil)
+func RegisterTools(mcpServerDefinition types.McpServerDefinition) error {
+	mcpToolsDefinition := mcpServerDefinition.WithTools(ToolConfiguration{}, ToolInit)
+	err := mcpToolsDefinition.AddTool("get_current_time", "Get the current time in specified time zone", GetCurrentTime)
 	if err != nil {
 		return err
 	}
-	err = toolProvider.AddTool("get_current_time", "Get the current time in specified time zone", GetCurrentTime)
-	if err != nil {
-		return err
-	}
-
-	err = toolProvider.AddTool("convert_time", "Convert time between two time zones", ConvertTime)
+	err = mcpToolsDefinition.AddTool("convert_time", "Convert time between two time zones", ConvertTime)
 	if err != nil {
 		return err
 	}
 
-	err = toolProvider.AddTool("get_local_timezone", "Get the local timezone", GetLocalTimezone)
+	err = mcpToolsDefinition.AddTool("get_local_timezone", "Get the local timezone", GetLocalTimezone)
 	if err != nil {
 		return err
 	}
-
-	toolsRegistry.RegisterToolProvider(toolProvider)
 
 	return nil
 }
