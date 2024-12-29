@@ -75,13 +75,22 @@ func (t *SdkToolDefinition) toolProcessFunction(
 	// let's create the output
 	output := registry.NewToolCallResult()
 
-	_, callErr, err := utils.CallFunction(t.toolHandlerFunction, goCtx, t.toolContext, toolArgs, output)
-	if err != nil {
-		return err
-	}
-	if callErr != nil {
-		return callErr
-	}
+	go func() {
+		_, callErr, err := utils.CallFunction(t.toolHandlerFunction, goCtx, t.toolContext, toolArgs, output)
+		if err != nil {
+			errChan <- &jsonrpc.JsonRpcError{
+				Code:    jsonrpc.RpcInternalError,
+				Message: err.Error(),
+			}
+		} else if callErr != nil {
+			errChan <- &jsonrpc.JsonRpcError{
+				Code:    jsonrpc.RpcInternalError,
+				Message: callErr.Error(),
+			}
+		} else {
+			errChan <- nil
+		}
+	}()
 
 	return nil
 }
