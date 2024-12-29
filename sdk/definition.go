@@ -78,3 +78,11 @@ func (s *SdkToolsDefinition) AddTool(toolName string, description string, toolHa
 	})
 	return nil
 }
+
+func (s *SdkServerDefinition) serverInitFunction() {
+
+}
+
+func (s *SdkServerDefinition) serverEndFunction() {
+
+}

@@ -147,6 +147,9 @@ func NewModelContextProtocolServer(configuration types.McpServerDefinition) (*Mo
 		return nil, fmt.Errorf("invalid configuration type: expected *sdk.SdkServerDefinition, got %T", configuration)
 	}
 
+	// create the McpServerRegistry
+	mcpServerRegistry := NewMcpServerRegistry()
+
 	// we build the configuration data
 	conf := config.ServerConfiguration{
 		ServerInfo: config.ServerInfo{
@@ -168,8 +171,8 @@ func NewModelContextProtocolServer(configuration types.McpServerDefinition) (*Mo
 
 	toolsRegistry := tools.NewToolsRegistry(false, logger)
 
-	// first step is to check that the MCP server definition is valid
-	err = sdkConfiguration.CheckConfiguration(toolsRegistry)
+	// Setup the SDK based MCP servers
+	err = sdkConfiguration.SetupMcpServer(toolsRegistry, mcpServerRegistry)
 	if err != nil {
 		return nil, err
 	}
