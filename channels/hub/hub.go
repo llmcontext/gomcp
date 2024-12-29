@@ -121,7 +121,7 @@ func NewHubModelContextProtocolServer(debug bool) (*ModelContextProtocolImpl, er
 	)
 }
 
-func NewModelContextProtocolServer(serverDefinition types.McpServerDefinition) (*ModelContextProtocolImpl, error) {
+func NewModelContextProtocolServer(serverDefinition types.McpSdkServerDefinition) (*ModelContextProtocolImpl, error) {
 	// We get the concrete type of the server definition
 	sdkServerDefinition, ok := serverDefinition.(*sdk.SdkServerDefinition)
 	if !ok {

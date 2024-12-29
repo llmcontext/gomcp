@@ -5,7 +5,7 @@ import (
 	"github.com/llmcontext/gomcp/types"
 )
 
-func RegisterPresetServers(mcpServerDefinition types.McpServerDefinition, logger types.Logger) error {
+func RegisterPresetServers(mcpServerDefinition types.McpSdkServerDefinition, logger types.Logger) error {
 	presetToolsNames := []string{
 		"gomcp_server_time",
 	}

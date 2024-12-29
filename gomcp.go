@@ -8,11 +8,11 @@ import (
 	"github.com/llmcontext/gomcp/types"
 )
 
-func NewMcpServerDefinition(serverName string, serverVersion string) types.McpServerDefinition {
+func NewMcpServerDefinition(serverName string, serverVersion string) types.McpSdkServerDefinition {
 	return sdk.NewMcpServerDefinition(serverName, serverVersion)
 }
 
-func NewModelContextProtocolServer(definition types.McpServerDefinition) (types.ModelContextProtocol, error) {
+func NewModelContextProtocolServer(definition types.McpSdkServerDefinition) (types.ModelContextProtocol, error) {
 	mcp, err := hub.NewModelContextProtocolServer(definition)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create model context protocol server: %v", err)

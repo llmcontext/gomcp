@@ -37,7 +37,7 @@ type SdkToolDefinition struct {
 	inputTypeName string
 }
 
-func NewMcpServerDefinition(serverName string, serverVersion string) types.McpServerDefinition {
+func NewMcpServerDefinition(serverName string, serverVersion string) types.McpSdkServerDefinition {
 	return &SdkServerDefinition{
 		serverName:      serverName,
 		serverVersion:   serverVersion,
