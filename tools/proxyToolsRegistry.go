@@ -13,6 +13,8 @@ type ProxyToolsRegistry struct {
 	baseDirectory string
 }
 
+// TODO:XXX: delete this
+
 func NewProxyToolsRegistry() *ProxyToolsRegistry {
 	var baseDirectory = filepath.Join(defaults.DefaultHubConfigurationDirectory, defaults.DefaultProxyToolsDirectory)
 	if _, err := os.Stat(baseDirectory); os.IsNotExist(err) {

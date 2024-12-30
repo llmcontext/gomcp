@@ -35,7 +35,7 @@ func NewToolsRegistry(loadProxyTools bool, logger types.Logger) *ToolsRegistry {
 	return toolsRegistry
 }
 
-// TODO: need that?
+// TODO:XXX: delete this
 func (r *ToolsRegistry) RegisterToolProvider(toolProvider *SdkToolProvider) error {
 	r.ToolProviders = append(r.ToolProviders, toolProvider)
 	r.logger.Info("registered tool provider", types.LogArg{
@@ -46,6 +46,7 @@ func (r *ToolsRegistry) RegisterToolProvider(toolProvider *SdkToolProvider) erro
 	return nil
 }
 
+// TODO:XXX: delete this
 func (r *ToolsRegistry) RegisterProxyToolProvider(proxyId string, proxyName string) (*SdkToolProvider, error) {
 	// check if the proxy tool provider is already registered
 	for _, toolProvider := range r.ToolProviders {

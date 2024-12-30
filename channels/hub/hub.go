@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"syscall"
 	"time"
@@ -15,10 +16,12 @@ import (
 	"github.com/llmcontext/gomcp/channels/hubmcpserver"
 	"github.com/llmcontext/gomcp/channels/hubmuxserver"
 	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/defaults"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/registry"
 	"github.com/llmcontext/gomcp/servers/presets"
+	"github.com/llmcontext/gomcp/servers/proxies"
 	"github.com/llmcontext/gomcp/servers/sdk"
 	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
@@ -154,6 +157,10 @@ func NewModelContextProtocolServer(serverDefinition types.McpSdkServerDefinition
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize logger: %v", err)
 	}
+
+	// proxies directory
+	proxiesDirectory := filepath.Join(defaults.DefaultHubConfigurationDirectory, defaults.DefaultProxyToolsDirectory)
+	proxies.RegisterProxyServers(proxiesDirectory, mcpServerRegistry)
 
 	toolsRegistry := tools.NewToolsRegistry(false, logger)
 

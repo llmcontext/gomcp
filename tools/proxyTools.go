@@ -38,6 +38,7 @@ func NewProxyTools() *ProxyTools {
 	}
 }
 
+// TODO:XXX: delete this
 func (t *ProxyTools) RegisterProxyTools(toolsRegistry *ToolsRegistry) error {
 	// load all the proxy definitions
 	files, err := os.ReadDir(t.baseDirectory)

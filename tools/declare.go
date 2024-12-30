@@ -45,6 +45,7 @@ func newProxyToolProvider(proxyId string, proxyName string) (*SdkToolProvider, e
 	return toolProvider, nil
 }
 
+// TODO:XXX: delete this
 func (tp *SdkToolProvider) AddProxyTool(toolName string, description string, inputSchema interface{}) error {
 	// Convert the interface{} to *jsonschema.Schema
 	var schema *jsonschema.Schema
