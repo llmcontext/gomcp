@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/llmcontext/gomcp/channels/hub"
-	"github.com/llmcontext/gomcp/servers/sdk"
+	"github.com/llmcontext/gomcp/providers/sdk"
 	"github.com/llmcontext/gomcp/types"
 )
 
