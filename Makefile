@@ -48,3 +48,7 @@ vet:
 staticcheck:
 	@echo "Running staticcheck..."
 	@staticcheck ./...
+
+inspector: build
+	@echo "Running inspector..."
+	npx @modelcontextprotocol/inspector $(BUILD_DIR)/gomcp
