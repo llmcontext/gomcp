@@ -7,7 +7,6 @@ import (
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/protocol/mux"
-	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 	"github.com/llmcontext/gomcp/version"
@@ -18,20 +17,18 @@ type StateManager struct {
 	options   *transport.ProxiedMcpServerDescription
 	muxClient *proxymuxclient.ProxyMuxClient
 	mcpClient *proxymcpclient.ProxyMcpClient
-	registry  *tools.ProxyToolsRegistry
 	// serverInfo is the info about the MCP server we are connected to
 	serverInfo   mcp.ServerInfo
 	reqIdMapping *jsonrpc.ReqIdMapping
 }
 
 func NewStateManager(options *transport.ProxiedMcpServerDescription,
-	registry *tools.ProxyToolsRegistry, logger types.Logger) *StateManager {
+	logger types.Logger) *StateManager {
 	return &StateManager{
 		options:      options,
 		logger:       logger,
 		serverInfo:   mcp.ServerInfo{},
 		reqIdMapping: jsonrpc.NewReqIdMapping(),
-		registry:     registry,
 	}
 }
 
@@ -89,42 +86,10 @@ func (s *StateManager) EventMcpResponseToolsList(resp *mcp.JsonRpcResponseToolsL
 		"tools": resp.Tools,
 	})
 
+	// TODO: this is the dynamic list of tools coming from
+	// a connected proxy server. We need to record them and check
+	// if there is a change in the definition of the tools
 	// we register the tools in the registry
-	proxyToolsDefinition := tools.ProxyDefinition{
-		ProxyId:          s.options.ProxyId,
-		WorkingDirectory: s.options.CurrentWorkingDirectory,
-		ProxyName:        s.options.ProxyName,
-		ProgramName:      s.options.ProgramName,
-		ProgramArguments: s.options.ProgramArgs,
-		Tools:            []tools.ProxyToolDefinition{},
-	}
-	for _, tool := range resp.Tools {
-		proxyToolsDefinition.Tools = append(proxyToolsDefinition.Tools, tools.ProxyToolDefinition{
-			Name:        tool.Name,
-			Description: tool.Description,
-			InputSchema: tool.InputSchema,
-		})
-	}
-	err := s.registry.AddProxyDefinition(&proxyToolsDefinition)
-	if err != nil {
-		s.logger.Error("failed to add proxy definition", types.LogArg{"error": err})
-	}
-
-	// update on 2024/12/25 , we don't need send the tools/register
-	// to the server as the tools are already registered in the registry
-	// // we send the "tools/register" request to the mux server
-	// toolsMux := make([]mux.ToolDescription, len(resp.Tools))
-	// for i, tool := range resp.Tools {
-	// 	toolsMux[i] = mux.ToolDescription{
-	// 		Name:        tool.Name,
-	// 		Description: tool.Description,
-	// 		InputSchema: tool.InputSchema,
-	// 	}
-	// }
-	// params := mux.JsonRpcRequestToolsRegisterParams{
-	// 	Tools: toolsMux,
-	// }
-	// s.muxClient.SendRequestWithMethodAndParams(mux.RpcRequestMethodToolsRegister, params)
 }
 
 func (s *StateManager) EventMuxStarted() {
