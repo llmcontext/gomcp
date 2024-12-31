@@ -19,15 +19,13 @@ type SdkToolDefinition struct {
 }
 
 type SdkToolProvider struct {
-	toolName              string
-	isDisabled            bool
-	toolInitFunction      interface{}
-	toolConfigurationData interface{}
-	contextType           reflect.Type
-	contextTypeName       string
-	toolDefinitions       []*SdkToolDefinition
+	toolName         string
+	isDisabled       bool
+	toolInitFunction interface{}
+	contextType      reflect.Type
+	contextTypeName  string
+	toolDefinitions  []*SdkToolDefinition
 	// the tool context retrieve from the tool init function
-	toolContext interface{}
 	// proxy id for proxy tool provider
 	proxyId string
 }

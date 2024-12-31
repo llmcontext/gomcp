@@ -273,31 +273,7 @@ func (s *StateManager) EventMuxRequestToolsRegister(proxyId string, params *mux.
 		return
 	}
 
-	toolProvider, err := s.toolsRegistry.RegisterProxyToolProvider(proxyId, session.ProxyName())
-	if err != nil {
-		s.logger.Error("Failed to register proxy tool provider", types.LogArg{
-			"error": err,
-		})
-		return
-	}
-	for _, tool := range params.Tools {
-		err := toolProvider.AddProxyTool(tool.Name, tool.Description, tool.InputSchema)
-		if err != nil {
-			s.logger.Error("Failed to add proxy tool", types.LogArg{
-				"error": err,
-			})
-			return
-		}
-	}
-
-	// we need to prepare the tool provider so that it can be used by the hub
-	err = s.toolsRegistry.PrepareProxyToolProvider(toolProvider)
-	if err != nil {
-		s.logger.Error("Failed to prepare proxy tool provider", types.LogArg{
-			"error": err,
-		})
-		return
-	}
+	// TODO: we receive the tools from the proxy server
 
 	// send the notification to the MCP client
 	// so that it will refresh the tools list

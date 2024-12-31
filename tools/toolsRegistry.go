@@ -27,40 +27,7 @@ func NewToolsRegistry(loadProxyTools bool, logger types.Logger) *ToolsRegistry {
 		Tools:         make(map[string]*toolProviderPrepared),
 		logger:        logger,
 	}
-	// check if we need to load proxy tools
-	if loadProxyTools {
-		proxyTools := NewProxyTools()
-		proxyTools.RegisterProxyTools(toolsRegistry)
-	}
 	return toolsRegistry
-}
-
-// TODO:XXX: delete this
-func (r *ToolsRegistry) RegisterToolProvider(toolProvider *SdkToolProvider) error {
-	r.ToolProviders = append(r.ToolProviders, toolProvider)
-	r.logger.Info("registered tool provider", types.LogArg{
-		"tool":            toolProvider.toolName,
-		"contextTypeName": toolProvider.contextTypeName,
-		"proxyId":         toolProvider.proxyId,
-	})
-	return nil
-}
-
-// TODO:XXX: delete this
-func (r *ToolsRegistry) RegisterProxyToolProvider(proxyId string, proxyName string) (*SdkToolProvider, error) {
-	// check if the proxy tool provider is already registered
-	for _, toolProvider := range r.ToolProviders {
-		if toolProvider.proxyId == proxyId {
-			return toolProvider, nil
-		}
-	}
-
-	provider, err := newProxyToolProvider(proxyId, proxyName)
-	if err != nil {
-		return nil, err
-	}
-	r.ToolProviders = append(r.ToolProviders, provider)
-	return provider, nil
 }
 
 func (r *ToolsRegistry) PrepareProxyToolProvider(toolProvider *SdkToolProvider) error {
