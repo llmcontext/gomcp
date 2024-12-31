@@ -12,7 +12,7 @@ var (
 	debug   bool
 	rootCmd = &cobra.Command{
 		Use:   "gomcp",
-		Short: "A MCP multiplexer server that enables multiple MCP proxy client connections",
+		Short: "A Model Context Protocol server multiplexer",
 		Run: func(cmd *cobra.Command, args []string) {
 			// we create the MCP server
 			mcp, err := hub.NewHubModelContextProtocolServer(debug)
