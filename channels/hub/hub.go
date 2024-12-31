@@ -23,7 +23,6 @@ import (
 	"github.com/llmcontext/gomcp/servers/presets"
 	"github.com/llmcontext/gomcp/servers/proxies"
 	"github.com/llmcontext/gomcp/servers/sdk"
-	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 	"golang.org/x/sync/errgroup"
@@ -31,7 +30,6 @@ import (
 
 type ModelContextProtocolImpl struct {
 	logger          types.Logger
-	toolsRegistry   *tools.ToolsRegistry
 	promptsRegistry *prompts.PromptsRegistry
 	inspector       *hubinspector.Inspector
 	muxServer       *hubmuxserver.MuxServer
@@ -44,7 +42,6 @@ func newModelContextProtocolServer(
 	logger types.Logger,
 	promptsConfig *config.PromptConfig,
 	inspectorConfig *config.InspectorInfo,
-	toolsRegistry *tools.ToolsRegistry,
 	proxyConfig *config.ServerProxyConfig) (*ModelContextProtocolImpl, error) {
 	// we initialize the logger
 	// logger, err := logger.NewLogger(logging, false)
@@ -66,7 +63,6 @@ func newModelContextProtocolServer(
 	stateManager := NewStateManager(
 		serverInfo.Name,
 		serverInfo.Version,
-		toolsRegistry,
 		promptsRegistry,
 		logger,
 	)
@@ -86,7 +82,6 @@ func newModelContextProtocolServer(
 
 	return &ModelContextProtocolImpl{
 		logger:          logger,
-		toolsRegistry:   toolsRegistry,
 		promptsRegistry: promptsRegistry,
 		inspector:       inspectorInstance,
 		muxServer:       muxServerInstance,
@@ -112,14 +107,11 @@ func NewHubModelContextProtocolServer(debug bool) (*ModelContextProtocolImpl, er
 		return nil, fmt.Errorf("failed to initialize logger: %v", err)
 	}
 
-	toolsRegistry := tools.NewToolsRegistry(true, logger)
-
 	return newModelContextProtocolServer(
 		&conf.ServerInfo,
 		logger,
 		conf.Prompts,
 		conf.Inspector,
-		toolsRegistry,
 		conf.Proxy,
 	)
 }
@@ -162,9 +154,7 @@ func NewModelContextProtocolServer(serverDefinition types.McpSdkServerDefinition
 	proxiesDirectory := filepath.Join(defaults.DefaultHubConfigurationDirectory, defaults.DefaultProxyToolsDirectory)
 	proxies.RegisterProxyServers(proxiesDirectory, mcpServerRegistry)
 
-	toolsRegistry := tools.NewToolsRegistry(false, logger)
-
-	// Registe	r preset servers
+	// Register preset servers
 	presets.RegisterPresetServers(sdkServerDefinition, logger)
 
 	// Setup the SDK based MCP servers
@@ -178,7 +168,6 @@ func NewModelContextProtocolServer(serverDefinition types.McpSdkServerDefinition
 		logger,
 		conf.Prompts,
 		conf.Inspector,
-		toolsRegistry,
 		nil,
 	)
 
@@ -196,17 +185,11 @@ func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
 
 // Start starts the server and the inspector
 func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
+	var err error
 	mcp.logger.Info("Starting MCP server", types.LogArg{})
 
 	// create a context that will be used to cancel the server and the inspector
 	ctx := context.Background()
-
-	// All the tools are initialized, we can prepare the tools registry
-	// so that it can be used by the server
-	err := mcp.toolsRegistry.Prepare(ctx)
-	if err != nil {
-		return fmt.Errorf("error preparing tools registry: %s", err)
-	}
 
 	mcp.logger.Info("Starting inspector", types.LogArg{})
 
