@@ -60,5 +60,9 @@ func ContextWithLogger(ctx context.Context, logger Logger) context.Context {
 }
 
 func GetLogger(ctx context.Context) Logger {
-	return ctx.Value(loggerKey).(Logger)
+	logger := ctx.Value(loggerKey)
+	if logger == nil {
+		return nil
+	}
+	return logger.(Logger)
 }

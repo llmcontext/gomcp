@@ -176,7 +176,6 @@ func NewModelContextProtocolServer(serverDefinition types.McpSdkServerDefinition
 func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
 	// we create the transport
 	transport := transport.NewStdioTransport(
-		mcp.inspector,
 		mcp.logger)
 
 	// we return the transport
