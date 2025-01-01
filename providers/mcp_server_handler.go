@@ -54,7 +54,18 @@ func (n *ProviderMcpServerHandler) ExecuteToolCall(
 }
 
 func (n *ProviderMcpServerHandler) ExecuteToolsList(ctx context.Context, logger types.Logger) (*mcp.JsonRpcResponseToolsListResult, *jsonrpc.JsonRpcError) {
-	return &mcp.JsonRpcResponseToolsListResult{
+	result := &mcp.JsonRpcResponseToolsListResult{
 		Tools: make([]mcp.ToolDescription, 0, 10),
-	}, nil
+	}
+
+	tools := n.sdkServerDefinition.GetListOfTools()
+	for _, tool := range tools {
+		result.Tools = append(result.Tools, mcp.ToolDescription{
+			Name:        tool.ToolName,
+			Description: tool.ToolDescription,
+			InputSchema: tool.InputSchema,
+		})
+	}
+
+	return result, nil
 }

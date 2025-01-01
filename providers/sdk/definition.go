@@ -42,8 +42,8 @@ type SdkServerDefinition struct {
 }
 
 type SdkToolDefinition struct {
-	toolName            string
-	toolDescription     string
+	ToolName            string
+	ToolDescription     string
 	toolHandlerFunction interface{}
 
 	// from the server context
@@ -53,7 +53,7 @@ type SdkToolDefinition struct {
 	Lifecycle *McpToolLifecycle
 
 	// enhanced data
-	inputSchema   *jsonschema.Schema
+	InputSchema   *jsonschema.Schema
 	inputTypeName string
 }
 
@@ -109,9 +109,22 @@ func (s *SdkServerDefinition) WithTools(toolConfigurationDate interface{}, tools
 
 func (s *SdkServerDefinition) AddTool(toolName string, description string, toolHandler interface{}) error {
 	s.toolDefinitions = append(s.toolDefinitions, &SdkToolDefinition{
-		toolName:            toolName,
-		toolDescription:     description,
+		ToolName:            toolName,
+		ToolDescription:     description,
 		toolHandlerFunction: toolHandler,
 	})
+	return nil
+}
+
+func (s *SdkServerDefinition) GetListOfTools() []*SdkToolDefinition {
+	return s.toolDefinitions
+}
+
+func (s *SdkServerDefinition) GetTool(toolName string) *SdkToolDefinition {
+	for _, tool := range s.toolDefinitions {
+		if tool.ToolName == toolName {
+			return tool
+		}
+	}
 	return nil
 }

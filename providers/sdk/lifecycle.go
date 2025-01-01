@@ -63,7 +63,7 @@ func (t *SdkToolDefinition) toolProcessFunction(
 ) error {
 
 	// let's check if the arguments match the schema
-	err := jsonschema.ValidateJsonSchemaWithObject(t.inputSchema, toolArgs)
+	err := jsonschema.ValidateJsonSchemaWithObject(t.InputSchema, toolArgs)
 	if err != nil {
 		return err
 	}

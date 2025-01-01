@@ -28,7 +28,7 @@ func (s *SdkServerDefinition) PrepareLifecyles() error {
 	for _, tool := range s.toolDefinitions {
 		toolLifecycle, err := tool.setupTool(s)
 		if err != nil {
-			return fmt.Errorf("failed to setup tool %s: %v", tool.toolName, err)
+			return fmt.Errorf("failed to setup tool %s: %v", tool.ToolName, err)
 		}
 		tool.Lifecycle = toolLifecycle
 	}
@@ -114,43 +114,43 @@ func (tool *SdkToolDefinition) setupTool(serverDefinition *SdkServerDefinition) 
 	// the input
 	// the output
 	if fnType.NumIn() != 4 {
-		return nil, fmt.Errorf("toolHandler for %s must have 4 arguments", tool.toolName)
+		return nil, fmt.Errorf("toolHandler for %s must have 4 arguments", tool.ToolName)
 	}
 
 	// the first argument must be a golang context
 	goContextType := reflect.TypeOf((*context.Context)(nil)).Elem()
 	if fnType.In(0) != goContextType {
-		return nil, fmt.Errorf("toolHandler for %s first argument must be a golang context", tool.toolName)
+		return nil, fmt.Errorf("toolHandler for %s first argument must be a golang context", tool.ToolName)
 	}
 
 	// the second argument must be a pointer to the tool context type
 	if fnType.In(1).Kind() != reflect.Ptr || fnType.In(1).Elem() != serverDefinition.contextType {
-		return nil, fmt.Errorf("toolHandler for %s second argument must be a pointer to the context type: %s", tool.toolName, serverDefinition.contextTypeName)
+		return nil, fmt.Errorf("toolHandler for %s second argument must be a pointer to the context type: %s", tool.ToolName, serverDefinition.contextTypeName)
 	}
 
 	// the third argument must be a pointer to a struct
 	if fnType.In(2).Kind() != reflect.Ptr || fnType.In(2).Elem().Kind() != reflect.Struct {
-		return nil, fmt.Errorf("toolHandler for %s third argument must be a pointer to a struct", tool.toolName)
+		return nil, fmt.Errorf("toolHandler for %s third argument must be a pointer to a struct", tool.ToolName)
 	}
 	// we need to get the schema of the third argument
 	inputSchema, inputTypeName, err := jsonschema.GetSchemaFromType(fnType.In(2))
 	if err != nil {
-		return nil, fmt.Errorf("error generating schema for toolHandler for %s third argument", tool.toolName)
+		return nil, fmt.Errorf("error generating schema for toolHandler for %s third argument", tool.ToolName)
 	}
 
 	// the fourth argument must be an implementation of types.ToolCallResult
 	toolCallResultType := reflect.TypeOf((*types.ToolCallResult)(nil)).Elem()
 	if !fnType.In(3).Implements(toolCallResultType) {
-		return nil, fmt.Errorf("toolHandler for %s fourth argument must implement types.ToolCallResult but is %s", tool.toolName, fnType.In(3).String())
+		return nil, fmt.Errorf("toolHandler for %s fourth argument must implement types.ToolCallResult but is %s", tool.ToolName, fnType.In(3).String())
 	}
 
 	// the function must return an error
 	if fnType.NumOut() != 1 || fnType.Out(0).String() != "error" {
-		return nil, fmt.Errorf("toolHandler for %s must return an error", tool.toolName)
+		return nil, fmt.Errorf("toolHandler for %s must return an error", tool.ToolName)
 	}
 
 	// Store the function for later use
-	tool.inputSchema = inputSchema
+	tool.InputSchema = inputSchema
 	tool.inputTypeName = inputTypeName
 
 	return &McpToolLifecycle{
