@@ -10,6 +10,10 @@ func RegisterPresetServers(mcpServerDefinition types.McpSdkServerDefinition, log
 		"gomcp_server_time",
 	}
 
+	logger.Debug("presets>RegisterPresetServers", types.LogArg{
+		"presetToolsNames": presetToolsNames,
+	})
+
 	// TODO: add mechanism to disable some preset tools
 	for _, toolName := range presetToolsNames {
 		switch toolName {

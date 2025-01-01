@@ -30,16 +30,18 @@ func (s *SdkServerDefinition) RegisterSdkMcpServer(
 
 	// we add all the tools to the tools registry
 	for _, tool := range s.toolDefinitions {
-		toolDefinition := registry.McpToolDefinition{
-			Name:        tool.toolName,
-			Description: tool.toolDescription,
-			InputSchema: nil,
-		}
-
 		toolLifecycle, err := tool.setupTool(s)
 		if err != nil {
 			return fmt.Errorf("failed to setup tool %s: %v", tool.toolName, err)
 		}
+
+		// we create the tool definition
+		toolDefinition := registry.McpToolDefinition{
+			Name:        tool.toolName,
+			Description: tool.toolDescription,
+			InputSchema: tool.inputSchema,
+		}
+
 		mcpServer.AddTool(&toolDefinition, toolLifecycle)
 	}
 
@@ -53,12 +55,12 @@ func (s *SdkServerDefinition) setupServer() error {
 	// Validate that toolHandler is a function
 	fnType := reflect.TypeOf(s.toolsInitFunction)
 	if fnType.Kind() != reflect.Func {
-		return fmt.Errorf("toolInitFunctiom must be a function")
+		return fmt.Errorf("toolInitFunction must be a function")
 	}
 
 	// the function must have 1 or 2 arguments: context and optional config
 	if fnType.NumIn() != 1 && fnType.NumIn() != 2 {
-		return fmt.Errorf("toolInitFunctiom must have 1 or 2 arguments")
+		return fmt.Errorf("toolInitFunction must have 1 or 2 arguments")
 	}
 
 	// the first argument must be a golang context
@@ -72,33 +74,36 @@ func (s *SdkServerDefinition) setupServer() error {
 	// if 1 argument is provided, it must be a pointer to a struct
 	if fnType.NumIn() == 2 {
 		if fnType.In(1).Kind() != reflect.Ptr {
-			return fmt.Errorf("toolInitFunctiom argument must be a pointer to a struct")
+			return fmt.Errorf("toolInitFunction argument must be a pointer to a struct")
 		}
-		configType = fnType.In(1)
+
+		// get the type of the configuration the pointer is pointing to
+		configType = fnType.In(1).Elem()
+
 		// check if the type is the same as the configuration type
 		if configType != configurationType {
-			return fmt.Errorf("toolInitFunctiom argument must be a pointer to a struct of type %s", configurationType.String())
+			return fmt.Errorf("toolInitFunction argument must be a pointer to a struct of type %s, but got %s", configurationType.String(), configType.String())
 		}
 	}
 
 	// the function must return a tool context, error
 	if fnType.NumOut() != 2 || fnType.Out(0).Kind() != reflect.Ptr || fnType.Out(1).Kind() != reflect.Interface {
-		return fmt.Errorf("toolInitFunctiom must return a context, error")
+		return fmt.Errorf("toolInitFunction must return a context, error")
 	}
 
 	// check that the second output is an error
 	if fnType.Out(1).String() != "error" {
-		return fmt.Errorf("toolInitFunctiom second return value must be an error")
+		return fmt.Errorf("toolInitFunction second return value must be an error")
 	}
 
 	// the first return value must be a context
 	if fnType.Out(0).Kind() != reflect.Ptr {
-		return fmt.Errorf("toolInitFunctiom first return value must be a pointer to a context")
+		return fmt.Errorf("toolInitFunction first return value must be a pointer to a context")
 	}
 
 	// the context must be a struct
 	if fnType.Out(0).Elem().Kind() != reflect.Struct {
-		return fmt.Errorf("toolInitFunctiom first return value must be a pointer to a struct")
+		return fmt.Errorf("toolInitFunction first return value must be a pointer to a struct")
 	}
 	returnedContextType := fnType.Out(0).Elem()
 	returnedContextTypeName := returnedContextType.Name()

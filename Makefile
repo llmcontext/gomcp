@@ -46,4 +46,4 @@ staticcheck:
 
 inspector: build
 	@echo "Running inspector..."
-	npx @modelcontextprotocol/inspector $(BUILD_DIR)/$(BINARY)
+	npx @modelcontextprotocol/inspector $(BUILD_DIR)/$(BINARY) --debug

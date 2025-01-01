@@ -51,7 +51,7 @@ func NewMcpSdkServer(serverDefinition types.McpSdkServerDefinition, debug bool) 
 	}
 
 	// create the McpServerRegistry
-	mcpServerRegistry := registry.NewMcpServerRegistry()
+	mcpServerRegistry := registry.NewMcpServerRegistry(logger)
 
 	// Setup the SDK based MCP servers
 	err = sdkServerDefinition.RegisterSdkMcpServer(mcpServerRegistry)
@@ -75,7 +75,12 @@ func NewMcpServer(serverInfo *config.ServerInfo, loggingInfo *config.LoggingInfo
 	}
 
 	// create the McpServerRegistry
-	mcpServerRegistry := registry.NewMcpServerRegistry()
+	mcpServerRegistry := registry.NewMcpServerRegistry(logger)
+
+	logger.Debug("registry>server>NewMcpServer", types.LogArg{
+		"serverName":    serverInfo.Name,
+		"serverVersion": serverInfo.Version,
+	})
 
 	// register the proxy servers
 	proxiesDirectory := filepath.Join(defaults.DefaultHubConfigurationDirectory, defaults.DefaultProxyToolsDirectory)
@@ -83,8 +88,18 @@ func NewMcpServer(serverInfo *config.ServerInfo, loggingInfo *config.LoggingInfo
 
 	// Register preset servers
 	// we use the same registration mechanism as for the SDK servers
-	sdkServerDefinition := sdk.NewMcpServerDefinition(serverInfo.Name, serverInfo.Version)
-	presets.RegisterPresetServers(sdkServerDefinition, logger)
+	serverDefinition := sdk.NewMcpServerDefinition(serverInfo.Name, serverInfo.Version)
+	presets.RegisterPresetServers(serverDefinition, logger)
+	sdkServerDefinition, ok := serverDefinition.(*sdk.SdkServerDefinition)
+	if !ok {
+		return nil, fmt.Errorf("invalid configuration type: expected *sdk.SdkServerDefinition, got %T", serverDefinition)
+	}
+
+	// Setup the SDK based MCP servers
+	err = sdkServerDefinition.RegisterSdkMcpServer(mcpServerRegistry)
+	if err != nil {
+		return nil, err
+	}
 
 	return newMcpServer(
 		logger,

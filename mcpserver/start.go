@@ -61,7 +61,7 @@ func (m *McpServer) Start(transport types.Transport) error {
 	// }
 
 	eg.Go(func() error {
-		m.logger.Info("Starting protocol", types.LogArg{})
+		m.logger.Info("Starting MCP protocol", types.LogArg{})
 
 		// Start protocol management
 		err := m.startProtocol(egCtx, transport)
@@ -81,10 +81,10 @@ func (m *McpServer) Start(transport types.Transport) error {
 
 	err = eg.Wait()
 	if err != nil {
-		m.logger.Info("Stopping hub server", types.LogArg{
+		m.logger.Info("Stopping MCP server", types.LogArg{
 			"reason": err.Error(),
 		})
 	}
-	m.logger.Info("Hub server stopped", types.LogArg{})
+	m.logger.Info("MCP server stopped", types.LogArg{})
 	return nil
 }

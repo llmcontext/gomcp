@@ -57,6 +57,7 @@ type McpTool struct {
 }
 
 type McpServer struct {
+	logger         types.Logger
 	serverName     string
 	serverVersion  string
 	serverHandlers *McpServerLifecycle
@@ -65,11 +66,13 @@ type McpServer struct {
 }
 
 type McpServerRegistry struct {
+	logger  types.Logger
 	servers []*McpServer
 }
 
-func NewMcpServerRegistry() *McpServerRegistry {
+func NewMcpServerRegistry(logger types.Logger) *McpServerRegistry {
 	return &McpServerRegistry{
+		logger:  logger,
 		servers: make([]*McpServer, 0),
 	}
 }
@@ -79,14 +82,22 @@ func (r *McpServerRegistry) RegisterServer(serverName string, serverVersion stri
 		serverName:     serverName,
 		serverVersion:  serverVersion,
 		serverHandlers: handlers,
+		logger:         r.logger,
 		prompts:        make([]McpPrompt, 0),
 		tools:          make([]McpTool, 0),
 	}
+	r.logger.Debug("registry>server>RegisterServer", types.LogArg{
+		"serverName":    serverName,
+		"serverVersion": serverVersion,
+	})
 	r.servers = append(r.servers, server)
 	return server, nil
 }
 
 func (s *McpServer) AddPrompt(prompt *McpPromptDefinition, handlers *McpPromptLifecycle) error {
+	s.logger.Debug("registry>server>AddPrompt", types.LogArg{
+		"promptName": prompt.Name,
+	})
 	for _, p := range s.prompts {
 		if p.Definition.Name == prompt.Name {
 			return fmt.Errorf("prompt already exists")
@@ -100,6 +111,11 @@ func (s *McpServer) AddPrompt(prompt *McpPromptDefinition, handlers *McpPromptLi
 }
 
 func (s *McpServer) AddTool(tool *McpToolDefinition, handlers *McpToolLifecycle) error {
+	s.logger.Debug("registry>server>AddTool", types.LogArg{
+		"toolName":        tool.Name,
+		"toolDescription": tool.Description,
+		"toolInputSchema": tool.InputSchema,
+	})
 	for _, t := range s.tools {
 		if t.Definition.Name == tool.Name {
 			return fmt.Errorf("tool already exists")

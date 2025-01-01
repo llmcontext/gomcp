@@ -38,7 +38,7 @@ func loadPrompts(filepath string) (*PromptConfig, error) {
 	// retrieve the schema for the PromptConfig struct
 	configSchema, _, err := jsonschema.GetFullSchemaFromInterface(reflect.TypeOf(&PromptConfig{}))
 	if err != nil {
-		return nil, fmt.Errorf("error generating schema for toolInitFunctiom argument")
+		return nil, fmt.Errorf("error generating schema for toolInitFunction argument")
 	}
 
 	// unmarshal the yaml data into an interface{}

@@ -179,6 +179,10 @@ func (m *McpServer) EventMcpRequestToolsList(params *mcp.JsonRpcRequestToolsList
 
 	// retrieve the tools from the registry
 	tools := m.serverRegistry.GetListOfTools()
+	m.logger.Debug("EventMcpRequestToolsList", types.LogArg{
+		"tools": tools,
+	})
+
 	for _, tool := range tools {
 		response.Tools = append(response.Tools, mcp.ToolDescription{
 			Name:        tool.Name,

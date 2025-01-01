@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"runtime"
 	"syscall"
 	"time"
@@ -15,12 +14,7 @@ import (
 	"github.com/llmcontext/gomcp/channels/hubmcpserver"
 	"github.com/llmcontext/gomcp/channels/hubmuxserver"
 	"github.com/llmcontext/gomcp/config"
-	"github.com/llmcontext/gomcp/defaults"
 	"github.com/llmcontext/gomcp/logger"
-	"github.com/llmcontext/gomcp/providers/presets"
-	"github.com/llmcontext/gomcp/providers/proxies"
-	"github.com/llmcontext/gomcp/providers/sdk"
-	"github.com/llmcontext/gomcp/registry"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 	"golang.org/x/sync/errgroup"
@@ -102,61 +96,6 @@ func NewHubModelContextProtocolServer(debug bool) (*ModelContextProtocolImpl, er
 		logger,
 		conf.Proxy,
 	)
-}
-
-func NewModelContextProtocolServer(serverDefinition types.McpSdkServerDefinition) (*ModelContextProtocolImpl, error) {
-	// We get the concrete type of the server definition
-	sdkServerDefinition, ok := serverDefinition.(*sdk.SdkServerDefinition)
-	if !ok {
-		return nil, fmt.Errorf("invalid configuration type: expected *sdk.SdkServerDefinition, got %T", serverDefinition)
-	}
-
-	// check that the server name and version are not empty
-	if sdkServerDefinition.ServerName() == "" || sdkServerDefinition.ServerVersion() == "" {
-		return nil, fmt.Errorf("invalid MCP server definition: server name or version is empty")
-	}
-
-	// create the McpServerRegistry
-	mcpServerRegistry := registry.NewMcpServerRegistry()
-
-	// we build the configuration data
-	conf := config.ServerConfiguration{
-		ServerInfo: config.ServerInfo{
-			Name:    sdkServerDefinition.ServerName(),
-			Version: sdkServerDefinition.ServerVersion(),
-		},
-		Logging: &config.LoggingInfo{
-			Level:      sdkServerDefinition.DebugLevel(),
-			File:       sdkServerDefinition.DebugFile(),
-			WithStderr: false,
-		},
-	}
-
-	// we initialize the logger
-	logger, err := logger.NewLogger(conf.Logging, false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize logger: %v", err)
-	}
-
-	// proxies directory
-	proxiesDirectory := filepath.Join(defaults.DefaultHubConfigurationDirectory, defaults.DefaultProxyToolsDirectory)
-	proxies.RegisterProxyServers(proxiesDirectory, mcpServerRegistry)
-
-	// Register preset servers
-	presets.RegisterPresetServers(sdkServerDefinition, logger)
-
-	// Setup the SDK based MCP servers
-	err = sdkServerDefinition.RegisterSdkMcpServer(mcpServerRegistry)
-	if err != nil {
-		return nil, err
-	}
-
-	return newModelContextProtocolServer(
-		&conf.ServerInfo,
-		logger,
-		nil,
-	)
-
 }
 
 func (mcp *ModelContextProtocolImpl) StdioTransport() types.Transport {
