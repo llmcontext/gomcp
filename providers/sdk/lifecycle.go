@@ -5,7 +5,6 @@ import (
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/jsonschema"
-	"github.com/llmcontext/gomcp/registry"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -58,7 +57,7 @@ func (t *SdkToolDefinition) toolInitFunction(ctx context.Context, logger types.L
 func (t *SdkToolDefinition) toolProcessFunction(
 	ctx context.Context,
 	toolArgs map[string]interface{},
-	result types.ToolCallResult,
+	output types.ToolCallResult,
 	logger types.Logger,
 	errChan chan *jsonrpc.JsonRpcError,
 ) error {
@@ -71,9 +70,6 @@ func (t *SdkToolDefinition) toolProcessFunction(
 
 	// create a new context with the logger
 	goCtx := types.ContextWithLogger(ctx, logger)
-
-	// let's create the output
-	output := registry.NewToolCallResult()
 
 	go func() {
 		_, callErr, err := callFunction(t.toolHandlerFunction, goCtx, t.toolContext, toolArgs, output)

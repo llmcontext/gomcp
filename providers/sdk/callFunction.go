@@ -47,6 +47,7 @@ func callFunction(fn interface{}, args ...interface{}) (interface{}, error, erro
 			if !reflect.TypeOf(arg).AssignableTo(expectedType) {
 				fmt.Printf("invalid argument type for parameter %d: %v\n", i, reflect.TypeOf(arg))
 				fmt.Printf("expected type: %v\n", expectedType)
+				fmt.Printf("fn name: %s\n", fnName)
 				return nil, nil, fmt.Errorf("invalid argument type for parameter %d", i)
 			}
 			callArgs[i] = reflect.ValueOf(arg)

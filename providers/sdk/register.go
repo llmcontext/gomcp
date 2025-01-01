@@ -77,8 +77,8 @@ func (s *SdkServerDefinition) setupServer() error {
 			return fmt.Errorf("toolInitFunction argument must be a pointer to a struct")
 		}
 
-		// get the type of the configuration the pointer is pointing to
-		configType = fnType.In(1).Elem()
+		// get the type of the configuration the pointer is pointing to (.Elem())
+		configType = fnType.In(1)
 
 		// check if the type is the same as the configuration type
 		if configType != configurationType {

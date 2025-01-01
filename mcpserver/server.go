@@ -112,6 +112,7 @@ func NewMcpServer(serverInfo *config.ServerInfo, loggingInfo *config.LoggingInfo
 
 // common constructor for the MCP server
 func newMcpServer(logger types.Logger, serverName string, serverVersion string, serverRegistry *registry.McpServerRegistry) *McpServer {
+
 	return &McpServer{
 		logger:         logger,
 		serverName:     serverName,

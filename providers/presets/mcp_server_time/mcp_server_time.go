@@ -19,7 +19,7 @@ func ToolInit(ctx context.Context, config *ToolConfiguration) (*ToolContext, err
 }
 
 func RegisterTools(mcpServerDefinition types.McpSdkServerDefinition) error {
-	mcpToolsDefinition := mcpServerDefinition.WithTools(ToolConfiguration{}, ToolInit)
+	mcpToolsDefinition := mcpServerDefinition.WithTools(&ToolConfiguration{}, ToolInit)
 	err := mcpToolsDefinition.AddTool("get_current_time", "Get the current time in specified time zone", GetCurrentTime)
 	if err != nil {
 		return err

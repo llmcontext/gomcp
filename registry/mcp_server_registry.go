@@ -24,9 +24,10 @@ type McpPromptLifecycle struct {
 }
 
 type McpToolLifecycle struct {
-	Init    func(ctx context.Context, logger types.Logger) error
-	Process func(ctx context.Context, params map[string]interface{}, result types.ToolCallResult, logger types.Logger, errChan chan *jsonrpc.JsonRpcError) error
-	End     func(ctx context.Context, logger types.Logger) error
+	IsInitialized bool
+	Init          func(ctx context.Context, logger types.Logger) error
+	Process       func(ctx context.Context, params map[string]interface{}, result types.ToolCallResult, logger types.Logger, errChan chan *jsonrpc.JsonRpcError) error
+	End           func(ctx context.Context, logger types.Logger) error
 }
 
 type McpServerLifecycle struct {
@@ -128,6 +129,51 @@ func (s *McpServer) AddTool(tool *McpToolDefinition, handlers *McpToolLifecycle)
 	return nil
 }
 
+func (r *McpServerRegistry) Init(ctx context.Context, logger types.Logger) error {
+	for _, server := range r.servers {
+		if server.serverHandlers.Init != nil {
+			err := server.serverHandlers.Init(ctx, logger)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r *McpServerRegistry) End(ctx context.Context, logger types.Logger) error {
+	// end all the tools that have been initialized
+	for _, server := range r.servers {
+		for _, tool := range server.tools {
+			if tool.Handler.IsInitialized {
+				if tool.Handler.End != nil {
+					err := tool.Handler.End(ctx, logger)
+					if err != nil {
+						logger.Error("error ending tool", types.LogArg{
+							"toolName": tool.Definition.Name,
+							"error":    err,
+						})
+					}
+				}
+			}
+		}
+	}
+
+	// end all the servers
+	for _, server := range r.servers {
+		if server.serverHandlers.End != nil {
+			err := server.serverHandlers.End(ctx, logger)
+			if err != nil {
+				logger.Error("error ending server", types.LogArg{
+					"serverName": server.serverName,
+					"error":      err,
+				})
+			}
+		}
+	}
+	return nil
+}
+
 // return the list of tools from all the servers
 func (r *McpServerRegistry) GetListOfTools() []McpToolDefinition {
 	tools := make([]McpToolDefinition, 0)
@@ -137,4 +183,58 @@ func (r *McpServerRegistry) GetListOfTools() []McpToolDefinition {
 		}
 	}
 	return tools
+}
+
+func (r *McpServerRegistry) GetTool(toolName string) (*McpTool, error) {
+	for _, server := range r.servers {
+		for _, tool := range server.tools {
+			if tool.Definition.Name == toolName {
+				return &tool, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("tool not found")
+}
+
+func (t *McpTool) Run(
+	ctx context.Context,
+	arguments map[string]interface{},
+	logger types.Logger,
+) (types.ToolCallResult, *jsonrpc.JsonRpcError) {
+	lifecycle := t.Handler
+	if !lifecycle.IsInitialized {
+		if lifecycle.Init != nil {
+			err := lifecycle.Init(ctx, logger)
+			if err != nil {
+				return nil, &jsonrpc.JsonRpcError{
+					Code:    jsonrpc.RpcInternalError,
+					Message: err.Error(),
+				}
+			}
+		}
+		lifecycle.IsInitialized = true
+	}
+
+	// let's create the output
+	output := NewToolCallResult()
+
+	errChan := make(chan *jsonrpc.JsonRpcError, 1)
+	go func() {
+		lifecycle.Process(ctx, arguments, output, logger, errChan)
+	}()
+
+	// wait on context and errChan
+	select {
+	case err := <-errChan:
+		if err != nil {
+			return nil, err
+		} else {
+			return output, nil
+		}
+	case <-ctx.Done():
+		return nil, &jsonrpc.JsonRpcError{
+			Code:    jsonrpc.RpcInternalError,
+			Message: ctx.Err().Error(),
+		}
+	}
 }
