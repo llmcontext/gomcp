@@ -8,6 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/llmcontext/gomcp/logger"
+	"github.com/llmcontext/gomcp/proxy"
+	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 	"github.com/llmcontext/gomcp/version"
 	"github.com/spf13/cobra"
@@ -31,6 +33,7 @@ Example:
 	gomcp proxy --cwd -- mcpserver --arg1 value1`,
 		Args: cobra.ArbitraryArgs,
 		Run: func(cmd *cobra.Command, args []string) {
+			var err error
 			logger := logger.NewTermLogger(debug)
 
 			// Get args after --
@@ -39,11 +42,14 @@ Example:
 			// banner
 			logger.Header(fmt.Sprintf("%s - %s", ProxyClientName, version.Version))
 
-			// get the current working directory
-			currentWorkingDirectory, err := os.Getwd()
-			if err != nil {
-				logger.Error("Failed to get current working directory", types.LogArg{"error": err})
-				os.Exit(1)
+			currentWorkingDirectory := ""
+			if withCurrentWorkingDirectory {
+				// get the current working directory
+				currentWorkingDirectory, err = os.Getwd()
+				if err != nil {
+					logger.Error("Failed to get current working directory", types.LogArg{"error": err})
+					os.Exit(1)
+				}
 			}
 
 			// read .env file
@@ -101,8 +107,16 @@ Example:
 				"proxyId":     proxyId,
 			})
 
-			// client := proxy.NewProxyClient(proxyInformation, debug, logger)
-			// client.Start()
+			var program = &transport.ProxiedMcpServerDescription{
+				ProxyId:                 proxyId,
+				CurrentWorkingDirectory: currentWorkingDirectory,
+				ProgramName:             programName,
+				ProgramArgs:             programArgs,
+			}
+
+			pxy := proxy.NewProxy(program, logger)
+
+			pxy.Start()
 		},
 	}
 )

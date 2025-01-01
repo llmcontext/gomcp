@@ -13,10 +13,12 @@ type McpClient struct {
 	logger        types.Logger
 	notifications McpClientNotifications
 	// the transport
+	doStopClient     bool
 	jsonRpcTransport *transport.JsonRpcTransport
 }
 
 type McpClientNotifications interface {
+	DoStopAfterListOfFeatures() bool
 	OnServerInformation(serverName string, serverVersion string)
 	OnToolsList(result *mcp.JsonRpcResponseToolsListResult, rpcError *jsonrpc.JsonRpcError)
 	OnToolCallResponse(result *mcp.JsonRpcResponseToolsCallResult, reqId *jsonrpc.JsonRpcRequestId, rpcError *jsonrpc.JsonRpcError)
@@ -28,5 +30,6 @@ func NewMcpClient(clientName string, clientVersion string, logger types.Logger, 
 		clientVersion: clientVersion,
 		logger:        logger,
 		notifications: notifications,
+		doStopClient:  false,
 	}
 }

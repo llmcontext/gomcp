@@ -55,7 +55,7 @@ func (s *StateManager) EventMcpStarted() {
 		ProtocolVersion: mcp.ProtocolVersion,
 		Capabilities:    mcp.ClientCapabilities{},
 		ClientInfo: mcp.ClientInfo{
-			Name:    s.options.ProxyName,
+			Name:    "To be removed",
 			Version: version.Version,
 		},
 	}

@@ -16,7 +16,7 @@ build:
 # Install binaries to /usr/local/bin
 install: build
 	@echo "Installing $(BINARY) to /usr/local/bin..."
-	@cp $(BUILD_DIR)/$(BINARY) /usr/local/bin/; \
+	@cp $(BUILD_DIR)/$(BINARY) /usr/local/bin/
 	@echo "Installation complete"
 
 # Run tests

@@ -37,7 +37,6 @@ const (
 
 func NewProxyClient(proxyInformation ProxyInformation, debug bool, logger types.Logger) *ProxyClient {
 	options := transport.ProxiedMcpServerDescription{
-		ProxyName:               GomcpProxyClientName,
 		CurrentWorkingDirectory: proxyInformation.CurrentWorkingDirectory,
 		ProgramName:             proxyInformation.ProgramName,
 		ProgramArgs:             proxyInformation.Args,

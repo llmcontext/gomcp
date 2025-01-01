@@ -7,13 +7,10 @@ import (
 	"github.com/llmcontext/gomcp/types"
 )
 
-func (m *McpClient) StartWithMcpServer(program *transport.ProxiedMcpServerDescription) error {
+func (m *McpClient) StartWithMcpServer(ctx context.Context, program *transport.ProxiedMcpServerDescription) error {
 	var err error
 	m.logger.Info("Starting MCP client", types.LogArg{"program": program})
 	errProxyChan := make(chan error, 1)
-
-	// create a context that will be used to cancel the server and the inspector
-	ctx := context.Background()
 
 	// create the transport
 	proxyTransport := transport.NewStdioProxyClientTransport(program)
@@ -21,6 +18,7 @@ func (m *McpClient) StartWithMcpServer(program *transport.ProxiedMcpServerDescri
 	// create the json rpc transport
 	jsonRpcTransport := transport.NewJsonRpcTransport(proxyTransport, "proxy - mcpclient", m.logger)
 	m.jsonRpcTransport = jsonRpcTransport
+	m.doStopClient = false
 
 	// we report that the MCP server is started
 	jsonRpcTransport.OnStarted(func() {
@@ -36,6 +34,10 @@ func (m *McpClient) StartWithMcpServer(program *transport.ProxiedMcpServerDescri
 				"name":    jsonRpcTransport.Name(),
 			})
 			m.handleIncomingMessage(msg)
+			if m.doStopClient {
+				m.logger.Info("stopping client", types.LogArg{})
+				errProxyChan <- nil
+			}
 		})
 		if err != nil {
 			m.logger.Error("failed to start proxy transport", types.LogArg{

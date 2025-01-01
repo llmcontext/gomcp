@@ -29,6 +29,9 @@ func (m *McpClient) handleIncomingMessage(message transport.JsonRpcMessage) erro
 			case mcp.RpcRequestMethodToolsList:
 				// we forward the error
 				m.notifications.OnToolsList(nil, response.Error)
+				if m.notifications.DoStopAfterListOfFeatures() {
+					m.doStopClient = true
+				}
 			}
 			return nil
 		}
@@ -60,6 +63,9 @@ func (m *McpClient) handleIncomingMessage(message transport.JsonRpcMessage) erro
 				}
 				// we forward the tools list
 				m.notifications.OnToolsList(toolsListResponse, nil)
+				if m.notifications.DoStopAfterListOfFeatures() {
+					m.doStopClient = true
+				}
 			}
 		case mcp.RpcRequestMethodToolsCall:
 			{
