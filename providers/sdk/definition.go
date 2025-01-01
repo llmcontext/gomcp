@@ -1,26 +1,12 @@
 package sdk
 
 import (
-	"context"
 	"reflect"
 	"slices"
 
 	"github.com/invopop/jsonschema"
-	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/types"
 )
-
-type McpToolLifecycle struct {
-	IsInitialized bool
-	Init          func(ctx context.Context, logger types.Logger) error
-	Process       func(ctx context.Context, params map[string]interface{}, result types.ToolCallResult, logger types.Logger, errChan chan *jsonrpc.JsonRpcError) error
-	End           func(ctx context.Context, logger types.Logger) error
-}
-
-type McpServerLifecycle struct {
-	Init func(ctx context.Context, logger types.Logger) error
-	End  func(ctx context.Context, logger types.Logger) error
-}
 
 type SdkServerDefinition struct {
 	serverName            string
@@ -30,9 +16,6 @@ type SdkServerDefinition struct {
 	toolConfigurationData interface{}
 	toolsInitFunction     interface{}
 	toolDefinitions       []*SdkToolDefinition
-
-	// lifecycle methods
-	Lifecycle *McpServerLifecycle
 
 	// enhanced data
 	contextType     reflect.Type
@@ -48,9 +31,6 @@ type SdkToolDefinition struct {
 
 	// from the server context
 	toolContext interface{}
-
-	// lifecycle methods
-	Lifecycle *McpToolLifecycle
 
 	// enhanced data
 	InputSchema   *jsonschema.Schema

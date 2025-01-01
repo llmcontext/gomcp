@@ -166,3 +166,8 @@ func mapToStruct(input map[string]interface{}, output interface{}) error {
 	}
 	return json.Unmarshal(jsonBytes, output)
 }
+
+func (r *ProxyRegistry) Prepare() error {
+	// TODO: to be implemented
+	return nil
+}

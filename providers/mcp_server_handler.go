@@ -28,29 +28,18 @@ func NewProviderMcpServerHandler(
 		if err != nil {
 			return nil, err
 		}
+		// prepare the proxy registry so that we can use it
+		proxyRegistry.Prepare()
 	}
 
-	// prepare the server lifecycle methods
-	sdkServerDefinition.PrepareLifecyles()
+	// prepare the server so that we can use it
+	sdkServerDefinition.Prepare()
 
 	return &ProviderMcpServerHandler{
 		logger:              logger,
 		sdkServerDefinition: sdkServerDefinition,
 		proxyRegistry:       proxyRegistry,
 	}, nil
-}
-
-func (n *ProviderMcpServerHandler) ExecuteToolCall(
-	ctx context.Context,
-	toolName string,
-	params *mcp.JsonRpcRequestToolsCallParams,
-	logger types.Logger,
-) (types.ToolCallResult, *jsonrpc.JsonRpcError) {
-	n.logger.Info("OnToolCall", types.LogArg{
-		"toolName": toolName,
-		"params":   params,
-	})
-	return nil, nil
 }
 
 func (n *ProviderMcpServerHandler) ExecuteToolsList(ctx context.Context, logger types.Logger) (*mcp.JsonRpcResponseToolsListResult, *jsonrpc.JsonRpcError) {
@@ -68,4 +57,18 @@ func (n *ProviderMcpServerHandler) ExecuteToolsList(ctx context.Context, logger 
 	}
 
 	return result, nil
+}
+
+func (n *ProviderMcpServerHandler) ExecuteToolCall(
+	ctx context.Context,
+	toolName string,
+	params *mcp.JsonRpcRequestToolsCallParams,
+	logger types.Logger,
+) (types.ToolCallResult, *jsonrpc.JsonRpcError) {
+	n.logger.Info("OnToolCall", types.LogArg{
+		"toolName": toolName,
+		"params":   params,
+	})
+
+	return nil, nil
 }

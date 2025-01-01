@@ -46,14 +46,6 @@ func (s *SdkServerDefinition) serverInitFunction(ctx context.Context, logger typ
 	return nil
 }
 
-func (s *SdkServerDefinition) serverEndFunction(ctx context.Context, logger types.Logger) error {
-	return nil
-}
-
-func (t *SdkToolDefinition) toolInitFunction(ctx context.Context, logger types.Logger) error {
-	return nil
-}
-
 func (t *SdkToolDefinition) toolProcessFunction(
 	ctx context.Context,
 	toolArgs map[string]interface{},
@@ -88,9 +80,5 @@ func (t *SdkToolDefinition) toolProcessFunction(
 		}
 	}()
 
-	return nil
-}
-
-func (t *SdkToolDefinition) toolEndFunction(ctx context.Context, logger types.Logger) error {
 	return nil
 }
