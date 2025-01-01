@@ -15,11 +15,10 @@ import (
 )
 
 type McpServer struct {
-	logger         types.Logger
-	serverName     string
-	serverVersion  string
-	serverRegistry *registry.McpServerRegistry
-	notifications  modelcontextprotocol.McpServerEventHandler
+	logger        types.Logger
+	serverName    string
+	serverVersion string
+	handler       modelcontextprotocol.McpServerEventHandler
 	// used by protocol
 	clientName          string
 	clientVersion       string
@@ -67,7 +66,6 @@ func NewMcpSdkServer(serverDefinition types.McpSdkServerDefinition, debug bool) 
 		logger,
 		sdkServerDefinition.ServerName(),
 		sdkServerDefinition.ServerVersion(),
-		mcpServerRegistry,
 		mcpServerNotifications,
 	), nil
 }
@@ -102,7 +100,7 @@ func NewMcpServer(serverInfo *config.ServerInfo, loggingInfo *config.LoggingInfo
 		return nil, err
 	}
 
-	mcpServerNotifications, err := providers.NewProviderMcpServerHandler(sdkServerDefinition, true, logger)
+	mcpServerHandler, err := providers.NewProviderMcpServerHandler(sdkServerDefinition, true, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +109,7 @@ func NewMcpServer(serverInfo *config.ServerInfo, loggingInfo *config.LoggingInfo
 		logger,
 		serverInfo.Name,
 		serverInfo.Version,
-		mcpServerRegistry,
-		mcpServerNotifications,
+		mcpServerHandler,
 	), nil
 
 }
@@ -122,17 +119,15 @@ func newMcpServer(
 	logger types.Logger,
 	serverName string,
 	serverVersion string,
-	serverRegistry *registry.McpServerRegistry,
-	notifications modelcontextprotocol.McpServerEventHandler,
+	handler modelcontextprotocol.McpServerEventHandler,
 ) *McpServer {
 
 	return &McpServer{
-		logger:         logger,
-		serverName:     serverName,
-		serverVersion:  serverVersion,
-		notifications:  notifications,
-		serverRegistry: serverRegistry,
-		lastRequestId:  0,
+		logger:        logger,
+		serverName:    serverName,
+		serverVersion: serverVersion,
+		handler:       handler,
+		lastRequestId: 0,
 	}
 }
 

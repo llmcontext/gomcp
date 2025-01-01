@@ -90,7 +90,7 @@ func (m *McpServer) handleIncomingMessage(
 				if err != nil {
 					m.jsonRpcTransport.SendError(jsonrpc.RpcInvalidRequest, err.Error(), request.Id)
 				}
-				m.EventMcpRequestToolsList(parsed, request.Id)
+				m.EventMcpRequestToolsList(ctx, parsed, request.Id)
 			}
 		case mcp.RpcRequestMethodToolsCall:
 			{
@@ -174,26 +174,28 @@ func (m *McpServer) EventMcpNotificationInitialized() {
 	m.isClientInitialized = true
 }
 
-func (m *McpServer) EventMcpRequestToolsList(params *mcp.JsonRpcRequestToolsListParams, reqId *jsonrpc.JsonRpcRequestId) {
-	var response = mcp.JsonRpcResponseToolsListResult{
-		Tools: make([]mcp.ToolDescription, 0, 10),
+func (m *McpServer) EventMcpRequestToolsList(ctx context.Context, params *mcp.JsonRpcRequestToolsListParams, reqId *jsonrpc.JsonRpcRequestId) {
+	response, jsonRpcErr := m.handler.ExecuteToolsList(ctx, m.logger)
+	if jsonRpcErr != nil {
+		m.jsonRpcTransport.SendError(jsonRpcErr.Code, jsonRpcErr.Message, reqId)
+		return
 	}
+	m.jsonRpcTransport.SendJsonRpcResponse(response, reqId)
 
-	// retrieve the tools from the registry
-	tools := m.serverRegistry.GetListOfTools()
-	m.logger.Debug("EventMcpRequestToolsList", types.LogArg{
-		"tools": tools,
-	})
+	// // retrieve the tools from the registry
+	// tools := m.serverRegistry.GetListOfTools()
+	// m.logger.Debug("EventMcpRequestToolsList", types.LogArg{
+	// 	"tools": tools,
+	// })
 
-	for _, tool := range tools {
-		response.Tools = append(response.Tools, mcp.ToolDescription{
-			Name:        tool.Name,
-			Description: tool.Description,
-			InputSchema: tool.InputSchema,
-		})
-	}
+	// for _, tool := range tools {
+	// 	response.Tools = append(response.Tools, mcp.ToolDescription{
+	// 		Name:        tool.Name,
+	// 		Description: tool.Description,
+	// 		InputSchema: tool.InputSchema,
+	// 	})
+	// }
 
-	m.jsonRpcTransport.SendJsonRpcResponse(&response, reqId)
 }
 
 func (m *McpServer) EventMcpRequestToolsCall(ctx context.Context, params *mcp.JsonRpcRequestToolsCallParams, reqId *jsonrpc.JsonRpcRequestId) {
@@ -205,15 +207,21 @@ func (m *McpServer) EventMcpRequestToolsCall(ctx context.Context, params *mcp.Js
 		"arguments": arguments,
 	})
 
-	// find the tool in the registry
-	tool, err := m.serverRegistry.GetTool(toolName)
-	if err != nil {
-		m.jsonRpcTransport.SendError(jsonrpc.RpcInvalidRequest, fmt.Sprintf("tool not found: %s", toolName), reqId)
-		return
-	}
+	// // find the tool in the registry
+	// tool, err := m.serverRegistry.GetTool(toolName)
+	// if err != nil {
+	// 	m.jsonRpcTransport.SendError(jsonrpc.RpcInvalidRequest, fmt.Sprintf("tool not found: %s", toolName), reqId)
+	// 	return
+	// }
 
-	// execute the tool
-	response, jsonRpcErr := tool.Run(ctx, arguments, m.logger)
+	// // execute the tool
+	// response, jsonRpcErr := tool.Run(ctx, arguments, m.logger)
+	// if jsonRpcErr != nil {
+	// 	m.jsonRpcTransport.SendError(jsonRpcErr.Code, jsonRpcErr.Message, reqId)
+	// 	return
+	// }
+
+	response, jsonRpcErr := m.handler.ExecuteToolCall(ctx, toolName, params, m.logger)
 	if jsonRpcErr != nil {
 		m.jsonRpcTransport.SendError(jsonRpcErr.Code, jsonRpcErr.Message, reqId)
 		return

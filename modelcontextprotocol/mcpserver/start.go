@@ -23,12 +23,6 @@ func (m *McpServer) Start(transport types.Transport) error {
 	// all the components of the server
 	eg, egCtx := errgroup.WithContext(ctx)
 
-	// we initialize the server registry
-	err = m.serverRegistry.Init(egCtx, m.logger)
-	if err != nil {
-		return err
-	}
-
 	eg.Go(func() error {
 		// Listen for OS signals (e.g., Ctrl+C)
 		signalChan := make(chan os.Signal, 1)
@@ -92,13 +86,6 @@ func (m *McpServer) Start(transport types.Transport) error {
 		})
 	}
 
-	// we end the server registry
-	err = m.serverRegistry.End(ctx, m.logger)
-	if err != nil {
-		m.logger.Error("error ending server registry", types.LogArg{
-			"error": err,
-		})
-	}
 	m.logger.Info("MCP server stopped", types.LogArg{})
 	return nil
 }

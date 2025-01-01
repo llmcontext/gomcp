@@ -37,7 +37,21 @@ func NewProviderMcpServerHandler(
 	}, nil
 }
 
-func (n *ProviderMcpServerHandler) ExecuteToolCall(ctx context.Context, params *mcp.JsonRpcRequestToolsCallParams) (interface{}, *jsonrpc.JsonRpcError) {
-	n.logger.Info("OnToolCall", types.LogArg{"params": params})
+func (n *ProviderMcpServerHandler) ExecuteToolCall(
+	ctx context.Context,
+	toolName string,
+	params *mcp.JsonRpcRequestToolsCallParams,
+	logger types.Logger,
+) (types.ToolCallResult, *jsonrpc.JsonRpcError) {
+	n.logger.Info("OnToolCall", types.LogArg{
+		"toolName": toolName,
+		"params":   params,
+	})
 	return nil, nil
+}
+
+func (n *ProviderMcpServerHandler) ExecuteToolsList(ctx context.Context, logger types.Logger) (*mcp.JsonRpcResponseToolsListResult, *jsonrpc.JsonRpcError) {
+	return &mcp.JsonRpcResponseToolsListResult{
+		Tools: make([]mcp.ToolDescription, 0, 10),
+	}, nil
 }

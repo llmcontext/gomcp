@@ -5,6 +5,7 @@ import (
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mcp"
+	"github.com/llmcontext/gomcp/types"
 )
 
 type McpClientEventHandler interface {
@@ -15,5 +16,6 @@ type McpClientEventHandler interface {
 }
 
 type McpServerEventHandler interface {
-	ExecuteToolCall(ctx context.Context, params *mcp.JsonRpcRequestToolsCallParams) (interface{}, *jsonrpc.JsonRpcError)
+	ExecuteToolCall(ctx context.Context, toolName string, params *mcp.JsonRpcRequestToolsCallParams, logger types.Logger) (types.ToolCallResult, *jsonrpc.JsonRpcError)
+	ExecuteToolsList(ctx context.Context, logger types.Logger) (*mcp.JsonRpcResponseToolsListResult, *jsonrpc.JsonRpcError)
 }
