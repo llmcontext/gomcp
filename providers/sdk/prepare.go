@@ -6,24 +6,20 @@ import (
 	"reflect"
 
 	"github.com/llmcontext/gomcp/jsonschema"
-	"github.com/llmcontext/gomcp/registry"
 	"github.com/llmcontext/gomcp/types"
 )
 
-func (s *SdkServerDefinition) RegisterSdkMcpServer(
-	mcpServerRegistry *registry.McpServerRegistry) error {
-	// server handlers
-	serverHandlers := registry.McpServerLifecycle{
+func (s *SdkServerDefinition) PrepareLifecyles() error {
+	// server handlers lifecycle methods
+	serverHandlers := McpServerLifecycle{
 		Init: s.serverInitFunction,
 		End:  s.serverEndFunction,
 	}
-	mcpServer, err := mcpServerRegistry.RegisterServer(s.ServerName(), s.ServerVersion(), &serverHandlers)
-	if err != nil {
-		return fmt.Errorf("failed to register MCP server: %v", err)
-	}
+	s.Lifecycle = &serverHandlers
+
 	// we setup the server
 	// check that the tools are valid
-	err = s.setupServer()
+	err := s.setupServer()
 	if err != nil {
 		return fmt.Errorf("failed to setup MCP server: %v", err)
 	}
@@ -34,15 +30,7 @@ func (s *SdkServerDefinition) RegisterSdkMcpServer(
 		if err != nil {
 			return fmt.Errorf("failed to setup tool %s: %v", tool.toolName, err)
 		}
-
-		// we create the tool definition
-		toolDefinition := registry.McpToolDefinition{
-			Name:        tool.toolName,
-			Description: tool.toolDescription,
-			InputSchema: tool.inputSchema,
-		}
-
-		mcpServer.AddTool(&toolDefinition, toolLifecycle)
+		tool.Lifecycle = toolLifecycle
 	}
 
 	return nil
@@ -113,7 +101,7 @@ func (s *SdkServerDefinition) setupServer() error {
 	return nil
 }
 
-func (tool *SdkToolDefinition) setupTool(serverDefinition *SdkServerDefinition) (*registry.McpToolLifecycle, error) {
+func (tool *SdkToolDefinition) setupTool(serverDefinition *SdkServerDefinition) (*McpToolLifecycle, error) {
 	// Validate that toolHandler is a function
 	fnType := reflect.TypeOf(tool.toolHandlerFunction)
 	if fnType.Kind() != reflect.Func {
@@ -165,7 +153,7 @@ func (tool *SdkToolDefinition) setupTool(serverDefinition *SdkServerDefinition) 
 	tool.inputSchema = inputSchema
 	tool.inputTypeName = inputTypeName
 
-	return &registry.McpToolLifecycle{
+	return &McpToolLifecycle{
 		Init:    tool.toolInitFunction,
 		Process: tool.toolProcessFunction,
 		End:     tool.toolEndFunction,

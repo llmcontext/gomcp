@@ -6,8 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/invopop/jsonschema"
 	"github.com/llmcontext/gomcp/defaults"
-	"github.com/llmcontext/gomcp/jsonschema"
+	mcpjsonschema "github.com/llmcontext/gomcp/jsonschema"
 )
 
 type ProxyRegistry struct {
@@ -94,7 +95,7 @@ func getListProxies(baseDirectory string) ([]*ProxyDefinition, error) {
 	}
 
 	// let's generate the schema from the config struct
-	proxySchema, err := jsonschema.GetSchemaFromAny(&ProxyDefinition{})
+	proxySchema, err := mcpjsonschema.GetSchemaFromAny(&ProxyDefinition{})
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +119,7 @@ func getListProxies(baseDirectory string) ([]*ProxyDefinition, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = jsonschema.ValidateJsonSchemaWithBytes(proxySchema, jsonBytes)
+		err = mcpjsonschema.ValidateJsonSchemaWithBytes(proxySchema, jsonBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -128,7 +129,40 @@ func getListProxies(baseDirectory string) ([]*ProxyDefinition, error) {
 		if err != nil {
 			return nil, err
 		}
+		for _, tool := range def.Tools {
+			err = SetJsonSchema(tool)
+			if err != nil {
+				return nil, err
+			}
+		}
 		proxies = append(proxies, &def)
 	}
 	return proxies, nil
+}
+
+func SetJsonSchema(tool *ProxyToolDefinition) error {
+	var schema *jsonschema.Schema
+	switch s := tool.InputSchema.(type) {
+	case *jsonschema.Schema:
+		schema = s
+	case map[string]interface{}:
+		schema = &jsonschema.Schema{}
+		// Unmarshal the map into the schema
+		if err := mapToStruct(s, schema); err != nil {
+			return fmt.Errorf("invalid schema format: %v", err)
+		}
+	default:
+		return fmt.Errorf("inputSchema must be either *jsonschema.Schema or map[string]interface{}")
+	}
+	tool.JsonSchema = schema
+
+	return nil
+}
+
+func mapToStruct(input map[string]interface{}, output interface{}) error {
+	jsonBytes, err := json.Marshal(input)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(jsonBytes, output)
 }

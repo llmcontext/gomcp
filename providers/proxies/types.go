@@ -1,5 +1,7 @@
 package proxies
 
+import "github.com/invopop/jsonschema"
+
 type ProxyDefinition struct {
 	ProxyId            string                 `json:"proxyId"`
 	WorkingDirectory   string                 `json:"workingDirectory"`
@@ -11,7 +13,8 @@ type ProxyDefinition struct {
 }
 
 type ProxyToolDefinition struct {
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	InputSchema interface{} `json:"inputSchema"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	InputSchema interface{}        `json:"inputSchema"`
+	JsonSchema  *jsonschema.Schema `json:"-"`
 }

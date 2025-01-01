@@ -30,6 +30,9 @@ func NewProviderMcpServerHandler(
 		}
 	}
 
+	// prepare the server lifecycle methods
+	sdkServerDefinition.PrepareLifecyles()
+
 	return &ProviderMcpServerHandler{
 		logger:              logger,
 		sdkServerDefinition: sdkServerDefinition,
