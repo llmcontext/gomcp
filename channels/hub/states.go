@@ -12,7 +12,6 @@ import (
 	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/protocol/mux"
-	"github.com/llmcontext/gomcp/tools"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -28,7 +27,6 @@ type StateManager struct {
 	serverVersion       string
 	clientInfo          *ClientInfo
 	isClientInitialized bool
-	toolsRegistry       *tools.ToolsRegistry
 	promptsRegistry     *prompts.PromptsRegistry
 
 	logger       types.Logger
@@ -40,16 +38,12 @@ type StateManager struct {
 func NewStateManager(
 	serverName string,
 	serverVersion string,
-	toolsRegistry *tools.ToolsRegistry,
-	promptsRegistry *prompts.PromptsRegistry,
 	logger types.Logger,
 ) *StateManager {
 	return &StateManager{
 		serverName:          serverName,
 		serverVersion:       serverVersion,
 		isClientInitialized: false,
-		toolsRegistry:       toolsRegistry,
-		promptsRegistry:     promptsRegistry,
 		logger:              logger,
 		reqIdMapping:        jsonrpc.NewReqIdMapping(),
 	}
@@ -103,70 +97,53 @@ func (s *StateManager) EventMcpNotificationInitialized() {
 }
 
 func (s *StateManager) EventMcpRequestToolsList(params *mcp.JsonRpcRequestToolsListParams, reqId *jsonrpc.JsonRpcRequestId) {
-	// we query the tools registry
-	tools := s.toolsRegistry.GetListOfTools()
-
 	var response = mcp.JsonRpcResponseToolsListResult{
-		Tools: make([]mcp.ToolDescription, 0, len(tools)),
+		Tools: make([]mcp.ToolDescription, 0, 10),
 	}
 
-	// we build the response
-	for _, tool := range tools {
-		// schemaBytes, _ := json.Marshal(tool.InputSchema)
-		response.Tools = append(response.Tools, mcp.ToolDescription{
-			Name:        tool.ToolName,
-			Description: tool.Description,
-			InputSchema: tool.InputSchema,
-		})
-	}
+	// TODO: creatr the list of tools
 
 	s.mcpServer.SendJsonRpcResponse(&response, reqId)
 }
 
 func (s *StateManager) EventMcpRequestToolsCall(ctx context.Context, params *mcp.JsonRpcRequestToolsCallParams, reqId *jsonrpc.JsonRpcRequestId) {
-	// we get the tool name and arguments
-	toolName := params.Name
-	toolArgs := params.Arguments
-
-	// let's check if the tool exists and is a proxy
-	isProxy, proxyId, err := s.toolsRegistry.IsProxyTool(toolName)
-	if err != nil {
-		s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool not found: %v", err), reqId)
-		return
-	}
+	// TODO: we retreve the tool and "run" it
 
 	// handle proxy tools
-	if isProxy {
-		session := s.muxServer.GetSessionByProxyId(proxyId)
-		if session == nil {
-			s.mcpServer.SendError(jsonrpc.RpcInternalError, "session not found", reqId)
-			return
-		}
-		// we send the request to the proxy
-		params := &mux.JsonRpcRequestToolsCallParams{
-			Name: toolName,
-			Args: toolArgs,
-		}
-		// we send the request to the proxy
-		// we keep track of the request id for that tool call in the session extra parameters
-		muxReqId, err := session.SendRequestWithMethodAndParams(mux.RpcRequestMethodCallTool, params)
-		if err != nil {
-			s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("failed to send request to proxy: %v", err), reqId)
-			return
-		}
-		// we keep track of the mapping between the mcp request id
-		// and the mux request id
-		s.reqIdMapping.AddMapping(muxReqId, reqId)
-	} else {
-		// this is a direct tool call (SDK built-in tool)
-		// let's call the tool
-		response, err := s.toolsRegistry.CallTool(ctx, toolName, toolArgs)
-		if err != nil {
-			s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool call failed: %v", err), reqId)
-			return
-		}
-		s.mcpServer.SendJsonRpcResponse(&response, reqId)
-	}
+	// if isProxy {
+	// 	session := s.muxServer.GetSessionByProxyId(proxyId)
+	// 	if session == nil {
+	// 		s.mcpServer.SendError(jsonrpc.RpcInternalError, "session not found", reqId)
+	// 		return
+	// 	}
+	// 	// we send the request to the proxy
+	// 	params := &mux.JsonRpcRequestToolsCallParams{
+	// 		Name: toolName,
+	// 		Args: toolArgs,
+	// 	}
+	// 	// we send the request to the proxy
+	// 	// we keep track of the request id for that tool call in the session extra parameters
+	// 	muxReqId, err := session.SendRequestWithMethodAndParams(mux.RpcRequestMethodCallTool, params)
+	// 	if err != nil {
+	// 		s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("failed to send request to proxy: %v", err), reqId)
+	// 		return
+	// 	}
+	// 	// we keep track of the mapping between the mcp request id
+	// 	// and the mux request id
+	// 	s.reqIdMapping.AddMapping(muxReqId, reqId)
+	// } else {
+	// this is a direct tool call (SDK built-in tool)
+	// let's call the tool
+	//
+	// TODO:XXX: we need to call the tool
+	//
+	// response, err := s.toolsRegistry.CallTool(ctx, toolName, toolArgs)
+	// if err != nil {
+	// 	s.mcpServer.SendError(jsonrpc.RpcInternalError, fmt.Sprintf("tool call failed: %v", err), reqId)
+	// 	return
+	// }
+	// s.mcpServer.SendJsonRpcResponse(&response, reqId)
+	//}
 }
 
 func (s *StateManager) EventMcpRequestResourcesList(params *mcp.JsonRpcRequestResourcesListParams, reqId *jsonrpc.JsonRpcRequestId) {
@@ -270,31 +247,7 @@ func (s *StateManager) EventMuxRequestToolsRegister(proxyId string, params *mux.
 		return
 	}
 
-	toolProvider, err := s.toolsRegistry.RegisterProxyToolProvider(proxyId, session.ProxyName())
-	if err != nil {
-		s.logger.Error("Failed to register proxy tool provider", types.LogArg{
-			"error": err,
-		})
-		return
-	}
-	for _, tool := range params.Tools {
-		err := toolProvider.AddProxyTool(tool.Name, tool.Description, tool.InputSchema)
-		if err != nil {
-			s.logger.Error("Failed to add proxy tool", types.LogArg{
-				"error": err,
-			})
-			return
-		}
-	}
-
-	// we need to prepare the tool provider so that it can be used by the hub
-	err = s.toolsRegistry.PrepareProxyToolProvider(toolProvider)
-	if err != nil {
-		s.logger.Error("Failed to prepare proxy tool provider", types.LogArg{
-			"error": err,
-		})
-		return
-	}
+	// TODO: we receive the tools from the proxy server
 
 	// send the notification to the MCP client
 	// so that it will refresh the tools list

@@ -1,5 +1,5 @@
-# Define all binary names
-BINARIES := gomcp gomcp-proxy
+# Binary name
+BINARY := gomcp
 
 # Build directory
 BUILD_DIR=./bin
@@ -10,18 +10,13 @@ all: build
 
 # Build all binaries
 build:
-	@echo "Building binaries..."
-	@for binary in $(BINARIES); do \
-		echo "Building $$binary..."; \
-		go build -o $(BUILD_DIR)/$$binary cmd/$$binary/*.go; \
-	done
+	@echo "Building $(BINARY)..."
+	@go build -o $(BUILD_DIR)/$(BINARY) cmd/*.go; \
 
 # Install binaries to /usr/local/bin
 install: build
-	@echo "Installing binaries to /usr/local/bin..."
-	@for binary in $(BINARIES); do \
-		cp $(BUILD_DIR)/$$binary /usr/local/bin/; \
-	done
+	@echo "Installing $(BINARY) to /usr/local/bin..."
+	@cp $(BUILD_DIR)/$(BINARY) /usr/local/bin/; \
 	@echo "Installation complete"
 
 # Run tests
@@ -48,3 +43,7 @@ vet:
 staticcheck:
 	@echo "Running staticcheck..."
 	@staticcheck ./...
+
+inspector: build
+	@echo "Running inspector..."
+	npx @modelcontextprotocol/inspector $(BUILD_DIR)/$(BINARY) --debug

@@ -1,4 +1,4 @@
-package utils
+package jsonschema
 
 import (
 	"encoding/json"

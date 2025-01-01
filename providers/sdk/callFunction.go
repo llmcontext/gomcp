@@ -1,4 +1,4 @@
-package utils
+package sdk
 
 import (
 	"encoding/json"
@@ -6,11 +6,11 @@ import (
 	"reflect"
 )
 
-// CallTool invokes a tool by name with provided arguments
+// callTool invokes a tool by name with provided arguments
 // returns the result, error, error
 // the first error is the error from the function when called,
 // the second error is if there was an error validating the arguments
-func CallFunction(fn interface{}, args ...interface{}) (interface{}, error, error) {
+func callFunction(fn interface{}, args ...interface{}) (interface{}, error, error) {
 	fnValue := reflect.ValueOf(fn)
 	fnType := fnValue.Type()
 	fnName := fnType.Name()

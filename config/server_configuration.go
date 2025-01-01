@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/invopop/jsonschema"
-	"github.com/llmcontext/gomcp/utils"
+	"github.com/llmcontext/gomcp/jsonschema"
 )
 
+// TODO: get rid of that confoguration
 type ServerConfiguration struct {
 	ConfigVersion int            `json:"v"`
 	ServerInfo    ServerInfo     `json:"serverInfo"`
@@ -25,9 +25,9 @@ func LoadServerConfig(configFilePath string) (*ServerConfiguration, error) {
 	}
 
 	// let's generate the schema from the config struct
-	configSchema := jsonschema.Reflect(&ServerConfiguration{})
-	if configSchema == nil {
-		return nil, fmt.Errorf("failed to generate schema from config struct")
+	configSchema, err := jsonschema.GetSchemaFromAny(&ServerConfiguration{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate schema from config struct: %v", err)
 	}
 	// let's check that the file is a valid json file
 	jsonBytes, err := os.ReadFile(configFilePath)
@@ -35,7 +35,7 @@ func LoadServerConfig(configFilePath string) (*ServerConfiguration, error) {
 		return nil, err
 	}
 
-	err = utils.ValidateJsonSchemaWithBytes(configSchema, jsonBytes)
+	err = jsonschema.ValidateJsonSchemaWithBytes(configSchema, jsonBytes)
 	if err != nil {
 		return nil, err
 	}

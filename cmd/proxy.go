@@ -22,10 +22,9 @@ const (
 )
 
 var (
-	debug   bool
-	delete  bool
-	rootCmd = &cobra.Command{
-		Use:   "gomcp-proxy",
+	delete   bool
+	proxyCmd = &cobra.Command{
+		Use:   "proxy",
 		Short: "A proxy server for MCP connections",
 		Run: func(cmd *cobra.Command, args []string) {
 			logger := logger.NewTermLogger(debug)
@@ -160,8 +159,8 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
-	rootCmd.Flags().BoolVarP(&delete, "delete", "x", false, "Delete the proxy setup")
+	proxyCmd.Flags().BoolVarP(&delete, "delete", "x", false, "Delete the proxy setup")
+	rootCmd.AddCommand(proxyCmd)
 }
 
 func loadEnvFile(filename string) error {
@@ -191,11 +190,4 @@ func loadEnvFile(filename string) error {
 		os.Setenv(key, value)
 	}
 	return nil
-}
-
-func main() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 }

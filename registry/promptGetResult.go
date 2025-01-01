@@ -1,4 +1,4 @@
-package prompts
+package registry
 
 import (
 	"encoding/json"
@@ -75,6 +75,10 @@ func NewPromptGetResult(description string) types.PromptGetResult {
 		Description: description,
 		Messages:    []interface{}{},
 	}
+}
+
+func (r *PromptGetResultImpl) SetDescription(description string) {
+	r.Description = description
 }
 
 func (r *PromptGetResultImpl) AddTextContent(role types.Role, content string) {

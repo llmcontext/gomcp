@@ -1,6 +1,6 @@
 package types
 
-type ModelContextProtocol interface {
+type ModelContextProtocolServer interface {
 	StdioTransport() Transport
 	Start(transport Transport) error
 }
