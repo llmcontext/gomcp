@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/llmcontext/gomcp/channels/hub"
+	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/mcpserver"
 	"github.com/spf13/cobra"
 )
 
@@ -14,16 +15,23 @@ var (
 		Use:   "gomcp",
 		Short: "A Model Context Protocol server multiplexer",
 		Run: func(cmd *cobra.Command, args []string) {
+			// we read the configuration file
+			conf, err := config.LoadHubConfiguration()
+			if err != nil {
+				fmt.Println("Error reading configuration file:", err)
+				os.Exit(1)
+			}
+
 			// we create the MCP server
-			mcp, err := hub.NewHubModelContextProtocolServer(debug)
+			mcpServer, err := mcpserver.NewMcpServer(conf.ServerInfo, conf.Logging, debug)
 			if err != nil {
 				fmt.Println("Error creating MCP server:", err)
 				os.Exit(1)
 			}
 
 			// start the server
-			transport := mcp.StdioTransport()
-			err = mcp.Start(transport)
+			transport := mcpServer.StdioTransport()
+			err = mcpServer.Start(transport)
 			if err != nil {
 				fmt.Println("Error starting MCP server:", err)
 				os.Exit(1)

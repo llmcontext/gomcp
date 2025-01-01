@@ -65,12 +65,11 @@ func RegisterProxyServers(
 		}
 
 		// we register the proxy server
-		// TODO: manage a version for the proxy server
 		proxyHandler := &registry.McpServerLifecycle{
 			Init: nil,
 			End:  nil,
 		}
-		mcpServer, err := mcpServerRegistry.RegisterServer(def.ProxyName, "0.1", proxyHandler)
+		mcpServer, err := mcpServerRegistry.RegisterServer(def.ProxyServerName, def.ProxyServerVersion, proxyHandler)
 		if err != nil {
 			return err
 		}

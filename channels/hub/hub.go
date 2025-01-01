@@ -12,13 +12,11 @@ import (
 	"time"
 
 	"github.com/llmcontext/gomcp/channels/hub/events"
-	"github.com/llmcontext/gomcp/channels/hubinspector"
 	"github.com/llmcontext/gomcp/channels/hubmcpserver"
 	"github.com/llmcontext/gomcp/channels/hubmuxserver"
 	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/defaults"
 	"github.com/llmcontext/gomcp/logger"
-	"github.com/llmcontext/gomcp/prompts"
 	"github.com/llmcontext/gomcp/providers/presets"
 	"github.com/llmcontext/gomcp/providers/proxies"
 	"github.com/llmcontext/gomcp/providers/sdk"
@@ -29,50 +27,44 @@ import (
 )
 
 type ModelContextProtocolImpl struct {
-	logger          types.Logger
-	promptsRegistry *prompts.PromptsRegistry
-	inspector       *hubinspector.Inspector
-	muxServer       *hubmuxserver.MuxServer
-	stateManager    *StateManager
-	events          events.Events
+	logger       types.Logger
+	muxServer    *hubmuxserver.MuxServer
+	stateManager *StateManager
+	events       events.Events
 }
 
 func newModelContextProtocolServer(
 	serverInfo *config.ServerInfo,
 	logger types.Logger,
-	promptsConfig *config.PromptConfig,
-	inspectorConfig *config.InspectorInfo,
 	proxyConfig *config.ServerProxyConfig) (*ModelContextProtocolImpl, error) {
 	// we initialize the logger
 	// logger, err := logger.NewLogger(logging, false)
 	// if err != nil {
 	// 	return nil, fmt.Errorf("failed to initialize logger: %v", err)
 	// }
-	var err error
 
 	// Initialize prompts registry
-	promptsRegistry := prompts.NewEmptyPromptsRegistry()
-	if promptsConfig != nil {
-		promptsRegistry, err = prompts.NewPromptsRegistry(promptsConfig.File)
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize prompts registry: %v", err)
-		}
-	}
+	// promptsRegistry := prompts.NewEmptyPromptsRegistry()
+	// if promptsConfig != nil {
+	// 	promptsRegistry, err = prompts.NewPromptsRegistry(promptsConfig.File)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to initialize prompts registry: %v", err)
+	// 	}
+	// }
 
 	// initialize the state manager
 	stateManager := NewStateManager(
 		serverInfo.Name,
 		serverInfo.Version,
-		promptsRegistry,
 		logger,
 	)
 	events := stateManager.AsEvents()
 
 	// Start inspector if enabled
-	var inspectorInstance *hubinspector.Inspector = nil
-	if inspectorConfig != nil && inspectorConfig.Enabled {
-		inspectorInstance = hubinspector.NewInspector(inspectorConfig, logger)
-	}
+	// var inspectorInstance *hubinspector.Inspector = nil
+	// if inspectorConfig != nil && inspectorConfig.Enabled {
+	// 	inspectorInstance = hubinspector.NewInspector(inspectorConfig, logger)
+	// }
 
 	// Start multiplexer if enabled
 	var muxServerInstance *hubmuxserver.MuxServer = nil
@@ -81,12 +73,10 @@ func newModelContextProtocolServer(
 	}
 
 	return &ModelContextProtocolImpl{
-		logger:          logger,
-		promptsRegistry: promptsRegistry,
-		inspector:       inspectorInstance,
-		muxServer:       muxServerInstance,
-		stateManager:    stateManager,
-		events:          events,
+		logger:       logger,
+		muxServer:    muxServerInstance,
+		stateManager: stateManager,
+		events:       events,
 	}, nil
 
 }
@@ -108,10 +98,8 @@ func NewHubModelContextProtocolServer(debug bool) (*ModelContextProtocolImpl, er
 	}
 
 	return newModelContextProtocolServer(
-		&conf.ServerInfo,
+		conf.ServerInfo,
 		logger,
-		conf.Prompts,
-		conf.Inspector,
 		conf.Proxy,
 	)
 }
@@ -166,8 +154,6 @@ func NewModelContextProtocolServer(serverDefinition types.McpSdkServerDefinition
 	return newModelContextProtocolServer(
 		&conf.ServerInfo,
 		logger,
-		conf.Prompts,
-		conf.Inspector,
 		nil,
 	)
 
@@ -216,24 +202,24 @@ func (mcp *ModelContextProtocolImpl) Start(transport types.Transport) error {
 	})
 
 	// Start inspector if it was enabled
-	if mcp.inspector != nil {
-		eg.Go(func() error {
-			mcp.logger.Info("[B] Starting inspector", types.LogArg{})
-			err := mcp.inspector.Start(egCtx)
-			if err != nil {
-				// check if the error is because the context was cancelled
-				if errors.Is(err, context.Canceled) {
-					mcp.logger.Info("[B.1] context cancelled, stopping inspector", types.LogArg{})
-				} else {
-					mcp.logger.Error("[B.2] error starting inspector", types.LogArg{
-						"error": err,
-					})
-				}
-			}
-			mcp.logger.Info("[B.3] inspector stopped", types.LogArg{})
-			return err
-		})
-	}
+	// if mcp.inspector != nil {
+	// 	eg.Go(func() error {
+	// 		mcp.logger.Info("[B] Starting inspector", types.LogArg{})
+	// 		err := mcp.inspector.Start(egCtx)
+	// 		if err != nil {
+	// 			// check if the error is because the context was cancelled
+	// 			if errors.Is(err, context.Canceled) {
+	// 				mcp.logger.Info("[B.1] context cancelled, stopping inspector", types.LogArg{})
+	// 			} else {
+	// 				mcp.logger.Error("[B.2] error starting inspector", types.LogArg{
+	// 					"error": err,
+	// 				})
+	// 			}
+	// 		}
+	// 		mcp.logger.Info("[B.3] inspector stopped", types.LogArg{})
+	// 		return err
+	// 	})
+	// }
 
 	eg.Go(func() error {
 		mcp.logger.Info("[C] Starting MCP server", types.LogArg{})

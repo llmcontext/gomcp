@@ -38,14 +38,12 @@ type StateManager struct {
 func NewStateManager(
 	serverName string,
 	serverVersion string,
-	promptsRegistry *prompts.PromptsRegistry,
 	logger types.Logger,
 ) *StateManager {
 	return &StateManager{
 		serverName:          serverName,
 		serverVersion:       serverVersion,
 		isClientInitialized: false,
-		promptsRegistry:     promptsRegistry,
 		logger:              logger,
 		reqIdMapping:        jsonrpc.NewReqIdMapping(),
 	}

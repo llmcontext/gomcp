@@ -8,6 +8,7 @@ import (
 	"github.com/llmcontext/gomcp/jsonschema"
 )
 
+// TODO: get rid of that confoguration
 type ServerConfiguration struct {
 	ConfigVersion int            `json:"v"`
 	ServerInfo    ServerInfo     `json:"serverInfo"`

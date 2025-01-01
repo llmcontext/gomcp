@@ -177,7 +177,15 @@ func (m *McpServer) EventMcpRequestToolsList(params *mcp.JsonRpcRequestToolsList
 		Tools: make([]mcp.ToolDescription, 0, 10),
 	}
 
-	// TODO: create the list of tools
+	// retrieve the tools from the registry
+	tools := m.serverRegistry.GetListOfTools()
+	for _, tool := range tools {
+		response.Tools = append(response.Tools, mcp.ToolDescription{
+			Name:        tool.Name,
+			Description: tool.Description,
+			InputSchema: tool.InputSchema,
+		})
+	}
 
 	m.jsonRpcTransport.SendJsonRpcResponse(&response, reqId)
 }

@@ -12,10 +12,9 @@ import (
 
 type HubConfiguration struct {
 	ConfigVersion int                `json:"v"`
-	ServerInfo    ServerInfo         `json:"serverInfo"`
+	ServerInfo    *ServerInfo        `json:"serverInfo"`
 	Logging       *LoggingInfo       `json:"logging,omitempty"`
 	Inspector     *InspectorInfo     `json:"inspector,omitempty"`
-	Prompts       *PromptConfig      `json:"prompts,omitempty"`
 	Proxy         *ServerProxyConfig `json:"proxy,omitempty"`
 }
 

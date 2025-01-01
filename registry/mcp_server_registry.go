@@ -111,3 +111,14 @@ func (s *McpServer) AddTool(tool *McpToolDefinition, handlers *McpToolLifecycle)
 	})
 	return nil
 }
+
+// return the list of tools from all the servers
+func (r *McpServerRegistry) GetListOfTools() []McpToolDefinition {
+	tools := make([]McpToolDefinition, 0)
+	for _, server := range r.servers {
+		for _, tool := range server.tools {
+			tools = append(tools, *tool.Definition)
+		}
+	}
+	return tools
+}
