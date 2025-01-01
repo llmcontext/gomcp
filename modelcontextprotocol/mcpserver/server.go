@@ -19,7 +19,7 @@ type McpServer struct {
 	serverName     string
 	serverVersion  string
 	serverRegistry *registry.McpServerRegistry
-	notifications  modelcontextprotocol.McpServerNotifications
+	notifications  modelcontextprotocol.McpServerEventHandler
 	// used by protocol
 	clientName          string
 	clientVersion       string
@@ -58,7 +58,7 @@ func NewMcpSdkServer(serverDefinition types.McpSdkServerDefinition, debug bool) 
 		return nil, err
 	}
 
-	mcpServerNotifications, err := providers.NewProviderMcpServerNotifications(sdkServerDefinition, false, logger)
+	mcpServerNotifications, err := providers.NewProviderMcpServerHandler(sdkServerDefinition, false, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func NewMcpServer(serverInfo *config.ServerInfo, loggingInfo *config.LoggingInfo
 		return nil, err
 	}
 
-	mcpServerNotifications, err := providers.NewProviderMcpServerNotifications(sdkServerDefinition, true, logger)
+	mcpServerNotifications, err := providers.NewProviderMcpServerHandler(sdkServerDefinition, true, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func newMcpServer(
 	serverName string,
 	serverVersion string,
 	serverRegistry *registry.McpServerRegistry,
-	notifications modelcontextprotocol.McpServerNotifications,
+	notifications modelcontextprotocol.McpServerEventHandler,
 ) *McpServer {
 
 	return &McpServer{

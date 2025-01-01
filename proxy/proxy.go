@@ -106,7 +106,7 @@ func (p *Proxy) Start() error {
 
 }
 
-func (p *Proxy) AsMcpClientNotifications() modelcontextprotocol.McpClientNotifications {
+func (p *Proxy) AsMcpClientNotifications() modelcontextprotocol.McpClientEventHandler {
 	return p
 }
 

@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 
+	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/modelcontextprotocol"
 	"github.com/llmcontext/gomcp/protocol/mcp"
 	"github.com/llmcontext/gomcp/providers/proxies"
@@ -10,16 +11,16 @@ import (
 	"github.com/llmcontext/gomcp/types"
 )
 
-type ProviderMcpServerNotifications struct {
+type ProviderMcpServerHandler struct {
 	logger              types.Logger
 	sdkServerDefinition *sdk.SdkServerDefinition
 	proxyRegistry       *proxies.ProxyRegistry
 }
 
-func NewProviderMcpServerNotifications(
+func NewProviderMcpServerHandler(
 	sdkServerDefinition *sdk.SdkServerDefinition,
 	withProxies bool,
-	logger types.Logger) (modelcontextprotocol.McpServerNotifications, error) {
+	logger types.Logger) (modelcontextprotocol.McpServerEventHandler, error) {
 	var proxyRegistry *proxies.ProxyRegistry
 	var err error
 	if withProxies {
@@ -29,13 +30,14 @@ func NewProviderMcpServerNotifications(
 		}
 	}
 
-	return &ProviderMcpServerNotifications{
+	return &ProviderMcpServerHandler{
 		logger:              logger,
 		sdkServerDefinition: sdkServerDefinition,
 		proxyRegistry:       proxyRegistry,
 	}, nil
 }
 
-func (n *ProviderMcpServerNotifications) OnToolCall(ctx context.Context, params *mcp.JsonRpcRequestToolsCallParams) {
+func (n *ProviderMcpServerHandler) ExecuteToolCall(ctx context.Context, params *mcp.JsonRpcRequestToolsCallParams) (interface{}, *jsonrpc.JsonRpcError) {
 	n.logger.Info("OnToolCall", types.LogArg{"params": params})
+	return nil, nil
 }

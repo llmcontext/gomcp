@@ -10,7 +10,7 @@ type McpClient struct {
 	clientName    string
 	clientVersion string
 	logger        types.Logger
-	notifications modelcontextprotocol.McpClientNotifications
+	notifications modelcontextprotocol.McpClientEventHandler
 	// the transport
 	doStopClient     bool
 	jsonRpcTransport *transport.JsonRpcTransport
@@ -19,7 +19,7 @@ type McpClient struct {
 func NewMcpClient(
 	clientName string,
 	clientVersion string,
-	notifications modelcontextprotocol.McpClientNotifications,
+	notifications modelcontextprotocol.McpClientEventHandler,
 	logger types.Logger,
 ) *McpClient {
 	return &McpClient{
