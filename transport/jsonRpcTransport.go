@@ -304,6 +304,14 @@ func (t *JsonRpcTransport) SendError(code int, message string, id *jsonrpc.JsonR
 
 }
 
+func (t *JsonRpcTransport) SendNotification(method string) {
+	notification := jsonrpc.JsonRpcRequest{
+		JsonRpcVersion: jsonrpc.JsonRpcVersion,
+		Method:         method,
+	}
+	t.SendRequest(&notification)
+}
+
 func (t *JsonRpcTransport) Close() {
 	t.transport.Close()
 }

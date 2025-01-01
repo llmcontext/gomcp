@@ -32,7 +32,7 @@ type ProxyInformation struct {
 }
 
 const (
-	GomcpProxyClientName = "gomcp-proxy"
+	GomcpProxyClientName = "gomcp proxy"
 )
 
 func NewProxyClient(proxyInformation ProxyInformation, debug bool, logger types.Logger) *ProxyClient {

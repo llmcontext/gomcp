@@ -83,7 +83,7 @@ func NewMcpServer(serverInfo *config.ServerInfo, loggingInfo *config.LoggingInfo
 	})
 
 	// register the proxy servers
-	proxiesDirectory := filepath.Join(defaults.DefaultHubConfigurationDirectory, defaults.DefaultProxyToolsDirectory)
+	proxiesDirectory := filepath.Join(defaults.DefaultHubConfigurationDirectory, defaults.DefaultProxyDirectory)
 	proxies.RegisterProxyServers(proxiesDirectory, mcpServerRegistry)
 
 	// Register preset servers

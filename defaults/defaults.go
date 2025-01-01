@@ -6,11 +6,10 @@ import (
 )
 
 const (
-	DefaultApplicationName     = "gomcp"
-	DefaultMultiplexerPort     = 8090
-	DefaultWsPort              = 8080
-	DefaultProxyConfigPath     = "gomcp-proxy.json"
-	DefaultProxyToolsDirectory = "proxy_tools"
+	DefaultApplicationName = "gomcp"
+	DefaultMultiplexerPort = 8090
+	DefaultWsPort          = 8080
+	DefaultProxyDirectory  = "proxies"
 )
 
 var DefaultHubConfigurationDirectory = filepath.Join(os.Getenv("HOME"), ".gomcp")

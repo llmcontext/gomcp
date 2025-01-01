@@ -60,6 +60,8 @@ func (m *McpServer) handleIncomingMessage(
 				"error_code":    response.Error.Code,
 				"error_data":    response.Error.Data,
 			})
+			// TODO: should we?
+			// m.jsonRpcTransport.SendError(response.Error.Code, response.Error.Message, response.Id)
 			return nil
 		}
 		switch message.Method {
