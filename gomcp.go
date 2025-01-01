@@ -3,7 +3,7 @@ package gomcp
 import (
 	"fmt"
 
-	"github.com/llmcontext/gomcp/mcpserver"
+	"github.com/llmcontext/gomcp/modelcontextprotocol/mcpserver"
 	"github.com/llmcontext/gomcp/providers/sdk"
 	"github.com/llmcontext/gomcp/types"
 )

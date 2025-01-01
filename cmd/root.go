@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/llmcontext/gomcp/config"
-	"github.com/llmcontext/gomcp/mcpserver"
+	"github.com/llmcontext/gomcp/modelcontextprotocol/mcpserver"
 	"github.com/spf13/cobra"
 )
 

@@ -9,8 +9,10 @@ import (
 
 	"github.com/llmcontext/gomcp/defaults"
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/mcpclient"
+	"github.com/llmcontext/gomcp/modelcontextprotocol"
+	"github.com/llmcontext/gomcp/modelcontextprotocol/mcpclient"
 	"github.com/llmcontext/gomcp/protocol/mcp"
+	"github.com/llmcontext/gomcp/providers/proxies"
 	"github.com/llmcontext/gomcp/transport"
 	"github.com/llmcontext/gomcp/types"
 	"github.com/llmcontext/gomcp/version"
@@ -20,8 +22,8 @@ import (
 type Proxy struct {
 	program         *transport.ProxiedMcpServerDescription
 	logger          types.Logger
-	proxyRegistry   *ProxyRegistry
-	proxyDefinition *ProxyDefinition
+	proxyRegistry   *proxies.ProxyRegistry
+	proxyDefinition *proxies.ProxyDefinition
 }
 
 func NewProxy(program *transport.ProxiedMcpServerDescription, logger types.Logger) *Proxy {
@@ -38,19 +40,19 @@ func (p *Proxy) Start() error {
 	eg, egctx := errgroup.WithContext(ctx)
 
 	// we retrieve the proxy registry
-	proxyRegistry, err := NewProxyRegistry()
+	proxyRegistry, err := proxies.NewProxyRegistry()
 	if err != nil {
 		return err
 	}
 	p.proxyRegistry = proxyRegistry
 
 	// we prepare the structure to register the proxy
-	p.proxyDefinition = &ProxyDefinition{
+	p.proxyDefinition = &proxies.ProxyDefinition{
 		ProxyId:          p.program.ProxyId,
 		WorkingDirectory: p.program.CurrentWorkingDirectory,
 		ProgramName:      p.program.ProgramName,
 		ProgramArguments: p.program.ProgramArgs,
-		Tools:            []*ProxyToolDefinition{},
+		Tools:            []*proxies.ProxyToolDefinition{},
 	}
 
 	// goroutine to listen for OS signals
@@ -73,8 +75,8 @@ func (p *Proxy) Start() error {
 	mcpClient := mcpclient.NewMcpClient(
 		defaults.DefaultApplicationName,
 		version.Version,
+		p.AsMcpClientNotifications(),
 		p.logger,
-		p,
 	)
 
 	eg.Go(func() error {
@@ -104,6 +106,10 @@ func (p *Proxy) Start() error {
 
 }
 
+func (p *Proxy) AsMcpClientNotifications() modelcontextprotocol.McpClientNotifications {
+	return p
+}
+
 func (p *Proxy) DoStopAfterListOfFeatures() bool {
 	return true
 }
@@ -117,7 +123,7 @@ func (p *Proxy) OnServerInformation(serverName string, serverVersion string) {
 func (p *Proxy) OnToolsList(result *mcp.JsonRpcResponseToolsListResult, rpcError *jsonrpc.JsonRpcError) {
 	p.logger.Info("Tools list received", types.LogArg{"result": result, "rpcError": rpcError})
 	for _, tool := range result.Tools {
-		p.proxyDefinition.Tools = append(p.proxyDefinition.Tools, &ProxyToolDefinition{
+		p.proxyDefinition.Tools = append(p.proxyDefinition.Tools, &proxies.ProxyToolDefinition{
 			Name:        tool.Name,
 			Description: tool.Description,
 			InputSchema: tool.InputSchema,

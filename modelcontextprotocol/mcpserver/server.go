@@ -2,13 +2,12 @@ package mcpserver
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/llmcontext/gomcp/config"
-	"github.com/llmcontext/gomcp/defaults"
 	"github.com/llmcontext/gomcp/logger"
+	"github.com/llmcontext/gomcp/modelcontextprotocol"
+	"github.com/llmcontext/gomcp/providers"
 	"github.com/llmcontext/gomcp/providers/presets"
-	"github.com/llmcontext/gomcp/providers/proxies"
 	"github.com/llmcontext/gomcp/providers/sdk"
 	"github.com/llmcontext/gomcp/registry"
 	"github.com/llmcontext/gomcp/transport"
@@ -20,7 +19,7 @@ type McpServer struct {
 	serverName     string
 	serverVersion  string
 	serverRegistry *registry.McpServerRegistry
-
+	notifications  modelcontextprotocol.McpServerNotifications
 	// used by protocol
 	clientName          string
 	clientVersion       string
@@ -59,11 +58,17 @@ func NewMcpSdkServer(serverDefinition types.McpSdkServerDefinition, debug bool) 
 		return nil, err
 	}
 
+	mcpServerNotifications, err := providers.NewProviderMcpServerNotifications(sdkServerDefinition, false, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	return newMcpServer(
 		logger,
 		sdkServerDefinition.ServerName(),
 		sdkServerDefinition.ServerVersion(),
 		mcpServerRegistry,
+		mcpServerNotifications,
 	), nil
 }
 
@@ -82,10 +87,6 @@ func NewMcpServer(serverInfo *config.ServerInfo, loggingInfo *config.LoggingInfo
 		"serverVersion": serverInfo.Version,
 	})
 
-	// register the proxy servers
-	proxiesDirectory := filepath.Join(defaults.DefaultHubConfigurationDirectory, defaults.DefaultProxyDirectory)
-	proxies.RegisterProxyServers(proxiesDirectory, mcpServerRegistry)
-
 	// Register preset servers
 	// we use the same registration mechanism as for the SDK servers
 	serverDefinition := sdk.NewMcpServerDefinition(serverInfo.Name, serverInfo.Version)
@@ -101,22 +102,35 @@ func NewMcpServer(serverInfo *config.ServerInfo, loggingInfo *config.LoggingInfo
 		return nil, err
 	}
 
+	mcpServerNotifications, err := providers.NewProviderMcpServerNotifications(sdkServerDefinition, true, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	return newMcpServer(
 		logger,
 		serverInfo.Name,
 		serverInfo.Version,
 		mcpServerRegistry,
+		mcpServerNotifications,
 	), nil
 
 }
 
 // common constructor for the MCP server
-func newMcpServer(logger types.Logger, serverName string, serverVersion string, serverRegistry *registry.McpServerRegistry) *McpServer {
+func newMcpServer(
+	logger types.Logger,
+	serverName string,
+	serverVersion string,
+	serverRegistry *registry.McpServerRegistry,
+	notifications modelcontextprotocol.McpServerNotifications,
+) *McpServer {
 
 	return &McpServer{
 		logger:         logger,
 		serverName:     serverName,
 		serverVersion:  serverVersion,
+		notifications:  notifications,
 		serverRegistry: serverRegistry,
 		lastRequestId:  0,
 	}
