@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"html/template"
 
-	"github.com/llmcontext/gomcp/registry"
+	"github.com/llmcontext/gomcp/providers/results"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -69,7 +69,7 @@ func (r *PromptsRegistry) GetPrompt(promptName string, arguments map[string]stri
 	promptResult := renderedPrompt.String()
 
 	// let's create the output
-	output := registry.NewPromptGetResult(prompt.Description)
+	output := results.NewPromptGetResult(prompt.Description)
 
 	output.AddTextContent(types.RoleUser, promptResult)
 

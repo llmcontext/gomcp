@@ -6,7 +6,7 @@ import (
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/protocol/mcp"
-	"github.com/llmcontext/gomcp/registry"
+	"github.com/llmcontext/gomcp/providers/results"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -38,7 +38,7 @@ func (n *SdkServerDefinition) ExecuteToolCall(
 	}
 
 	// let's create the output
-	output := registry.NewToolCallResult()
+	output := results.NewToolCallResult()
 
 	errChan := make(chan *jsonrpc.JsonRpcError, 1)
 	go func() {
