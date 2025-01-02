@@ -129,7 +129,7 @@ func getListProxies(baseDirectory string) ([]*ProxyDefinition, error) {
 			return nil, err
 		}
 		for _, tool := range def.Tools {
-			err = SetJsonSchema(tool)
+			err = setJsonSchema(tool)
 			if err != nil {
 				return nil, err
 			}
@@ -139,7 +139,7 @@ func getListProxies(baseDirectory string) ([]*ProxyDefinition, error) {
 	return proxies, nil
 }
 
-func SetJsonSchema(tool *ProxyToolDefinition) error {
+func setJsonSchema(tool *ProxyToolDefinition) error {
 	schema, err := jsonschema.ToJsonSchema(tool.InputSchema)
 	if err != nil {
 		return err
