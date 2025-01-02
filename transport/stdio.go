@@ -6,15 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
-	"github.com/llmcontext/gomcp/channels/hubinspector"
 	"github.com/llmcontext/gomcp/types"
 )
 
 type StdioTransport struct {
 	isClosed  bool
-	inspector *hubinspector.Inspector
 	logger    types.Logger
 	onStarted func()
 	onMessage func(json.RawMessage)
@@ -22,11 +19,10 @@ type StdioTransport struct {
 	onError   func(error)
 }
 
-func NewStdioTransport(inspector *hubinspector.Inspector, logger types.Logger) types.Transport {
+func NewStdioTransport(logger types.Logger) types.Transport {
 	return &StdioTransport{
-		inspector: inspector,
-		logger:    logger,
-		isClosed:  false,
+		logger:   logger,
+		isClosed: false,
 	}
 }
 
@@ -50,13 +46,13 @@ func (t *StdioTransport) Start(ctx context.Context) error {
 func (t *StdioTransport) Send(message json.RawMessage) error {
 	// Write message followed by newline to stdout
 
-	if t.inspector != nil {
-		t.inspector.EnqueueMessage(hubinspector.MessageInfo{
-			Timestamp: time.Now().Format(time.RFC3339),
-			Direction: hubinspector.MessageDirectionResponse,
-			Content:   string(message),
-		})
-	}
+	// if t.inspector != nil {
+	// 	t.inspector.EnqueueMessage(hubinspector.MessageInfo{
+	// 		Timestamp: time.Now().Format(time.RFC3339),
+	// 		Direction: hubinspector.MessageDirectionResponse,
+	// 		Content:   string(message),
+	// 	})
+	// }
 
 	_, err := fmt.Fprintf(os.Stdout, "%s\n", message)
 	return err
@@ -113,13 +109,13 @@ func (t *StdioTransport) readLoop(ctx context.Context, errChan chan error) {
 			default:
 				line := scanner.Text()
 				if t.onMessage != nil {
-					if t.inspector != nil {
-						t.inspector.EnqueueMessage(hubinspector.MessageInfo{
-							Timestamp: time.Now().Format(time.RFC3339),
-							Direction: hubinspector.MessageDirectionRequest,
-							Content:   line,
-						})
-					}
+					// if t.inspector != nil {
+					// 	t.inspector.EnqueueMessage(hubinspector.MessageInfo{
+					// 		Timestamp: time.Now().Format(time.RFC3339),
+					// 		Direction: hubinspector.MessageDirectionRequest,
+					// 		Content:   line,
+					// 	})
+					// }
 					t.onMessage(json.RawMessage(line))
 				}
 			}

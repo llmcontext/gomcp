@@ -2,8 +2,6 @@ package config
 
 import (
 	"path/filepath"
-
-	"github.com/llmcontext/gomcp/defaults"
 )
 
 type ServerInfo struct {
@@ -23,23 +21,12 @@ type InspectorInfo struct {
 	ProtocolDebugFile string `json:"protocolDebugFile,omitempty"`
 }
 
-type PromptConfig struct {
-	File string `json:"file"`
-}
-
-type ToolConfig struct {
-	Name          string      `json:"name"`
-	IsDisabled    bool        `json:"isDisabled,omitempty"`
-	Description   string      `json:"description,omitempty"`
-	Configuration interface{} `json:"configuration"`
-}
-
 func updateFilePath(path string) string {
 	if path == "" {
 		return path
 	}
 	if !filepath.IsAbs(path) {
-		path = filepath.Join(defaults.DefaultHubConfigurationDirectory, path)
+		path = filepath.Join(DefaultHubConfigurationDirectory, path)
 	}
 	return path
 }

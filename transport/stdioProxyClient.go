@@ -13,7 +13,6 @@ import (
 
 type ProxiedMcpServerDescription struct {
 	ProxyId                 string
-	ProxyName               string
 	CurrentWorkingDirectory string
 	ProgramName             string
 	ProgramArgs             []string
@@ -29,6 +28,7 @@ type StdioProxyClientTransport struct {
 	onError   func(error)
 	onStarted func()
 	// we need to keep track of the pipe reader
+	pid        int // the pid of the process
 	pipeReader *io.PipeReader
 }
 
@@ -41,7 +41,12 @@ func NewStdioProxyClientTransport(options *ProxiedMcpServerDescription) types.Tr
 
 func (t *StdioProxyClientTransport) Start(ctx context.Context) error {
 	t.cmd = exec.Command(t.options.ProgramName, t.options.ProgramArgs...)
+	// check if we need to set the current working directory
+	if t.options.CurrentWorkingDirectory != "" {
+		t.cmd.Dir = t.options.CurrentWorkingDirectory
+	}
 
+	// create the stdin pipe
 	stdin, err := t.cmd.StdinPipe()
 	if err != nil {
 		return fmt.Errorf("failed to create stdin pipe: %v", err)
@@ -57,6 +62,8 @@ func (t *StdioProxyClientTransport) Start(ctx context.Context) error {
 	if err := t.cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start command: %v", err)
 	}
+	// get the pid of the process
+	t.pid = t.cmd.Process.Pid
 
 	errChan := make(chan error, 1)
 	go t.readLoop(ctx, errChan)

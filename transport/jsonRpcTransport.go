@@ -262,6 +262,7 @@ func (t *JsonRpcTransport) SendRequest(request *jsonrpc.JsonRpcRequest) error {
 	return t.transport.Send(jsonMessage)
 }
 
+// TODO: stop using that method
 func (t *JsonRpcTransport) SendResponse(response *jsonrpc.JsonRpcResponse) error {
 	jsonMessage, err := jsonrpc.MarshalJsonRpcResponse(response)
 	if err != nil {
@@ -271,6 +272,15 @@ func (t *JsonRpcTransport) SendResponse(response *jsonrpc.JsonRpcResponse) error
 		return err
 	}
 	return t.transport.Send(jsonMessage)
+}
+
+func (t *JsonRpcTransport) SendJsonRpcResponse(response interface{}, id *jsonrpc.JsonRpcRequestId) {
+	t.SendResponse(&jsonrpc.JsonRpcResponse{
+		JsonRpcVersion: jsonrpc.JsonRpcVersion,
+		Id:             id,
+		Result:         response,
+		Error:          nil,
+	})
 }
 
 func (t *JsonRpcTransport) SendError(code int, message string, id *jsonrpc.JsonRpcRequestId) error {
@@ -292,6 +302,14 @@ func (t *JsonRpcTransport) SendError(code int, message string, id *jsonrpc.JsonR
 	// send the message
 	return t.transport.Send(jsonMessage)
 
+}
+
+func (t *JsonRpcTransport) SendNotification(method string) {
+	notification := jsonrpc.JsonRpcRequest{
+		JsonRpcVersion: jsonrpc.JsonRpcVersion,
+		Method:         method,
+	}
+	t.SendRequest(&notification)
 }
 
 func (t *JsonRpcTransport) Close() {
