@@ -159,6 +159,10 @@ func setJsonSchema(tool *ProxyToolDefinition) error {
 	return nil
 }
 
+func (p *ProxyDefinition) GetTools() []*ProxyToolDefinition {
+	return p.Tools
+}
+
 func (r *ProxyRegistry) Prepare() error {
 	// TODO: to be implemented
 	return nil

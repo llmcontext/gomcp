@@ -48,6 +48,7 @@ func (n *ProviderMcpServerHandler) ExecuteToolsList(ctx context.Context, logger 
 		Tools: make([]mcp.ToolDescription, 0, 10),
 	}
 
+	// get the tools from the sdk
 	tools := n.sdkServerDefinition.GetListOfTools()
 	for _, tool := range tools {
 		result.Tools = append(result.Tools, mcp.ToolDescription{
@@ -55,6 +56,18 @@ func (n *ProviderMcpServerHandler) ExecuteToolsList(ctx context.Context, logger 
 			Description: tool.ToolDescription,
 			InputSchema: tool.InputSchema,
 		})
+	}
+
+	// get the tools from the proxies
+	proxiesTools := n.proxyRegistry.GetProxies()
+	for _, proxy := range proxiesTools {
+		for _, tool := range proxy.GetTools() {
+			result.Tools = append(result.Tools, mcp.ToolDescription{
+				Name:        tool.Name,
+				Description: tool.Description,
+				InputSchema: tool.InputSchema,
+			})
+		}
 	}
 
 	return result, nil
