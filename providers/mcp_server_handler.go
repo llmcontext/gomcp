@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/modelcontextprotocol"
@@ -61,14 +62,23 @@ func (n *ProviderMcpServerHandler) ExecuteToolsList(ctx context.Context, logger 
 
 func (n *ProviderMcpServerHandler) ExecuteToolCall(
 	ctx context.Context,
-	toolName string,
 	params *mcp.JsonRpcRequestToolsCallParams,
 	logger types.Logger,
 ) (types.ToolCallResult, *jsonrpc.JsonRpcError) {
+	toolName := params.Name
 	n.logger.Info("OnToolCall", types.LogArg{
 		"toolName": toolName,
 		"params":   params,
 	})
 
-	return n.sdkServerDefinition.ExecuteToolCall(ctx, params, logger)
+	// check if the tool is available in the proxy
+	proxy := n.proxyRegistry.GetTool(toolName)
+	if proxy != nil {
+		return n.sdkServerDefinition.ExecuteToolCall(ctx, params, logger)
+	}
+
+	return nil, &jsonrpc.JsonRpcError{
+		Code:    jsonrpc.RpcInternalError,
+		Message: fmt.Sprintf("Tool %s not found", toolName),
+	}
 }

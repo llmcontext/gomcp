@@ -40,6 +40,17 @@ func (r *ProxyRegistry) GetProxy(proxyId string) *ProxyDefinition {
 	return nil
 }
 
+func (r *ProxyRegistry) GetTool(toolName string) *ProxyToolDefinition {
+	for _, proxy := range r.proxies {
+		for _, tool := range proxy.Tools {
+			if tool.Name == toolName {
+				return tool
+			}
+		}
+	}
+	return nil
+}
+
 func (r *ProxyRegistry) AddProxy(proxy *ProxyDefinition) error {
 	// we need to check if the proxy already exists
 	for _, p := range r.proxies {
