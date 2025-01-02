@@ -21,11 +21,6 @@ type InspectorInfo struct {
 	ProtocolDebugFile string `json:"protocolDebugFile,omitempty"`
 }
 
-// TODO: delete and have prompt part of a preset server
-type PromptConfig struct {
-	File string `json:"file"`
-}
-
 func updateFilePath(path string) string {
 	if path == "" {
 		return path
