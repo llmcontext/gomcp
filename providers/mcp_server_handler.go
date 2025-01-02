@@ -70,5 +70,5 @@ func (n *ProviderMcpServerHandler) ExecuteToolCall(
 		"params":   params,
 	})
 
-	return nil, nil
+	return n.sdkServerDefinition.ExecuteToolCall(ctx, params, logger)
 }
