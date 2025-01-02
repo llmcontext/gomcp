@@ -1,4 +1,4 @@
-package hubinspector
+package inspector
 
 import (
 	"context"
