@@ -2,8 +2,6 @@ package config
 
 import (
 	"path/filepath"
-
-	"github.com/llmcontext/gomcp/defaults"
 )
 
 type ServerInfo struct {
@@ -33,7 +31,7 @@ func updateFilePath(path string) string {
 		return path
 	}
 	if !filepath.IsAbs(path) {
-		path = filepath.Join(defaults.DefaultHubConfigurationDirectory, path)
+		path = filepath.Join(DefaultHubConfigurationDirectory, path)
 	}
 	return path
 }

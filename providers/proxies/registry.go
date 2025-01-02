@@ -6,9 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/invopop/jsonschema"
-	"github.com/llmcontext/gomcp/defaults"
-	mcpjsonschema "github.com/llmcontext/gomcp/jsonschema"
+	"github.com/llmcontext/gomcp/config"
+	"github.com/llmcontext/gomcp/jsonschema"
 )
 
 type ProxyRegistry struct {
@@ -17,7 +16,7 @@ type ProxyRegistry struct {
 }
 
 func NewProxyRegistry() (*ProxyRegistry, error) {
-	baseDirectory := filepath.Join(defaults.DefaultHubConfigurationDirectory, defaults.DefaultProxyDirectory)
+	baseDirectory := filepath.Join(config.DefaultHubConfigurationDirectory, config.DefaultProxyDirectory)
 	proxies, err := getListProxies(baseDirectory)
 	if err != nil {
 		return nil, err
@@ -95,7 +94,7 @@ func getListProxies(baseDirectory string) ([]*ProxyDefinition, error) {
 	}
 
 	// let's generate the schema from the config struct
-	proxySchema, err := mcpjsonschema.GetSchemaFromAny(&ProxyDefinition{})
+	proxySchema, err := jsonschema.GetSchemaFromAny(&ProxyDefinition{})
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +118,7 @@ func getListProxies(baseDirectory string) ([]*ProxyDefinition, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = mcpjsonschema.ValidateJsonSchemaWithBytes(proxySchema, jsonBytes)
+		err = jsonschema.ValidateJsonSchemaWithBytes(proxySchema, jsonBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -141,30 +140,12 @@ func getListProxies(baseDirectory string) ([]*ProxyDefinition, error) {
 }
 
 func SetJsonSchema(tool *ProxyToolDefinition) error {
-	var schema *jsonschema.Schema
-	switch s := tool.InputSchema.(type) {
-	case *jsonschema.Schema:
-		schema = s
-	case map[string]interface{}:
-		schema = &jsonschema.Schema{}
-		// Unmarshal the map into the schema
-		if err := mapToStruct(s, schema); err != nil {
-			return fmt.Errorf("invalid schema format: %v", err)
-		}
-	default:
-		return fmt.Errorf("inputSchema must be either *jsonschema.Schema or map[string]interface{}")
-	}
-	tool.JsonSchema = schema
-
-	return nil
-}
-
-func mapToStruct(input map[string]interface{}, output interface{}) error {
-	jsonBytes, err := json.Marshal(input)
+	schema, err := jsonschema.ToJsonSchema(tool.InputSchema)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(jsonBytes, output)
+	tool.JsonSchema = schema
+	return nil
 }
 
 func (r *ProxyRegistry) Prepare() error {

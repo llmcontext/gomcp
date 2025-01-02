@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/llmcontext/gomcp/defaults"
 	"github.com/llmcontext/gomcp/jsonschema"
 )
 
@@ -23,7 +22,7 @@ type ServerProxyConfig struct {
 	ListenAddress string `json:"listenAddress"`
 }
 
-var defaultHubConfigurationPath = filepath.Join(defaults.DefaultHubConfigurationDirectory, "hub.json")
+var defaultHubConfigurationPath = filepath.Join(DefaultHubConfigurationDirectory, "hub.json")
 
 func GetDefaultHubConfigurationPath() string {
 	return defaultHubConfigurationPath

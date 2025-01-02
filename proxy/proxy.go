@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/llmcontext/gomcp/defaults"
+	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/modelcontextprotocol"
 	"github.com/llmcontext/gomcp/modelcontextprotocol/mcpclient"
@@ -73,7 +73,7 @@ func (p *Proxy) Start() error {
 	})
 
 	mcpClient := mcpclient.NewMcpClient(
-		defaults.DefaultApplicationName,
+		config.DefaultApplicationName,
 		version.Version,
 		p.AsMcpClientNotifications(),
 		p.logger,
