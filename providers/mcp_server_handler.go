@@ -74,9 +74,16 @@ func (n *ProviderMcpServerHandler) ExecuteToolCall(
 	// check if the tool is available in the proxy
 	proxy := n.proxyRegistry.GetTool(toolName)
 	if proxy != nil {
+		return n.proxyRegistry.ExecuteToolCall(ctx, params, logger)
+	}
+
+	// check if the tool is available in the sdk
+	tool := n.sdkServerDefinition.GetTool(toolName)
+	if tool != nil {
 		return n.sdkServerDefinition.ExecuteToolCall(ctx, params, logger)
 	}
 
+	// if the tool is not found in the proxy or the sdk, return an error
 	return nil, &jsonrpc.JsonRpcError{
 		Code:    jsonrpc.RpcInternalError,
 		Message: fmt.Sprintf("Tool %s not found", toolName),
