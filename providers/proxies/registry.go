@@ -13,6 +13,8 @@ import (
 type ProxyRegistry struct {
 	baseDirectory string
 	proxies       []*ProxyDefinition
+	// only for internal use
+	mcpRunners *McpRunners
 }
 
 func NewProxyRegistry() (*ProxyRegistry, error) {
@@ -164,6 +166,9 @@ func (p *ProxyDefinition) GetTools() []*ProxyToolDefinition {
 }
 
 func (r *ProxyRegistry) Prepare() error {
-	// TODO: to be implemented
+	r.mcpRunners = NewMcpRunners()
+	for _, proxy := range r.proxies {
+		r.mcpRunners.AddProxy(proxy)
+	}
 	return nil
 }

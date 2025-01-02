@@ -87,7 +87,7 @@ func (n *ProviderMcpServerHandler) ExecuteToolCall(
 	// check if the tool is available in the proxy
 	proxyTool, proxy := n.proxyRegistry.GetTool(toolName)
 	if proxyTool != nil {
-		return proxyTool.ExecuteToolCall(ctx, proxy, params, logger)
+		return n.proxyRegistry.ExecuteToolCall(ctx, proxy, proxyTool, params, logger)
 	}
 
 	// check if the tool is available in the sdk
