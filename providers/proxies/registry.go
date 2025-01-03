@@ -13,6 +13,8 @@ import (
 type ProxyRegistry struct {
 	baseDirectory string
 	proxies       []*ProxyDefinition
+	// only for internal use
+	mcpRunners *McpRunners
 }
 
 func NewProxyRegistry() (*ProxyRegistry, error) {
@@ -38,6 +40,17 @@ func (r *ProxyRegistry) GetProxy(proxyId string) *ProxyDefinition {
 		}
 	}
 	return nil
+}
+
+func (r *ProxyRegistry) GetTool(toolName string) (*ProxyToolDefinition, *ProxyDefinition) {
+	for _, proxy := range r.proxies {
+		for _, tool := range proxy.Tools {
+			if tool.Name == toolName {
+				return tool, proxy
+			}
+		}
+	}
+	return nil, nil
 }
 
 func (r *ProxyRegistry) AddProxy(proxy *ProxyDefinition) error {
@@ -129,7 +142,7 @@ func getListProxies(baseDirectory string) ([]*ProxyDefinition, error) {
 			return nil, err
 		}
 		for _, tool := range def.Tools {
-			err = SetJsonSchema(tool)
+			err = setJsonSchema(tool)
 			if err != nil {
 				return nil, err
 			}
@@ -139,7 +152,7 @@ func getListProxies(baseDirectory string) ([]*ProxyDefinition, error) {
 	return proxies, nil
 }
 
-func SetJsonSchema(tool *ProxyToolDefinition) error {
+func setJsonSchema(tool *ProxyToolDefinition) error {
 	schema, err := jsonschema.ToJsonSchema(tool.InputSchema)
 	if err != nil {
 		return err
@@ -148,7 +161,14 @@ func SetJsonSchema(tool *ProxyToolDefinition) error {
 	return nil
 }
 
+func (p *ProxyDefinition) GetTools() []*ProxyToolDefinition {
+	return p.Tools
+}
+
 func (r *ProxyRegistry) Prepare() error {
-	// TODO: to be implemented
+	r.mcpRunners = NewMcpRunners()
+	for _, proxy := range r.proxies {
+		r.mcpRunners.AddProxy(proxy)
+	}
 	return nil
 }

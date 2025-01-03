@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/modelcontextprotocol"
@@ -47,6 +48,7 @@ func (n *ProviderMcpServerHandler) ExecuteToolsList(ctx context.Context, logger 
 		Tools: make([]mcp.ToolDescription, 0, 10),
 	}
 
+	// get the tools from the sdk
 	tools := n.sdkServerDefinition.GetListOfTools()
 	for _, tool := range tools {
 		result.Tools = append(result.Tools, mcp.ToolDescription{
@@ -56,19 +58,47 @@ func (n *ProviderMcpServerHandler) ExecuteToolsList(ctx context.Context, logger 
 		})
 	}
 
+	// get the tools from the proxies
+	proxiesTools := n.proxyRegistry.GetProxies()
+	for _, proxy := range proxiesTools {
+		for _, tool := range proxy.GetTools() {
+			result.Tools = append(result.Tools, mcp.ToolDescription{
+				Name:        tool.Name,
+				Description: tool.Description,
+				InputSchema: tool.InputSchema,
+			})
+		}
+	}
+
 	return result, nil
 }
 
 func (n *ProviderMcpServerHandler) ExecuteToolCall(
 	ctx context.Context,
-	toolName string,
 	params *mcp.JsonRpcRequestToolsCallParams,
 	logger types.Logger,
 ) (types.ToolCallResult, *jsonrpc.JsonRpcError) {
+	toolName := params.Name
 	n.logger.Info("OnToolCall", types.LogArg{
 		"toolName": toolName,
 		"params":   params,
 	})
 
-	return n.sdkServerDefinition.ExecuteToolCall(ctx, params, logger)
+	// check if the tool is available in the proxy
+	proxyTool, proxy := n.proxyRegistry.GetTool(toolName)
+	if proxyTool != nil {
+		return n.proxyRegistry.ExecuteToolCall(ctx, proxy, proxyTool, params, logger)
+	}
+
+	// check if the tool is available in the sdk
+	tool := n.sdkServerDefinition.GetTool(toolName)
+	if tool != nil {
+		return n.sdkServerDefinition.ExecuteToolCall(ctx, params, logger)
+	}
+
+	// if the tool is not found in the proxy or the sdk, return an error
+	return nil, &jsonrpc.JsonRpcError{
+		Code:    jsonrpc.RpcInternalError,
+		Message: fmt.Sprintf("Tool %s not found", toolName),
+	}
 }
