@@ -7,7 +7,6 @@ import (
 	"github.com/llmcontext/gomcp/jsonrpc"
 	"github.com/llmcontext/gomcp/modelcontextprotocol"
 	"github.com/llmcontext/gomcp/protocol/mcp"
-	"github.com/llmcontext/gomcp/providers/proxies"
 	"github.com/llmcontext/gomcp/providers/sdk"
 	"github.com/llmcontext/gomcp/types"
 )
@@ -15,31 +14,20 @@ import (
 type ProviderMcpServerHandler struct {
 	logger              types.Logger
 	sdkServerDefinition *sdk.SdkServerDefinition
-	proxyRegistry       *proxies.ProxyRegistry
 }
 
 func NewProviderMcpServerHandler(
 	sdkServerDefinition *sdk.SdkServerDefinition,
-	withProxies bool,
 	logger types.Logger) (modelcontextprotocol.McpServerEventHandler, error) {
-	var proxyRegistry *proxies.ProxyRegistry
-	var err error
-	if withProxies {
-		proxyRegistry, err = proxies.NewProxyRegistry()
-		if err != nil {
-			return nil, err
-		}
-		// prepare the proxy registry so that we can use it
-		proxyRegistry.Prepare()
-	}
-
 	// prepare the server so that we can use it
-	sdkServerDefinition.Prepare()
+	err := sdkServerDefinition.Prepare()
+	if err != nil {
+		return nil, err
+	}
 
 	return &ProviderMcpServerHandler{
 		logger:              logger,
 		sdkServerDefinition: sdkServerDefinition,
-		proxyRegistry:       proxyRegistry,
 	}, nil
 }
 
@@ -58,18 +46,6 @@ func (n *ProviderMcpServerHandler) ExecuteToolsList(ctx context.Context, logger 
 		})
 	}
 
-	// get the tools from the proxies
-	proxiesTools := n.proxyRegistry.GetProxies()
-	for _, proxy := range proxiesTools {
-		for _, tool := range proxy.GetTools() {
-			result.Tools = append(result.Tools, mcp.ToolDescription{
-				Name:        tool.Name,
-				Description: tool.Description,
-				InputSchema: tool.InputSchema,
-			})
-		}
-	}
-
 	return result, nil
 }
 
@@ -83,12 +59,6 @@ func (n *ProviderMcpServerHandler) ExecuteToolCall(
 		"toolName": toolName,
 		"params":   params,
 	})
-
-	// check if the tool is available in the proxy
-	proxyTool, proxy := n.proxyRegistry.GetTool(toolName)
-	if proxyTool != nil {
-		return n.proxyRegistry.ExecuteToolCall(ctx, proxy, proxyTool, params, logger)
-	}
 
 	// check if the tool is available in the sdk
 	tool := n.sdkServerDefinition.GetTool(toolName)
