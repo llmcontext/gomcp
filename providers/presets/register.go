@@ -1,7 +1,7 @@
 package presets
 
 import (
-	"github.com/llmcontext/gomcp/providers/presets/mcp_server_time"
+	"github.com/llmcontext/gomcp/providers/presets/mcptime"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -18,7 +18,7 @@ func RegisterPresetServers(mcpServerDefinition types.McpSdkServerDefinition, log
 	for _, toolName := range presetToolsNames {
 		switch toolName {
 		case "gomcp_server_time":
-			err := mcp_server_time.RegisterTools(mcpServerDefinition)
+			err := mcptime.RegisterTools(mcpServerDefinition)
 			if err != nil {
 				logger.Error("failed to register tools: %v", types.LogArg{
 					"error": err,

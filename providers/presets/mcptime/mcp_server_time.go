@@ -1,4 +1,4 @@
-package mcp_server_time
+package mcptime
 
 import (
 	"context"
