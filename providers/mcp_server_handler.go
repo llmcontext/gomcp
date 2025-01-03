@@ -66,7 +66,7 @@ func (n *ProviderMcpServerHandler) ExecuteToolCall(
 		return n.sdkServerDefinition.ExecuteToolCall(ctx, params, logger)
 	}
 
-	// if the tool is not found in the proxy or the sdk, return an error
+	// if the tool is not found in the sdk, return an error
 	return nil, &jsonrpc.JsonRpcError{
 		Code:    jsonrpc.RpcInternalError,
 		Message: fmt.Sprintf("Tool %s not found", toolName),

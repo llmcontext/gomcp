@@ -9,11 +9,11 @@ import (
 
 func GetSchemaFromAny(any interface{}) (*jsonschema.Schema, error) {
 	// let's generate the schema from the config struct
-	proxySchema := jsonschema.Reflect(any)
-	if proxySchema == nil {
-		return nil, fmt.Errorf("failed to generate schema from config struct")
+	jsonSchema := jsonschema.Reflect(any)
+	if jsonSchema == nil {
+		return nil, fmt.Errorf("failed to generate schema from struct")
 	}
-	return proxySchema, nil
+	return jsonSchema, nil
 }
 
 func GetSchemaFromType(t reflect.Type) (*jsonschema.Schema, string, error) {

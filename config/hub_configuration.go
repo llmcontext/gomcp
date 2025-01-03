@@ -10,16 +10,10 @@ import (
 )
 
 type HubConfiguration struct {
-	ConfigVersion int                `json:"v"`
-	ServerInfo    *ServerInfo        `json:"serverInfo"`
-	Logging       *LoggingInfo       `json:"logging,omitempty"`
-	Inspector     *InspectorInfo     `json:"inspector,omitempty"`
-	Proxy         *ServerProxyConfig `json:"proxy,omitempty"`
-}
-
-type ServerProxyConfig struct {
-	Enabled       bool   `json:"enabled"`
-	ListenAddress string `json:"listenAddress"`
+	ConfigVersion int            `json:"v"`
+	ServerInfo    *ServerInfo    `json:"serverInfo"`
+	Logging       *LoggingInfo   `json:"logging,omitempty"`
+	Inspector     *InspectorInfo `json:"inspector,omitempty"`
 }
 
 var defaultHubConfigurationPath = filepath.Join(DefaultHubConfigurationDirectory, "hub.json")
