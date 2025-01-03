@@ -48,7 +48,7 @@ func NewMcpSdkServer(serverDefinition types.McpSdkServerDefinition, debug bool) 
 	}
 
 	// we create the MCP server handler
-	mcpServerNotifications, err := providers.NewProviderMcpServerHandler(sdkServerDefinition, false, logger)
+	mcpServerNotifications, err := providers.NewProviderMcpServerHandler(sdkServerDefinition, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func NewMcpServer(serverInfo *config.ServerInfo, loggingInfo *config.LoggingInfo
 	presets.RegisterPresetServers(sdkServerDefinition, logger)
 
 	// we create the MCP server handler
-	mcpServerHandler, err := providers.NewProviderMcpServerHandler(sdkServerDefinition, true, logger)
+	mcpServerHandler, err := providers.NewProviderMcpServerHandler(sdkServerDefinition, logger)
 	if err != nil {
 		return nil, err
 	}
