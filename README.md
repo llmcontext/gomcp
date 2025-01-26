@@ -257,6 +257,9 @@ Check the [README](https://github.com/llmcontext/mcpnotion/blob/main/README.md) 
 
 ## Changelog
 
+### 0.5.0
+- addtool to detect dead code: go install golang.org/x/tools/cmd/deadcode@latest
+
 ### 0.4.0
 
 - Add support for the proxy/multiplexer. In the configuration file, set the `proxy.enabled` field to true to enable the proxy. The proxy is a tool that allows you to proxy messages between any MCP server and the LLM.

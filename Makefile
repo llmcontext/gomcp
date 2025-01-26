@@ -44,6 +44,11 @@ staticcheck:
 	@echo "Running staticcheck..."
 	@staticcheck ./...
 
+# deadcode
+deadcode:
+	@echo "Running deadcode..."
+	@deadcode ./...
+
 inspector: build
 	@echo "Running inspector..."
 	npx @modelcontextprotocol/inspector $(BUILD_DIR)/$(BINARY) --debug
