@@ -144,7 +144,7 @@ func TestParseJsonRpcResponse(t *testing.T) {
 			}`),
 			expectedResponse: &JsonRpcResponse{
 				JsonRpcVersion: "2.0",
-				Id:             &JsonRpcRequestId{String: stringPtr("123")},
+				Id:             &JsonRpcRequestId{String: StringPtr("123")},
 				Result:         "hello",
 			},
 			wantError: nil,
@@ -158,7 +158,7 @@ func TestParseJsonRpcResponse(t *testing.T) {
 			}`),
 			expectedResponse: &JsonRpcResponse{
 				JsonRpcVersion: "2.0",
-				Id:             &JsonRpcRequestId{Number: intPtr(42)},
+				Id:             &JsonRpcRequestId{Number: IntPtr(42)},
 				Result:         true,
 			},
 			wantError: nil,
@@ -175,7 +175,7 @@ func TestParseJsonRpcResponse(t *testing.T) {
 			}`),
 			expectedResponse: &JsonRpcResponse{
 				JsonRpcVersion: "2.0",
-				Id:             &JsonRpcRequestId{String: stringPtr("123")},
+				Id:             &JsonRpcRequestId{String: StringPtr("123")},
 				Error: &JsonRpcError{
 					Code:    -32600,
 					Message: "Invalid Request",
