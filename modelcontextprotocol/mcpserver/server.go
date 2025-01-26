@@ -3,7 +3,6 @@ package mcpserver
 import (
 	"fmt"
 
-	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/logger"
 	"github.com/llmcontext/gomcp/modelcontextprotocol"
 	"github.com/llmcontext/gomcp/providers"
@@ -35,7 +34,7 @@ func NewMcpSdkServer(serverDefinition types.McpSdkServerDefinition, debug bool) 
 	}
 
 	// we build the configuration data
-	loggingInfo := &config.LoggingInfo{
+	loggingInfo := &logger.LoggingInfo{
 		Level:      sdkServerDefinition.DebugLevel(),
 		File:       sdkServerDefinition.DebugFile(),
 		WithStderr: false,
@@ -62,20 +61,20 @@ func NewMcpSdkServer(serverDefinition types.McpSdkServerDefinition, debug bool) 
 }
 
 // constructor for the multiplexer MCP server
-func NewMcpServer(serverInfo *config.ServerInfo, loggingInfo *config.LoggingInfo, debug bool) (*McpServer, error) {
+func NewMcpServer(serverName string, serverVersion string, loggingInfo *logger.LoggingInfo, debug bool) (*McpServer, error) {
 	logger, err := logger.NewLogger(loggingInfo, debug)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize logger: %v", err)
 	}
 
 	logger.Debug("registry>server>NewMcpServer", types.LogArg{
-		"serverName":    serverInfo.Name,
-		"serverVersion": serverInfo.Version,
+		"serverName":    serverName,
+		"serverVersion": serverVersion,
 	})
 
 	// Register preset servers
 	// we use the same registration mechanism as for the SDK servers
-	sdkServerDefinition := sdk.NewMcpSdkServerDefinition(serverInfo.Name, serverInfo.Version)
+	sdkServerDefinition := sdk.NewMcpSdkServerDefinition(serverName, serverVersion)
 	presets.RegisterPresetServers(sdkServerDefinition, logger)
 
 	// we create the MCP server handler
@@ -86,8 +85,8 @@ func NewMcpServer(serverInfo *config.ServerInfo, loggingInfo *config.LoggingInfo
 
 	return newMcpServer(
 		logger,
-		serverInfo.Name,
-		serverInfo.Version,
+		serverName,
+		serverVersion,
 		mcpServerHandler,
 	), nil
 

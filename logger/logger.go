@@ -4,17 +4,22 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/llmcontext/gomcp/config"
 	"github.com/llmcontext/gomcp/types"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
+type LoggingInfo struct {
+	File       string
+	Level      string
+	WithStderr bool
+}
+
 type LoggerImpl struct {
 	zapLog *zap.Logger
 }
 
-func NewLogger(config *config.LoggingInfo, debug bool) (types.Logger, error) {
+func NewLogger(config *LoggingInfo, debug bool) (types.Logger, error) {
 	cfg := zap.NewProductionConfig()
 
 	// Configure encoder to use ISO 8601 timestamp format
