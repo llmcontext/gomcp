@@ -255,6 +255,10 @@ Check the documentation [here](https://github.com/llmcontext/mcpnotion?tab=readm
 
 Check the [README](https://github.com/llmcontext/mcpnotion/blob/main/README.md) of the [mcpnotion](https://github.com/llmcontext/mcpnotion) project for more information on how to integrate your MCP server with the Claude desktop application.
 
+
+## TODO
+- better error management: eg. failure when init functionc fails
+
 ## Changelog
 
 ### 0.5.0

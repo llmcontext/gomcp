@@ -30,9 +30,13 @@ func (n *SdkServerDefinition) ExecuteToolCall(
 		// if not, we initialize the tool context
 		err := n.serverInitFunction(ctx, logger)
 		if err != nil {
+			logger.Error("error initializing tool context", types.LogArg{
+				"toolName": toolName,
+				"error":    err,
+			})
 			return nil, &jsonrpc.JsonRpcError{
 				Code:    jsonrpc.RpcInternalError,
-				Message: fmt.Sprintf("tool %s context not found", toolName),
+				Message: fmt.Sprintf("tool %s - error initializing tool context: %v", toolName, err),
 			}
 		}
 	}

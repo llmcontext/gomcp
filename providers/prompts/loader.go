@@ -6,7 +6,7 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/llmcontext/gomcp/jsonschema"
+	"github.com/llmcontext/gomcp/pkg/jsonschema"
 	"gopkg.in/yaml.v3"
 )
 
