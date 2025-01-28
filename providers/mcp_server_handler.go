@@ -72,3 +72,28 @@ func (n *ProviderMcpServerHandler) ExecuteToolCall(
 		Message: fmt.Sprintf("Tool %s not found", toolName),
 	}
 }
+
+func (n *ProviderMcpServerHandler) ExecutePromptsList(ctx context.Context, logger types.Logger) (*mcp.JsonRpcResponsePromptsListResult, *jsonrpc.JsonRpcError) {
+	var response = mcp.JsonRpcResponsePromptsListResult{
+		Prompts: make([]mcp.PromptDescription, 0),
+	}
+
+	prompts := n.sdkServerDefinition.GetListOfPrompts()
+	for _, prompt := range prompts {
+		arguments := make([]mcp.PromptArgumentDescription, 0, len(prompt.Arguments))
+		for _, argument := range prompt.Arguments {
+			arguments = append(arguments, mcp.PromptArgumentDescription{
+				Name:        argument.Name,
+				Description: argument.Description,
+				Required:    argument.Required,
+			})
+		}
+		response.Prompts = append(response.Prompts, mcp.PromptDescription{
+			Name:        prompt.Name,
+			Description: prompt.Description,
+			Arguments:   arguments,
+		})
+	}
+
+	return &response, nil
+}

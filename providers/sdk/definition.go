@@ -44,6 +44,7 @@ func NewMcpSdkServerDefinition(serverName string, serverVersion string) *SdkServ
 		serverName:      serverName,
 		serverVersion:   serverVersion,
 		toolDefinitions: []*SdkToolDefinition{},
+		promptsRegistry: prompts.NewPromptsRegistry(),
 	}
 }
 
@@ -109,6 +110,10 @@ func (s *SdkServerDefinition) GetTool(toolName string) *SdkToolDefinition {
 		}
 	}
 	return nil
+}
+
+func (s *SdkServerDefinition) GetListOfPrompts() []*prompts.PromptDefinition {
+	return s.promptsRegistry.GetListOfPrompts()
 }
 
 func (s *SdkServerDefinition) AddTemplateYamlFile(templateYamlFilePath string) {

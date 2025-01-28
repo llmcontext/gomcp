@@ -10,11 +10,11 @@ import (
 )
 
 type PromptsRegistry struct {
-	prompts []PromptDefinition
+	prompts []*PromptDefinition
 }
 
 func NewPromptsRegistry() *PromptsRegistry {
-	return &PromptsRegistry{prompts: []PromptDefinition{}}
+	return &PromptsRegistry{prompts: []*PromptDefinition{}}
 }
 
 func (r *PromptsRegistry) LoadPromptYamlFile(promptYamlFilePath string) error {
@@ -27,14 +27,14 @@ func (r *PromptsRegistry) LoadPromptYamlFile(promptYamlFilePath string) error {
 	return nil
 }
 
-func (r *PromptsRegistry) GetListOfPrompts() []PromptDefinition {
+func (r *PromptsRegistry) GetListOfPrompts() []*PromptDefinition {
 	return r.prompts
 }
 
 func (r *PromptsRegistry) findPrompt(name string) *PromptDefinition {
 	for _, prompt := range r.prompts {
 		if prompt.Name == name {
-			return &prompt
+			return prompt
 		}
 	}
 	return nil

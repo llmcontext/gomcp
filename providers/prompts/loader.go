@@ -12,7 +12,7 @@ import (
 
 // PromptConfig represents the root YAML structure
 type PromptConfig struct {
-	Prompts []PromptDefinition `json:"prompts" yaml:"prompts"`
+	Prompts []*PromptDefinition `json:"prompts" yaml:"prompts"`
 }
 
 type PromptDefinition struct {

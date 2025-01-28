@@ -9,6 +9,10 @@ import (
 )
 
 type McpServerEventHandler interface {
-	ExecuteToolCall(ctx context.Context, params *mcp.JsonRpcRequestToolsCallParams, logger types.Logger) (types.ToolCallResult, *jsonrpc.JsonRpcError)
+	// tools
 	ExecuteToolsList(ctx context.Context, logger types.Logger) (*mcp.JsonRpcResponseToolsListResult, *jsonrpc.JsonRpcError)
+	ExecuteToolCall(ctx context.Context, params *mcp.JsonRpcRequestToolsCallParams, logger types.Logger) (types.ToolCallResult, *jsonrpc.JsonRpcError)
+
+	// prompts
+	ExecutePromptsList(ctx context.Context, logger types.Logger) (*mcp.JsonRpcResponsePromptsListResult, *jsonrpc.JsonRpcError)
 }
