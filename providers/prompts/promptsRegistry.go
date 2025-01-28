@@ -13,16 +13,18 @@ type PromptsRegistry struct {
 	prompts []PromptDefinition
 }
 
-func NewEmptyPromptsRegistry() *PromptsRegistry {
+func NewPromptsRegistry() *PromptsRegistry {
 	return &PromptsRegistry{prompts: []PromptDefinition{}}
 }
 
-func NewPromptsRegistry(promptYamlFilePath string) (*PromptsRegistry, error) {
+func (r *PromptsRegistry) LoadPromptYamlFile(promptYamlFilePath string) error {
 	prompts, err := loadPrompts(promptYamlFilePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &PromptsRegistry{prompts: prompts.Prompts}, nil
+	// add the prompts to the registry
+	r.prompts = append(r.prompts, prompts.Prompts...)
+	return nil
 }
 
 func (r *PromptsRegistry) GetListOfPrompts() []PromptDefinition {

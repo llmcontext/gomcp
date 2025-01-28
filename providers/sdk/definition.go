@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/invopop/jsonschema"
+	"github.com/llmcontext/gomcp/providers/prompts"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -16,6 +17,7 @@ type SdkServerDefinition struct {
 	toolConfigurationData interface{}
 	toolsInitFunction     interface{}
 	toolDefinitions       []*SdkToolDefinition
+	promptsRegistry       *prompts.PromptsRegistry
 
 	// enhanced data
 	contextType     reflect.Type
@@ -107,4 +109,8 @@ func (s *SdkServerDefinition) GetTool(toolName string) *SdkToolDefinition {
 		}
 	}
 	return nil
+}
+
+func (s *SdkServerDefinition) AddTemplateYamlFile(templateYamlFilePath string) {
+	s.promptsRegistry.LoadPromptYamlFile(templateYamlFilePath)
 }

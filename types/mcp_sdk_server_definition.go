@@ -7,4 +7,5 @@ type ToolsDefinition interface {
 type McpSdkServerDefinition interface {
 	SetDebugLevel(debugLevel string, debugFile string)
 	WithTools(configuration interface{}, toolsInitFunction interface{}) ToolsDefinition
+	AddTemplateYamlFile(templateYamlFilePath string)
 }
