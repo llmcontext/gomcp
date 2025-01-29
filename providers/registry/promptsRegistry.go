@@ -1,24 +1,25 @@
-package prompts
+package registry
 
 import (
 	"bytes"
 	"fmt"
 	"html/template"
 
+	"github.com/llmcontext/gomcp/pkg/prompts"
 	"github.com/llmcontext/gomcp/providers/results"
 	"github.com/llmcontext/gomcp/types"
 )
 
 type PromptsRegistry struct {
-	prompts []*PromptDefinition
+	prompts []*prompts.PromptDefinition
 }
 
 func NewPromptsRegistry() *PromptsRegistry {
-	return &PromptsRegistry{prompts: []*PromptDefinition{}}
+	return &PromptsRegistry{prompts: []*prompts.PromptDefinition{}}
 }
 
 func (r *PromptsRegistry) LoadPromptYamlFile(promptYamlFilePath string) error {
-	prompts, err := loadPrompts(promptYamlFilePath)
+	prompts, err := prompts.LoadPromptYamlFile(promptYamlFilePath)
 	if err != nil {
 		return err
 	}
@@ -27,11 +28,11 @@ func (r *PromptsRegistry) LoadPromptYamlFile(promptYamlFilePath string) error {
 	return nil
 }
 
-func (r *PromptsRegistry) GetListOfPrompts() []*PromptDefinition {
+func (r *PromptsRegistry) GetListOfPrompts() []*prompts.PromptDefinition {
 	return r.prompts
 }
 
-func (r *PromptsRegistry) findPrompt(name string) *PromptDefinition {
+func (r *PromptsRegistry) findPrompt(name string) *prompts.PromptDefinition {
 	for _, prompt := range r.prompts {
 		if prompt.Name == name {
 			return prompt

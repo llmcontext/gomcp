@@ -5,7 +5,8 @@ import (
 	"slices"
 
 	"github.com/invopop/jsonschema"
-	"github.com/llmcontext/gomcp/providers/prompts"
+	"github.com/llmcontext/gomcp/pkg/prompts"
+	"github.com/llmcontext/gomcp/providers/registry"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -17,7 +18,7 @@ type SdkServerDefinition struct {
 	toolConfigurationData interface{}
 	toolsInitFunction     interface{}
 	toolDefinitions       []*SdkToolDefinition
-	promptsRegistry       *prompts.PromptsRegistry
+	promptsRegistry       *registry.PromptsRegistry
 
 	// enhanced data
 	contextType     reflect.Type
@@ -44,7 +45,7 @@ func NewMcpSdkServerDefinition(serverName string, serverVersion string) *SdkServ
 		serverName:      serverName,
 		serverVersion:   serverVersion,
 		toolDefinitions: []*SdkToolDefinition{},
-		promptsRegistry: prompts.NewPromptsRegistry(),
+		promptsRegistry: registry.NewPromptsRegistry(),
 	}
 }
 
