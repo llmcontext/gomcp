@@ -123,7 +123,7 @@ func (m *McpServer) handleIncomingMessage(
 				if err != nil {
 					m.jsonRpcTransport.SendError(jsonrpc.RpcInvalidRequest, err.Error(), request.Id)
 				}
-				m.EventMcpRequestPromptsGet(parsed, request.Id)
+				m.EventMcpRequestPromptsGet(ctx, parsed, request.Id)
 			}
 		case "ping":
 			result := json.RawMessage(`{}`)
@@ -219,29 +219,11 @@ func (m *McpServer) EventMcpRequestPromptsList(ctx context.Context, params *mcp.
 	m.jsonRpcTransport.SendJsonRpcResponse(response, reqId)
 }
 
-func (m *McpServer) EventMcpRequestPromptsGet(params *mcp.JsonRpcRequestPromptsGetParams, reqId *jsonrpc.JsonRpcRequestId) {
-	var templateArgs = map[string]string{}
-	// copy the arguments, as strings
-	for key, value := range params.Arguments {
-		templateArgs[key] = fmt.Sprintf("%v", value)
+func (m *McpServer) EventMcpRequestPromptsGet(ctx context.Context, params *mcp.JsonRpcRequestPromptsGetParams, reqId *jsonrpc.JsonRpcRequestId) {
+	response, jsonRpcErr := m.handler.ExecutePromptGet(ctx, params, m.logger)
+	if jsonRpcErr != nil {
+		m.jsonRpcTransport.SendError(jsonRpcErr.Code, jsonRpcErr.Message, reqId)
+		return
 	}
-	// promptName := params.Name
-
-	// response, err := s.promptsRegistry.GetPrompt(promptName, templateArgs)
-	// if err != nil {
-	// 	s.mcpServer.SendError(jsonrpc.RpcInvalidParams, fmt.Sprintf("prompt processing error: %s", err), reqId)
-	// 	return
-	// }
-
-	response := json.RawMessage(`{ "result": "hello" }`)
-
-	// marshal response
-	responseBytes, err := json.Marshal(response)
-	if err != nil {
-		m.jsonRpcTransport.SendError(jsonrpc.RpcInternalError, "failed to marshal response", reqId)
-	}
-	jsonResponse := json.RawMessage(responseBytes)
-
-	// we send the response
-	m.jsonRpcTransport.SendJsonRpcResponse(&jsonResponse, reqId)
+	m.jsonRpcTransport.SendJsonRpcResponse(response, reqId)
 }

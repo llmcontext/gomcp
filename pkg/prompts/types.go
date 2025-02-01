@@ -17,3 +17,8 @@ type PromptArgumentDefinition struct {
 	Description string `json:"description" yaml:"description"`
 	Required    bool   `json:"required" yaml:"required"`
 }
+
+type DuplicatedPrompt struct {
+	PromptName string
+	FilePath   string
+}

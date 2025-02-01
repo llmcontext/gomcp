@@ -15,4 +15,5 @@ type McpServerEventHandler interface {
 
 	// prompts
 	ExecutePromptsList(ctx context.Context, logger types.Logger) (*mcp.JsonRpcResponsePromptsListResult, *jsonrpc.JsonRpcError)
+	ExecutePromptGet(ctx context.Context, params *mcp.JsonRpcRequestPromptsGetParams, logger types.Logger) (types.PromptGetResult, *jsonrpc.JsonRpcError)
 }

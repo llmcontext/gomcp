@@ -117,6 +117,10 @@ func (s *SdkServerDefinition) GetListOfPrompts() []*prompts.PromptDefinition {
 	return s.promptsRegistry.GetListOfPrompts()
 }
 
-func (s *SdkServerDefinition) AddTemplateYamlFile(templateYamlFilePath string) {
-	s.promptsRegistry.LoadPromptYamlFile(templateYamlFilePath)
+func (s *SdkServerDefinition) GetPrompt(promptName string, arguments map[string]string) (types.PromptGetResult, error) {
+	return s.promptsRegistry.GetPrompt(promptName, arguments)
+}
+
+func (s *SdkServerDefinition) AddTemplateYamlFile(templateYamlFilePath string) ([]*prompts.DuplicatedPrompt, error) {
+	return s.promptsRegistry.LoadPromptYamlFile(templateYamlFilePath)
 }

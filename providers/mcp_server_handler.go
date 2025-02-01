@@ -97,3 +97,18 @@ func (n *ProviderMcpServerHandler) ExecutePromptsList(ctx context.Context, logge
 
 	return &response, nil
 }
+
+func (n *ProviderMcpServerHandler) ExecutePromptGet(ctx context.Context, params *mcp.JsonRpcRequestPromptsGetParams, logger types.Logger) (types.PromptGetResult, *jsonrpc.JsonRpcError) {
+	promptName := params.Name
+	templateArgs := params.Arguments
+
+	response, err := n.sdkServerDefinition.GetPrompt(promptName, templateArgs)
+	if err != nil {
+		return nil, &jsonrpc.JsonRpcError{
+			Code:    jsonrpc.RpcInvalidParams,
+			Message: fmt.Sprintf("prompt processing error: %s", err),
+		}
+	}
+
+	return response, nil
+}

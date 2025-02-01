@@ -18,14 +18,22 @@ func NewPromptsRegistry() *PromptsRegistry {
 	return &PromptsRegistry{prompts: []*prompts.PromptDefinition{}}
 }
 
-func (r *PromptsRegistry) LoadPromptYamlFile(promptYamlFilePath string) error {
-	prompts, err := prompts.LoadPromptYamlFile(promptYamlFilePath)
+func (r *PromptsRegistry) LoadPromptYamlFile(promptYamlFilePath string) ([]*prompts.DuplicatedPrompt, error) {
+	duplicatedPrompts := make([]*prompts.DuplicatedPrompt, 0)
+	loadedPrompts, err := prompts.LoadPromptYamlFile(promptYamlFilePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	// add the prompts to the registry
-	r.prompts = append(r.prompts, prompts.Prompts...)
-	return nil
+	// make sure we don't have duplicated prompts
+	for _, prompt := range loadedPrompts.Prompts {
+		if r.findPrompt(prompt.Name) != nil {
+			duplicatedPrompts = append(duplicatedPrompts, &prompts.DuplicatedPrompt{PromptName: prompt.Name, FilePath: promptYamlFilePath})
+		} else {
+			r.prompts = append(r.prompts, prompt)
+		}
+	}
+
+	return duplicatedPrompts, nil
 }
 
 func (r *PromptsRegistry) GetListOfPrompts() []*prompts.PromptDefinition {
@@ -41,7 +49,7 @@ func (r *PromptsRegistry) findPrompt(name string) *prompts.PromptDefinition {
 	return nil
 }
 
-func (r *PromptsRegistry) GetPrompt(promptName string, arguments map[string]string) (interface{}, error) {
+func (r *PromptsRegistry) GetPrompt(promptName string, arguments map[string]string) (types.PromptGetResult, error) {
 	prompt := r.findPrompt(promptName)
 	if prompt == nil {
 		return nil, fmt.Errorf("prompt %s not found", promptName)
