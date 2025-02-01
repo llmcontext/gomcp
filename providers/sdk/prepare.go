@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/llmcontext/gomcp/jsonschema"
+	"github.com/llmcontext/gomcp/pkg/jsonschema"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -30,6 +30,7 @@ func (s *SdkServerDefinition) Prepare() error {
 	return nil
 }
 
+// TODO: check that the configuration is valid eg. s.toolsInitFunction exists etc...
 func (s *SdkServerDefinition) setupServer() error {
 	// get the type of the configuration
 	configurationType := reflect.TypeOf(s.toolConfigurationData)

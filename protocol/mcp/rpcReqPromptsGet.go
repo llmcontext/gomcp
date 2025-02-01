@@ -12,8 +12,8 @@ const (
 )
 
 type JsonRpcRequestPromptsGetParams struct {
-	Name      string                 `json:"name"`
-	Arguments map[string]interface{} `json:"arguments"`
+	Name      string            `json:"name"`
+	Arguments map[string]string `json:"arguments"`
 }
 
 func ParseJsonRpcRequestPromptsGet(params *jsonrpc.JsonRpcParams) (*JsonRpcRequestPromptsGetParams, error) {
@@ -38,7 +38,12 @@ func ParseJsonRpcRequestPromptsGet(params *jsonrpc.JsonRpcParams) (*JsonRpcReque
 	if err != nil {
 		return nil, fmt.Errorf("invalid call parameters, arguments is not an object")
 	}
-	resp.Arguments = arguments
+
+	// let's convert the arguments to a map[string]string
+	resp.Arguments = make(map[string]string)
+	for k, v := range arguments {
+		resp.Arguments[k] = v.(string)
+	}
 
 	// check if the request is valid
 	return resp, nil

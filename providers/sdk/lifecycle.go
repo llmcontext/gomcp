@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/llmcontext/gomcp/jsonrpc"
-	"github.com/llmcontext/gomcp/jsonschema"
+	"github.com/llmcontext/gomcp/pkg/jsonschema"
 	"github.com/llmcontext/gomcp/types"
 )
 

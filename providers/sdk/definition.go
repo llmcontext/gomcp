@@ -5,6 +5,8 @@ import (
 	"slices"
 
 	"github.com/invopop/jsonschema"
+	"github.com/llmcontext/gomcp/pkg/prompts"
+	"github.com/llmcontext/gomcp/providers/registry"
 	"github.com/llmcontext/gomcp/types"
 )
 
@@ -16,6 +18,7 @@ type SdkServerDefinition struct {
 	toolConfigurationData interface{}
 	toolsInitFunction     interface{}
 	toolDefinitions       []*SdkToolDefinition
+	promptsRegistry       *registry.PromptsRegistry
 
 	// enhanced data
 	contextType     reflect.Type
@@ -42,6 +45,7 @@ func NewMcpSdkServerDefinition(serverName string, serverVersion string) *SdkServ
 		serverName:      serverName,
 		serverVersion:   serverVersion,
 		toolDefinitions: []*SdkToolDefinition{},
+		promptsRegistry: registry.NewPromptsRegistry(),
 	}
 }
 
@@ -107,4 +111,16 @@ func (s *SdkServerDefinition) GetTool(toolName string) *SdkToolDefinition {
 		}
 	}
 	return nil
+}
+
+func (s *SdkServerDefinition) GetListOfPrompts() []*prompts.PromptDefinition {
+	return s.promptsRegistry.GetListOfPrompts()
+}
+
+func (s *SdkServerDefinition) GetPrompt(promptName string, arguments map[string]string) (types.PromptGetResult, error) {
+	return s.promptsRegistry.GetPrompt(promptName, arguments)
+}
+
+func (s *SdkServerDefinition) AddTemplateYamlFile(templateYamlFilePath string) ([]*prompts.DuplicatedPrompt, error) {
+	return s.promptsRegistry.LoadPromptYamlFile(templateYamlFilePath)
 }

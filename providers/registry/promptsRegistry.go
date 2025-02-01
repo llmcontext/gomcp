@@ -1,44 +1,55 @@
-package prompts
+package registry
 
 import (
 	"bytes"
 	"fmt"
 	"html/template"
 
+	"github.com/llmcontext/gomcp/pkg/prompts"
 	"github.com/llmcontext/gomcp/providers/results"
 	"github.com/llmcontext/gomcp/types"
 )
 
 type PromptsRegistry struct {
-	prompts []PromptDefinition
+	prompts []*prompts.PromptDefinition
 }
 
-func NewEmptyPromptsRegistry() *PromptsRegistry {
-	return &PromptsRegistry{prompts: []PromptDefinition{}}
+func NewPromptsRegistry() *PromptsRegistry {
+	return &PromptsRegistry{prompts: []*prompts.PromptDefinition{}}
 }
 
-func NewPromptsRegistry(promptYamlFilePath string) (*PromptsRegistry, error) {
-	prompts, err := loadPrompts(promptYamlFilePath)
+func (r *PromptsRegistry) LoadPromptYamlFile(promptYamlFilePath string) ([]*prompts.DuplicatedPrompt, error) {
+	duplicatedPrompts := make([]*prompts.DuplicatedPrompt, 0)
+	loadedPrompts, err := prompts.LoadPromptYamlFile(promptYamlFilePath)
 	if err != nil {
 		return nil, err
 	}
-	return &PromptsRegistry{prompts: prompts.Prompts}, nil
+	// make sure we don't have duplicated prompts
+	for _, prompt := range loadedPrompts.Prompts {
+		if r.findPrompt(prompt.Name) != nil {
+			duplicatedPrompts = append(duplicatedPrompts, &prompts.DuplicatedPrompt{PromptName: prompt.Name, FilePath: promptYamlFilePath})
+		} else {
+			r.prompts = append(r.prompts, prompt)
+		}
+	}
+
+	return duplicatedPrompts, nil
 }
 
-func (r *PromptsRegistry) GetListOfPrompts() []PromptDefinition {
+func (r *PromptsRegistry) GetListOfPrompts() []*prompts.PromptDefinition {
 	return r.prompts
 }
 
-func (r *PromptsRegistry) findPrompt(name string) *PromptDefinition {
+func (r *PromptsRegistry) findPrompt(name string) *prompts.PromptDefinition {
 	for _, prompt := range r.prompts {
 		if prompt.Name == name {
-			return &prompt
+			return prompt
 		}
 	}
 	return nil
 }
 
-func (r *PromptsRegistry) GetPrompt(promptName string, arguments map[string]string) (interface{}, error) {
+func (r *PromptsRegistry) GetPrompt(promptName string, arguments map[string]string) (types.PromptGetResult, error) {
 	prompt := r.findPrompt(promptName)
 	if prompt == nil {
 		return nil, fmt.Errorf("prompt %s not found", promptName)

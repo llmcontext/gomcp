@@ -3,7 +3,7 @@ package version
 import "runtime"
 
 var (
-	Version = "0.4.0"
+	Version = "0.5.0"
 
 	// GoVersion is Go tree's version.
 	GoVersion = runtime.Version()

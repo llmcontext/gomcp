@@ -2,8 +2,6 @@ package jsonrpc
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 )
 
 func extractId(rawJson map[string]interface{}) *JsonRpcRequestId {
@@ -37,27 +35,11 @@ func RequestIdToString(register *JsonRpcRequestId) string {
 	return fmt.Sprintf("S:%s", *register.String)
 }
 
-func ReqIdStringToId(reqId string) *JsonRpcRequestId {
-	if strings.HasPrefix(reqId, "N:") {
-		number := strings.TrimPrefix(reqId, "N:")
-		intValue, err := strconv.Atoi(number)
-		if err != nil {
-			return nil
-		}
-		return &JsonRpcRequestId{Number: &intValue}
-	}
-	if strings.HasPrefix(reqId, "S:") {
-		stringValue := strings.TrimPrefix(reqId, "S:")
-		return &JsonRpcRequestId{String: &stringValue}
-	}
-	return nil
-}
-
-func stringPtr(s string) *string {
+func StringPtr(s string) *string {
 	return &s
 }
 
-func intPtr(i int) *int {
+func IntPtr(i int) *int {
 	return &i
 }
 
@@ -65,49 +47,7 @@ func BoolPtr(b bool) *bool {
 	return &b
 }
 
-// func rawMessagePtr(s string) *json.RawMessage {
-// 	rm := json.RawMessage(s)
-// 	return &rm
-// }
-
-type reqIdMappingEntry struct {
-	reqIdA *JsonRpcRequestId
-	reqIdB *JsonRpcRequestId
-}
-
-type ReqIdMapping struct {
-	entries []reqIdMappingEntry
-}
-
-func NewReqIdMapping() *ReqIdMapping {
-	return &ReqIdMapping{
-		entries: []reqIdMappingEntry{},
-	}
-}
-
-func (m *ReqIdMapping) AddMapping(reqIdA *JsonRpcRequestId, reqIdB *JsonRpcRequestId) {
-	m.entries = append(m.entries, reqIdMappingEntry{reqIdA, reqIdB})
-}
-
-func (m *ReqIdMapping) GetMapping(reqId *JsonRpcRequestId) *JsonRpcRequestId {
-	var foundEntry *JsonRpcRequestId = nil
-	var ixEntry int = -1
-	for ix, entry := range m.entries {
-		// Compare the actual values instead of pointer addresses
-		if equalRequestIds(entry.reqIdA, reqId) {
-			foundEntry = entry.reqIdB
-			ixEntry = ix
-			break
-		}
-	}
-	if foundEntry != nil {
-		// delete the entry from the list
-		m.entries = append(m.entries[:ixEntry], m.entries[ixEntry+1:]...)
-	}
-	return foundEntry
-}
-
-func equalRequestIds(a, b *JsonRpcRequestId) bool {
+func EqualRequestIds(a, b *JsonRpcRequestId) bool {
 	if a == nil || b == nil {
 		return a == b
 	}

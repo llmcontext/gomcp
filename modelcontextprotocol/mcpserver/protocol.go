@@ -115,7 +115,7 @@ func (m *McpServer) handleIncomingMessage(
 				if err != nil {
 					m.jsonRpcTransport.SendError(jsonrpc.RpcInvalidRequest, err.Error(), request.Id)
 				}
-				m.EventMcpRequestPromptsList(parsed, request.Id)
+				m.EventMcpRequestPromptsList(ctx, parsed, request.Id)
 			}
 		case mcp.RpcRequestMethodPromptsGet:
 			{
@@ -123,7 +123,7 @@ func (m *McpServer) handleIncomingMessage(
 				if err != nil {
 					m.jsonRpcTransport.SendError(jsonrpc.RpcInvalidRequest, err.Error(), request.Id)
 				}
-				m.EventMcpRequestPromptsGet(parsed, request.Id)
+				m.EventMcpRequestPromptsGet(ctx, parsed, request.Id)
 			}
 		case "ping":
 			result := json.RawMessage(`{}`)
@@ -181,21 +181,6 @@ func (m *McpServer) EventMcpRequestToolsList(ctx context.Context, params *mcp.Js
 		return
 	}
 	m.jsonRpcTransport.SendJsonRpcResponse(response, reqId)
-
-	// // retrieve the tools from the registry
-	// tools := m.serverRegistry.GetListOfTools()
-	// m.logger.Debug("EventMcpRequestToolsList", types.LogArg{
-	// 	"tools": tools,
-	// })
-
-	// for _, tool := range tools {
-	// 	response.Tools = append(response.Tools, mcp.ToolDescription{
-	// 		Name:        tool.Name,
-	// 		Description: tool.Description,
-	// 		InputSchema: tool.InputSchema,
-	// 	})
-	// }
-
 }
 
 func (m *McpServer) EventMcpRequestToolsCall(ctx context.Context, params *mcp.JsonRpcRequestToolsCallParams, reqId *jsonrpc.JsonRpcRequestId) {
@@ -225,54 +210,20 @@ func (m *McpServer) EventMcpRequestResourcesList(params *mcp.JsonRpcRequestResou
 	m.jsonRpcTransport.SendJsonRpcResponse(&response, reqId)
 }
 
-func (m *McpServer) EventMcpRequestPromptsList(params *mcp.JsonRpcRequestPromptsListParams, reqId *jsonrpc.JsonRpcRequestId) {
-	var response = mcp.JsonRpcResponsePromptsListResult{
-		Prompts: make([]mcp.PromptDescription, 0),
+func (m *McpServer) EventMcpRequestPromptsList(ctx context.Context, params *mcp.JsonRpcRequestPromptsListParams, reqId *jsonrpc.JsonRpcRequestId) {
+	response, jsonRpcErr := m.handler.ExecutePromptsList(ctx, m.logger)
+	if jsonRpcErr != nil {
+		m.jsonRpcTransport.SendError(jsonRpcErr.Code, jsonRpcErr.Message, reqId)
+		return
 	}
-
-	// prompts := m.promptsRegistry.GetListOfPrompts()
-	// for _, prompt := range prompts {
-	// 	arguments := make([]mcp.PromptArgumentDescription, 0, len(prompt.Arguments))
-	// 	for _, argument := range prompt.Arguments {
-	// 		arguments = append(arguments, mcp.PromptArgumentDescription{
-	// 			Name:        argument.Name,
-	// 			Description: argument.Description,
-	// 			Required:    argument.Required,
-	// 		})
-	// 	}
-	// 	response.Prompts = append(response.Prompts, mcp.PromptDescription{
-	// 		Name:        prompt.Name,
-	// 		Description: prompt.Description,
-	// 		Arguments:   arguments,
-	// 	})
-	// }
-
-	m.jsonRpcTransport.SendJsonRpcResponse(&response, reqId)
+	m.jsonRpcTransport.SendJsonRpcResponse(response, reqId)
 }
 
-func (m *McpServer) EventMcpRequestPromptsGet(params *mcp.JsonRpcRequestPromptsGetParams, reqId *jsonrpc.JsonRpcRequestId) {
-	var templateArgs = map[string]string{}
-	// copy the arguments, as strings
-	for key, value := range params.Arguments {
-		templateArgs[key] = fmt.Sprintf("%v", value)
+func (m *McpServer) EventMcpRequestPromptsGet(ctx context.Context, params *mcp.JsonRpcRequestPromptsGetParams, reqId *jsonrpc.JsonRpcRequestId) {
+	response, jsonRpcErr := m.handler.ExecutePromptGet(ctx, params, m.logger)
+	if jsonRpcErr != nil {
+		m.jsonRpcTransport.SendError(jsonRpcErr.Code, jsonRpcErr.Message, reqId)
+		return
 	}
-	// promptName := params.Name
-
-	// response, err := s.promptsRegistry.GetPrompt(promptName, templateArgs)
-	// if err != nil {
-	// 	s.mcpServer.SendError(jsonrpc.RpcInvalidParams, fmt.Sprintf("prompt processing error: %s", err), reqId)
-	// 	return
-	// }
-
-	response := json.RawMessage(`{ "result": "hello" }`)
-
-	// marshal response
-	responseBytes, err := json.Marshal(response)
-	if err != nil {
-		m.jsonRpcTransport.SendError(jsonrpc.RpcInternalError, "failed to marshal response", reqId)
-	}
-	jsonResponse := json.RawMessage(responseBytes)
-
-	// we send the response
-	m.jsonRpcTransport.SendJsonRpcResponse(&jsonResponse, reqId)
+	m.jsonRpcTransport.SendJsonRpcResponse(response, reqId)
 }
